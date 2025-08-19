@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Quiz Battle - ワイヤーフレーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #e5e7eb;
+            color: #333;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        /* スマホ画面エリア */
+        .phone-screen {
+            width: 315px;
+            height: 700px;
+            background: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ヘッダー */
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 10px 12px;
+            text-align: center;
+            font-weight: bold;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        /* 動画プレイヤー */
+        .video-container {
+            background: #000;
+            height: 177px; /* 315px * 9 / 16 */
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .video-container.hidden {
+            display: none;
+        }
+
+        /* ゲーム情報 */
+        .game-info {
+            background: white;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .progress {
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .score {
+            color: #6b7280;
+        }
+
+        /* メインゲームエリア */
+        .game-area {
+            padding: 16px 12px 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            box-sizing: border-box;
+            flex: 1;
+        }
+
+        /* 解答エリア */
+        .answer-area {
+            background: white;
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            box-sizing: border-box;
+            height: 110px;
+            display: flex;
+            align-items: stretch;
+        }
+
+        /* ガイドテキスト（READY/LOADING状態用） */
+        .guide-text {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 16px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        /* 解答コンテンツ */
+        .answer-content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .answer-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+            position: relative;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .attempts-counter {
+            color: #2563eb;
+            font-weight: bold;
+            flex: 1;
+        }
+
+        .answer-timer {
+            color: #ef4444;
+            font-weight: bold;
+            flex: 1;
+            text-align: right;
+        }
+
+        .answer-result {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .answer-result.correct {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .answer-result.incorrect {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .answer-input-container {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .answer-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            min-width: 0;
+            height: 44px;
+            box-sizing: border-box;
+        }
+
+        .answer-input:focus {
+            border-color: #2563eb;
+        }
+
+        .answer-input:disabled {
+            background: #f9fafb;
+            color: #6b7280;
+        }
+
+        .submit-button {
+            padding: 12px 16px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+            flex-shrink: 0;
+            height: 44px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .submit-button:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+
+        .submit-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* 早押しボタンコンテナ */
+        .quiz-button-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 12px;
+            width: 100%;
+            box-sizing: border-box;
+            flex: 1;
+            min-height: 280px;
+        }
+
+        /* 早押しボタン（4状態対応） */
+        .quiz-button {
+            width: 180px;
+            height: 240px;
+            border-radius: 18px;
+            border: 4px solid;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            text-align: center;
+            line-height: 1.2;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* STANDBY状態 - デフォルトの赤いボタン */
+        .quiz-button.standby {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+            border-color: #b91c1c;
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .quiz-button.standby:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+        }
+
+        /* PUSHED状態 - 押下された黄色いボタン */
+        .quiz-button.pushed {
+            background: linear-gradient(45deg, #fbbf24, #f59e0b);
+            border-color: #d97706;
+            transform: scale(0.98);
+            box-shadow: 0 4px 16px rgba(251, 191, 36, 0.4);
+        }
+
+        /* RELEASED状態 - LED点灯状態の緑いボタン */
+        .quiz-button.released {
+            background: linear-gradient(45deg, #10b981, #059669);
+            border-color: #047857;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.02); }
+        }
+
+        /* DISABLED状態 - 無効化されたグレーボタン */
+        .quiz-button.disabled {
+            background: linear-gradient(45deg, #9ca3af, #6b7280);
+            border-color: #4b5563;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 8px rgba(156, 163, 175, 0.3);
+        }
+
+        /* ダイアログオーバーレイ（スマホ画面内に制限） */
+        .dialog-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            border-radius: 12px;
+        }
+
+        .dialog {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px;
+            text-align: center;
+            max-width: 280px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .dialog h3 {
+            margin-bottom: 12px;
+            color: #1f2937;
+            font-size: 18px;
+        }
+
+        .dialog p {
+            color: #6b7280;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        .dialog-button {
+            padding: 10px 20px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .dialog-button:hover {
+            background: #1d4ed8;
+        }
+
+        /* ローディングダイアログ用のスタイル */
+        .loading-dialog {
+            background: white;
+            border-radius: 12px;
+            padding: 32px 24px;
+            margin: 20px;
+            text-align: center;
+            max-width: 280px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-dialog h3 {
+            margin-bottom: 8px;
+            color: #1f2937;
+            font-size: 18px;
+        }
+
+        .loading-dialog p {
+            color: #6b7280;
+            margin: 0;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        /* 状態切り替えコントロール */
+        .demo-controls {
+            background: #1f2937;
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            width: 200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        .demo-controls h4 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            color: #e5e7eb;
+            text-align: center;
+        }
+
+        .demo-section {
+            margin-bottom: 16px;
+        }
+
+        .demo-section-title {
+            font-size: 11px;
+            color: #d1d5db;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .demo-button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .demo-button-full {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .demo-button {
+            padding: 8px 6px;
+            background: #374151;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background 0.2s;
+        }
+
+        .demo-button:hover {
+            background: #4b5563;
+        }
+
+        .demo-button.active {
+            background: #2563eb;
+        }
+
+        .demo-info {
+            background: #374151;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            line-height: 1.3;
+            color: #d1d5db;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .show {
+            display: flex !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- スマホ画面 -->
+    <div class="phone-screen">
+        <!-- ローディングダイアログ -->
+        <div class="dialog-overlay" id="loadingDialog">
+            <div class="loading-dialog">
+                <div class="loading-spinner"></div>
+                <h3>読み込み中...</h3>
+                <p>クイズデータを準備しています</p>
+            </div>
+        </div>
+
+        <!-- 横画面警告ダイアログ -->
+        <div class="dialog-overlay" id="orientationDialog">
+            <div class="dialog">
+                <h3>📱 画面を縦向きにしてください</h3>
+                <p>このゲームは縦画面専用です。<br>より良い体験のために画面を回転させてください。</p>
+                <button class="dialog-button" onclick="hideDialog('orientation')">OK</button>
+            </div>
+        </div>
+
+        <!-- ヘッダー -->
+        <div class="header">
+            YouTube Quiz Battle
+        </div>
+
+        <!-- 動画プレイヤー -->
+        <div class="video-container" id="videoContainer">
+            YouTube Video Player
+            <br><small>(16:9 aspect ratio)</small>
+        </div>
+
+        <!-- ゲーム情報 -->
+        <div class="game-info" id="gameInfo">
+            <div class="progress" id="progressText">第3問</div>
+            <div class="score" id="scoreText">○: 2 ×: 1</div>
+        </div>
+
+        <!-- メインゲームエリア -->
+        <div class="game-area">
+            <!-- 解答エリア -->
+            <div class="answer-area" id="answerArea">
+                <!-- ガイドテキスト（READY/LOADING状態用） -->
+                <div class="guide-text" id="guideText">
+                    ボタンを押してゲームを開始
+                </div>
+                
+                <!-- 解答コンテンツ（QUESTIONING/ANSWERING/WAITING/REVEALING状態用） -->
+                <div class="answer-content" id="answerContent" style="display: none;">
+                    <div class="answer-meta">
+                        <span class="attempts-counter" id="attemptsCounter">残り 2回</span>
+                        <div class="answer-result hidden" id="answerResult">正解！</div>
+                        <span class="answer-timer" id="answerTimer">残り 10秒</span>
+                    </div>
+                    <div class="answer-input-container">
+                        <input type="text" class="answer-input" placeholder="解答を入力" id="answerInput">
+                        <button class="submit-button" id="submitButton">送信</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 早押しボタン -->
+            <div class="quiz-button-container">
+                <button class="quiz-button standby" id="quizButton">
+                    早押し
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- デモコントロール -->
+    <div class="demo-controls">
+        <h4>🎮 デモコントロール</h4>
+        
+        <div class="demo-section">
+            <div class="demo-section-title">ゲーム状態:</div>
+            <div class="demo-button-grid">
+                <button class="demo-button" onclick="setState('loading', this)">LOADING</button>
+                <button class="demo-button active" onclick="setState('ready', this)">READY</button>
+                <button class="demo-button" onclick="setState('talking', this)">TALKING</button>
+                <button class="demo-button" onclick="setState('questioning', this)">QUESTIONING</button>
+                <button class="demo-button" onclick="setState('answering', this)">ANSWERING</button>
+                <button class="demo-button" onclick="setState('waiting', this)">WAITING</button>
+                <button class="demo-button" onclick="setState('revealing', this)">REVEALING</button>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <div class="demo-section-title">ボタン状態:</div>
+            <div class="demo-button-grid">
+                <button class="demo-button" onclick="setButtonState('standby')">STANDBY</button>
+                <button class="demo-button" onclick="setButtonState('pushed')">PUSHED</button>
+                <button class="demo-button" onclick="setButtonState('released')">RELEASED</button>
+                <button class="demo-button" onclick="setButtonState('disabled')">DISABLED</button>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <div class="demo-section-title">ダイアログ:</div>
+            <div class="demo-button-full">
+                <button class="demo-button" onclick="showDialog('loading')">ローディング</button>
+                <button class="demo-button" onclick="showDialog('orientation')">横画面警告</button>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <div class="demo-section-title">アクション:</div>
+            <div class="demo-button-full">
+                <button class="demo-button" onclick="showCorrectResult()">正解表示</button>
+                <button class="demo-button" onclick="showIncorrectResult()">不正解表示</button>
+                <button class="demo-button" onclick="startCountdown()">カウントダウン</button>
+                <button class="demo-button" onclick="hideVideoPlayer()">動画非表示</button>
+                <button class="demo-button" onclick="resetFlow()">フロー初期化</button>
+            </div>
+        </div>
+
+        <div class="demo-info">
+            <strong>現在の状態:</strong><br>
+            <span id="currentStateInfo">READY</span>
+        </div>
+    </div>
+
+    <script>
+        let currentState = 'ready';
+        let currentButtonState = 'standby';
+        let countdownTimer = null;
+        let countdownValue = 10;
+
+        // ゲーム状態設定
+        function setState(state, targetButton = null) {
+            currentState = state;
+            console.log('State changed to:', state);
+            
+            const loadingDialog = document.getElementById('loadingDialog');
+            const videoContainer = document.getElementById('videoContainer');
+            const gameInfo = document.getElementById('gameInfo');
+            const guideText = document.getElementById('guideText');
+            const answerContent = document.getElementById('answerContent');
+            const answerInput = document.getElementById('answerInput');
+            const submitButton = document.getElementById('submitButton');
+            const answerResult = document.getElementById('answerResult');
+            const quizButton = document.getElementById('quizButton');
+
+            // 共通処理：answerResultは常に非表示から開始
+            answerResult.classList.add('hidden');
+            stopCountdown();
+
+            // 状態遷移時に動画を再表示（loading状態以外）
+            if (state !== 'loading') {
+                videoContainer.classList.remove('hidden');
+            }
+
+            switch(state) {
+                case 'loading':
+                    loadingDialog.classList.add('show');
+                    quizButton.className = 'quiz-button disabled';
+                    quizButton.textContent = '読み込み中';
+                    guideText.style.display = 'flex';
+                    guideText.textContent = '読み込み中...';
+                    answerContent.style.display = 'none';
+                    break;
+                    
+                case 'ready':
+                    loadingDialog.classList.remove('show');
+                    quizButton.className = 'quiz-button standby';
+                    quizButton.textContent = '早押し';
+                    guideText.style.display = 'flex';
+                    guideText.textContent = 'ボタンを押してゲームを開始';
+                    answerContent.style.display = 'none';
+                    break;
+                    
+                case 'talking':
+                    quizButton.className = 'quiz-button disabled';
+                    quizButton.textContent = '待機中';
+                    guideText.style.display = 'flex';
+                    guideText.textContent = '次の問題をお待ちください';
+                    answerContent.style.display = 'none';
+                    break;
+                    
+                case 'questioning':
+                    quizButton.className = 'quiz-button standby';
+                    quizButton.textContent = '早押し';
+                    guideText.style.display = 'none';
+                    answerContent.style.display = 'flex';
+                    answerInput.disabled = true;
+                    answerInput.value = '';  // 解答入力をクリア
+                    submitButton.disabled = true;
+                    document.getElementById('attemptsCounter').textContent = '残り 2回';
+                    document.getElementById('answerTimer').textContent = '';
+                    // 解答結果を非表示に
+                    answerResult.classList.add('hidden');
+                    break;
+                    
+                case 'answering':
+                    quizButton.className = 'quiz-button released';
+                    quizButton.textContent = '解答中';
+                    guideText.style.display = 'none';
+                    answerContent.style.display = 'flex';
+                    answerInput.disabled = false;
+                    submitButton.disabled = false;
+                    answerInput.focus();
+                    startCountdown();
+                    break;
+                    
+                case 'waiting':
+                    quizButton.className = 'quiz-button disabled';
+                    quizButton.textContent = '待機中';
+                    guideText.style.display = 'none';
+                    answerContent.style.display = 'flex';
+                    answerInput.disabled = true;
+                    submitButton.disabled = true;
+                    document.getElementById('answerTimer').textContent = '';
+                    break;
+                    
+                case 'revealing':
+                    quizButton.className = 'quiz-button disabled';
+                    quizButton.textContent = '発表中';
+                    guideText.style.display = 'none';
+                    answerContent.style.display = 'flex';
+                    answerInput.disabled = true;
+                    submitButton.disabled = true;
+                    document.getElementById('answerTimer').textContent = '';
+                    break;
+            }
+
+            // アクティブボタン更新
+            document.querySelectorAll('.demo-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
+
+            // 現在状態情報更新
+            document.getElementById('currentStateInfo').textContent = state.toUpperCase();
+        }
+
+        // ボタン状態設定
+        function setButtonState(state) {
+            currentButtonState = state;
+            const quizButton = document.getElementById('quizButton');
+            
+            // 現在のゲーム状態に応じてテキストを設定
+            let buttonText = '早押し';
+            switch(currentState) {
+                case 'loading': buttonText = '読み込み中'; break;
+                case 'ready': buttonText = '早押し'; break;
+                case 'talking': buttonText = '待機中'; break;
+                case 'questioning': buttonText = '早押し'; break;
+                case 'answering': buttonText = '解答中'; break;
+                case 'waiting': buttonText = '待機中'; break;
+                case 'revealing': buttonText = '発表中'; break;
+            }
+            
+            quizButton.className = `quiz-button ${state}`;
+            quizButton.textContent = buttonText;
+        }
+
+        // 正解結果表示（状態チェック付き）
+        function showCorrectResult() {
+            // QUESTIONING, ANSWERING状態では表示しない
+            if (currentState === 'questioning' || currentState === 'answering') {
+                console.log('正解表示はこの状態では無効です:', currentState);
+                return;
+            }
+            
+            const answerResult = document.getElementById('answerResult');
+            answerResult.className = 'answer-result correct';
+            answerResult.textContent = '正解！';
+            answerResult.classList.remove('hidden');
+        }
+
+        // 不正解結果表示（状態チェック付き）
+        function showIncorrectResult() {
+            // QUESTIONING, ANSWERING状態では表示しない
+            if (currentState === 'questioning' || currentState === 'answering') {
+                console.log('不正解表示はこの状態では無効です:', currentState);
+                return;
+            }
+            
+            const answerResult = document.getElementById('answerResult');
+            answerResult.className = 'answer-result incorrect';
+            answerResult.textContent = '不正解';
+            answerResult.classList.remove('hidden');
+        }
+
+        // カウントダウン開始（状態チェック付き）
+        function startCountdown() {
+            // ANSWERING状態でのみ有効
+            if (currentState !== 'answering') {
+                console.log('カウントダウンはANSWERING状態でのみ有効です。現在の状態:', currentState);
+                return;
+            }
+            
+            stopCountdown();
+            countdownValue = 10;
+            updateCountdownDisplay();
+            
+            countdownTimer = setInterval(() => {
+                countdownValue--;
+                updateCountdownDisplay();
+                
+                if (countdownValue <= 0) {
+                    stopCountdown();
+                    document.getElementById('answerTimer').textContent = '時間切れ';
+                }
+            }, 1000);
+        }
+
+        // カウントダウン停止
+        function stopCountdown() {
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+            }
+        }
+
+        // カウントダウン表示更新
+        function updateCountdownDisplay() {
+            const timerElement = document.getElementById('answerTimer');
+            if (countdownValue > 0) {
+                timerElement.textContent = `残り ${countdownValue}秒`;
+                if (countdownValue <= 3) {
+                    timerElement.style.color = '#dc2626';
+                    timerElement.style.fontWeight = 'bold';
+                } else {
+                    timerElement.style.color = '#ef4444';
+                }
+            }
+        }
+
+        // 動画プレイヤー表示/非表示切り替え（状態チェック付き）
+        function hideVideoPlayer() {
+            // ANSWERING状態でのみ有効
+            if (currentState !== 'answering') {
+                console.log('動画非表示はANSWERING状態でのみ有効です。現在の状態:', currentState);
+                return;
+            }
+            
+            const videoContainer = document.getElementById('videoContainer');
+            videoContainer.classList.toggle('hidden');
+        }
+
+        // フロー初期化
+        function resetFlow() {
+            setState('ready');
+            // 解答結果を非表示に
+            const answerResult = document.getElementById('answerResult');
+            answerResult.classList.add('hidden');
+            // 解答入力をクリア
+            const answerInput = document.getElementById('answerInput');
+            answerInput.value = '';
+            // カウントダウンを停止
+            stopCountdown();
+            // 動画表示を復元
+            const videoContainer = document.getElementById('videoContainer');
+            videoContainer.classList.remove('hidden');
+        }
+
+        // ダイアログ表示
+        function showDialog(type) {
+            const loadingDialog = document.getElementById('loadingDialog');
+            const orientationDialog = document.getElementById('orientationDialog');
+            
+            if (type === 'loading') {
+                loadingDialog.classList.add('show');
+            } else if (type === 'orientation') {
+                orientationDialog.classList.add('show');
+            }
+        }
+
+        // ダイアログ非表示
+        function hideDialog(type) {
+            const loadingDialog = document.getElementById('loadingDialog');
+            const orientationDialog = document.getElementById('orientationDialog');
+            
+            if (type === 'loading') {
+                loadingDialog.classList.remove('show');
+            } else if (type === 'orientation') {
+                orientationDialog.classList.remove('show');
+            }
+        }
+
+        // イベントリスナー設定
+        function setupEventListeners() {
+            const quizButton = document.getElementById('quizButton');
+            const submitButton = document.getElementById('submitButton');
+            const answerInput = document.getElementById('answerInput');
+            
+            if (quizButton) {
+                quizButton.addEventListener('click', function() {
+                    if (currentState === 'ready') {
+                        setState('talking');
+                    } else if (currentState === 'questioning' && !this.classList.contains('disabled')) {
+                        setState('answering');
+                        setButtonState('released');
+                    }
+                });
+            }
+            
+            if (submitButton) {
+                submitButton.addEventListener('click', function() {
+                    if (currentState === 'answering') {
+                        setState('waiting');
+                        showCorrectResult();
+                    }
+                });
+            }
+
+            // Enterキーで送信
+            if (answerInput) {
+                answerInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !submitButton.disabled) {
+                        submitButton.click();
+                    }
+                });
+            }
+
+            // スペースキーで早押し（PC用）
+            document.addEventListener('keydown', function(e) {
+                if (e.code === 'Space' && (currentState === 'ready' || currentState === 'questioning')) {
+                    e.preventDefault();
+                    quizButton.click();
+                }
+            });
+        }
+
+        // 初期化
+        function initialize() {
+            console.log('Initializing YouTube Quiz Battle Wireframe...');
+            setupEventListeners();
+            setState('ready');
+        }
+
+        // 確実な初期化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
+        } else {
+            initialize();
+        }
+    </script>
+</body>
+</html>
