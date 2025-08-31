@@ -1,0 +1,6 @@
+# Pinia ストアディレクトリ
+
+このディレクトリには以下のストアが配置される予定：
+- gameStore.ts - ゲーム状態管理
+- quizStore.ts - クイズデータ管理
+- audioStore.ts - 音声管理

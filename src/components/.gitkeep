@@ -1,0 +1,8 @@
+# コンポーネントディレクトリ
+
+このディレクトリには以下のコンポーネントが配置される予定：
+- QuizButton.vue - 早押しボタンコンポーネント
+- AnswerArea.vue - 解答エリアコンポーネント
+- GameInfo.vue - ゲーム進行状況表示
+- ResultArea.vue - ゲーム終了画面
+- SettingsModal.vue - 設定画面

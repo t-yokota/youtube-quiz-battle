@@ -1,0 +1,7 @@
+# サービスディレクトリ
+
+このディレクトリには以下のサービスクラスが配置される予定：
+- YouTubePlayerManager.ts - YouTube Player制御
+- TimeManager.ts - 時間管理
+- AnswerValidator.ts - 解答検証
+- AudioManager.ts - 音声管理

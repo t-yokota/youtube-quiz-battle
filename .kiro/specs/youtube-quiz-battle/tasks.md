@@ -2,7 +2,7 @@
 
 ## Phase 1: プロジェクト基盤とコア機能
 
-- [ ] 1. プロジェクト初期設定とビルド環境構築
+- [x] 1. プロジェクト初期設定とビルド環境構築
   - Vue 3 + TypeScript + Vite プロジェクトの作成
   - Tailwind CSS の設定
   - ESLint/Prettier の設定
