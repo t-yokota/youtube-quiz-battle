@@ -405,19 +405,22 @@ function shouldTransition(targetTime: number): boolean {
 
 #### 一回性トリガ（Single‑Shot Guard）
 
-採用: 問題単位で「start/reveal/end」を各1回だけ処理するフラグ管理を行う（巻き戻しや任意シークがあっても安全）。
+採用: 問題単位で「start/reveal/end」を各1回だけ処理するフラグ管理を行う（巻き戻しや任意シークがあっても安全）。比較時には微小な許容値 `EPS`（目安: `1e-3` 秒）を加えて量子化ズレを吸収する。
 
 ```typescript
 // 問題ごとの一回性フラグ（start/reveal/end を各1回だけ処理）
 const consumed: Record<number, { start: boolean; reveal: boolean; end: boolean }> = {}
+const EPS = 1e-3
 
 function applyThresholds(prev: number, curr: number, q: QuizQuestion) {
   const c = consumed[q.index] ?? (consumed[q.index] = { start: false, reveal: false, end: false })
-  if (!c.start && prev < q.startTime && curr >= q.startTime) { c.start = true; onStart(q) }
-  if (!c.reveal && prev < q.revealTime && curr >= q.revealTime) { c.reveal = true; onReveal(q) }
-  if (!c.end && prev < q.endTime && curr >= q.endTime) { c.end = true; onEnd(q) }
+  if (!c.start && prev + EPS < q.startTime && curr + EPS >= q.startTime) { c.start = true; onStart(q) }
+  if (!c.reveal && prev + EPS < q.revealTime && curr + EPS >= q.revealTime) { c.reveal = true; onReveal(q) }
+  if (!c.end && prev + EPS < q.endTime && curr + EPS >= q.endTime) { c.end = true; onEnd(q) }
 }
 ```
+
+`jumpToRevealPeriod=true` でシークするコードパスでは、時間ハンドラより先に `consumed[q.index].reveal = true` を設定し、二重発火が起きないよう順序を固定する。
 
 参考: 時間経過起点のハンドラと GameManager の対応付け
 
@@ -451,16 +454,18 @@ function onEnd(q: QuizQuestion) {
 
 #### 1ティック内の複数閾値走査
 
-`setInterval`の遅延等で閾値を飛び越える可能性に備え、`(prev, curr]`の窓内を走査して順に処理する。
+`setInterval`の遅延等で閾値を飛び越える可能性に備え、`(prev, curr]`の窓内を走査して順に処理する。比較は `EPS` を考慮して行い、境界値の取りこぼしを防ぐ。
 
 ```typescript
 function processTimeWindow(prev: number, curr: number, q: QuizQuestion) {
   const thresholds = [q.startTime, q.revealTime, q.endTime]
-    .filter((t) => t > prev && t <= curr)
+    .filter((t) => t > prev + EPS && t <= curr + EPS)
     .sort((a, b) => a - b)
   for (const t of thresholds) transitionAt(t)
 }
 ```
+
+Tips: YouTube IFrame API の `getCurrentTime()` は量子化誤差で想定値より僅かに小さい値を返すことがあるため、このように `EPS` を用いて閾値との比較に余裕を持たせている。
 
 ### WatchedVideoTime Update Logic
 
@@ -477,16 +482,21 @@ flowchart TD
 
     Update --> Setting2{状態遷移を停止中？}
 
-    Setting2 --> |true| Time{次のQUIZ区間に到達？}
+    Setting2 --> |true| Window[未消費閾値の走査]
     Setting2 --> |false| Transition[状態遷移の判定処理]
 
+    Window --> |未消費startあり| Time{次のQUIZ区間に到達？}
+    Window --> |全start消費済&未消費endなし| Finish[FINISHEDへ遷移]
+    Window --> End
+
     Time --> |true| Transition
-    Time --> |false| End
+    Time --> |false| Block
 
     Reset --> End
-    Wait --> Block["状態遷移を停止<br/>（次のQUIZ区間まで）"]
+    Wait --> Block["状態遷移を停止<br/>（閾値処理のみ継続）"]
 
     Transition --> End(["完了"])
+    Finish --> End
     Block --> End
 ```
 
@@ -495,6 +505,8 @@ flowchart TD
 #### Time Update Loop（簡易実装例）
 
 動画時刻の定期更新処理（TimeUpdate）では、再生直後の誤検出を避けるウォームアップ猶予と、壁時計との差分による停滞チェックの枠組みを持たせる。
+
+状態遷移停止中も `processTimeWindow` は継続し、未消費の `reveal/end` 閾値があれば消化する。すべての問題で `start` が消費済みかつ未消費の `end` が残っていない場合は、強制的に `FINISHED` へ遷移させてソフトロックを防ぐ。
 
 ```typescript
 const STALL_WALL_MS = 1200
@@ -852,6 +864,7 @@ interface AnswerValidator {
 - クライアント側で処理: 正解データをクライアントで保持し、入力と比較して同期判定
 - Phase 2（MVP）: 正規化なし＋完全一致のみ（必要なら内部で`trim+NFKC`を用意し既定OFF）
 - Phase 3: 安全な統一パイプラインをグローバル適用（下記）。可変オプションは使用しない
+- Requirement 4 の受け入れ条件（全角半角・大小文字・仮名揺れなど）を満たすのは Phase 3 完了時点。Phase 2 では未達成であることをタスク計画に明記し、進捗管理時は Phase 3 を要件達成ポイントとする。
 
 #### Phase 3 デフォルト正規化パイプライン
 
@@ -1043,11 +1056,15 @@ _Action Buttons_
   │ 📊データ収集について  │
   │ ゲーム改善のため匿名の │
   │ 利用データを収集して   │
-  │ います。              │
+  │ います。入力した解答内 │
+  │ 容も統計処理の対象です │
+  │ が、個人を直接識別でき │
+  │ る形では保存しません。 │
   │ • プレイ統計          │
   │ • エラー情報          │
   │ • デバイス情報        │
-  │ 個人情報は収集しません │
+  │ • 入力した解答内容    │
+  │   (匿名統計目的)       │
   │                      │
   │      [ 閉じる ]      │
   └──────────────────────┘
