@@ -2,6 +2,7 @@
 // YouTube Quiz Battle - メインアプリケーション
 import AppHeader from './components/AppHeader.vue'
 import VideoPlayer from './components/VideoPlayer.vue'
+import GameInfo from './components/GameInfo.vue'
 </script>
 
 <template>
@@ -14,11 +15,8 @@ import VideoPlayer from './components/VideoPlayer.vue'
       <!-- Video Player -->
       <VideoPlayer />
 
-      <!-- Game Info Area -->
-      <section class="game-info">
-        <div class="progress-display">問題: 1/5</div>
-        <div class="score-display">○: 0 ×: 0</div>
-      </section>
+      <!-- Game Info -->
+      <GameInfo :current-question="0" :total-questions="5" :correct-count="0" :incorrect-count="0" />
 
       <!-- Answer Area -->
       <section class="answer-area">
@@ -72,24 +70,6 @@ import VideoPlayer from './components/VideoPlayer.vue'
   padding: 1rem;
   gap: 1rem;
   min-height: 0;
-}
-
-/* Game Info */
-.game-info {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: space-between;
-  background-color: white;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.progress-display,
-.score-display {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #333;
 }
 
 /* Answer Area */
@@ -265,11 +245,6 @@ import VideoPlayer from './components/VideoPlayer.vue'
     gap: 0.5rem;
   }
 
-  .game-info {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-  }
-
   .answer-area {
     padding: 0.75rem;
     height: 100px;
@@ -313,10 +288,6 @@ import VideoPlayer from './components/VideoPlayer.vue'
   .main-content {
     padding: 0.5rem;
     gap: 0.5rem;
-  }
-
-  .game-info {
-    padding: 0.5rem 0.75rem;
   }
 
   .answer-area {

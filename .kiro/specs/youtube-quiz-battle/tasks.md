@@ -29,7 +29,7 @@
   - 状態による表示制御の準備
   - _Requirements: 1.1_
 
-- [ ] 5. GameInfoコンポーネントの実装
+- [x] 5. GameInfoコンポーネントの実装
   - ProgressDisplay サブコンポーネント（問題番号表示）
   - ScoreDisplay サブコンポーネント（正解・不正解数表示）
   - レスポンシブレイアウトの適用
