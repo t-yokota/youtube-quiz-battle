@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // YouTube Quiz Battle - メインアプリケーション
 import AppHeader from './components/AppHeader.vue'
+import VideoPlayer from './components/VideoPlayer.vue'
 </script>
 
 <template>
@@ -10,13 +11,8 @@ import AppHeader from './components/AppHeader.vue'
 
     <!-- Main Content Area -->
     <main class="main-content">
-      <!-- Video Player Placeholder -->
-      <section class="video-section">
-        <div class="video-placeholder">
-          <p class="text-white text-center">Video Player Area</p>
-          <p class="text-white text-sm text-center">16:9 aspect ratio</p>
-        </div>
-      </section>
+      <!-- Video Player -->
+      <VideoPlayer />
 
       <!-- Game Info Area -->
       <section class="game-info">
@@ -76,23 +72,6 @@ import AppHeader from './components/AppHeader.vue'
   padding: 1rem;
   gap: 1rem;
   min-height: 0;
-}
-
-/* Video Section */
-.video-section {
-  flex-shrink: 0;
-}
-
-.video-placeholder {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background-color: #1a1a1a;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.5rem;
-  overflow: hidden;
 }
 
 /* Game Info */
