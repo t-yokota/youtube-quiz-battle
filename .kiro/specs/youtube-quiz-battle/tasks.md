@@ -50,7 +50,7 @@
   - 最小サイズ制約の設定
   - _Requirements: 1.2, 2.3_
 
-- [ ] 8. ResultAreaコンポーネントの実装
+- [x] 8. ResultAreaコンポーネントの実装
   - FinalScore サブコンポーネント（最終スコア表示）
   - ResultTable サブコンポーネント（個別結果表・基本構成と簡略版）
   - ActionButtons サブコンポーネント（再プレイボタン）
