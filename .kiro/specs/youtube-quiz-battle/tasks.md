@@ -35,7 +35,7 @@
   - レスポンシブレイアウトの適用
   - _Requirements: 5.1, 5.4_
 
-- [ ] 6. AnswerAreaコンポーネントの実装
+- [x] 6. AnswerAreaコンポーネントの実装
   - GuideText サブコンポーネント（LOADING/READY/TALKING状態用）
   - AnswerContent サブコンポーネント（QUESTIONING/ANSWERING/WAITING/REVEALING状態用）
   - AnswerMeta サブコンポーネント（残り回数・タイマー・結果表示）
