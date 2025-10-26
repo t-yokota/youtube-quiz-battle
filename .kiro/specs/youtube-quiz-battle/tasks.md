@@ -43,7 +43,7 @@
   - 状態に応じた表示切り替えの準備
   - _Requirements: 1.3, 5.2_
 
-- [ ] 7. QuizButtonコンポーネントの実装
+- [x] 7. QuizButtonコンポーネントの実装
   - 4つの状態（STANDBY/PUSHED/RELEASED/DISABLED）のスタイル実装
   - レスポンシブサイズ計算（4:3比率維持）
   - 余剰スペース最大活用の計算ロジック
