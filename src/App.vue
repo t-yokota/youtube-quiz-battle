@@ -1,13 +1,12 @@
 <script setup lang="ts">
 // YouTube Quiz Battle - メインアプリケーション
+import AppHeader from './components/AppHeader.vue'
 </script>
 
 <template>
   <div class="app-container">
     <!-- Header -->
-    <header class="header">
-      <h1 class="header-title">YouTube Quiz Battle</h1>
-    </header>
+    <AppHeader />
 
     <!-- Main Content Area -->
     <main class="main-content">
@@ -65,22 +64,6 @@
   height: 100vh;
   background-color: #f5f5f5;
   overflow: hidden;
-}
-
-/* Header */
-.header {
-  flex-shrink: 0;
-  background-color: #2563eb;
-  color: white;
-  padding: 1rem;
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.header-title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: bold;
 }
 
 /* Main Content */
@@ -298,14 +281,6 @@
 
 /* モバイル対応 */
 @media (max-width: 640px) {
-  .header {
-    padding: 0.75rem;
-  }
-
-  .header-title {
-    font-size: 1.25rem;
-  }
-
   .main-content {
     padding: 0.5rem;
     gap: 0.5rem;
@@ -356,14 +331,6 @@
 
 /* 小さい画面での追加調整 */
 @media (max-height: 700px) {
-  .header {
-    padding: 0.5rem;
-  }
-
-  .header-title {
-    font-size: 1.125rem;
-  }
-
   .main-content {
     padding: 0.5rem;
     gap: 0.5rem;
