@@ -1,11 +1,16 @@
 <script setup lang="ts">
 // YouTube Quiz Battle - メインアプリケーション
+import { ref } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import VideoPlayer from './components/VideoPlayer.vue'
 // import GameInfo from './components/GameInfo.vue'
 // import AnswerArea from './components/AnswerArea.vue'
 // import QuizButton from './components/QuizButton.vue'
 import ResultArea from './components/ResultArea.vue'
+import SettingsModal from './components/SettingsModal.vue'
+import LoadingDialog from './components/LoadingDialog.vue'
+import OrientationDialog from './components/OrientationDialog.vue'
+import ErrorDialog from './components/ErrorDialog.vue'
 
 // ResultArea表示確認用のダミーデータ
 const dummyResults = [
@@ -15,12 +20,43 @@ const dummyResults = [
   { questionNumber: 4, isCorrect: false, correctAnswer: '徳川家康', userAnswer: '徳川吉宗' },
   { questionNumber: 5, isCorrect: true, correctAnswer: '太平洋', userAnswer: '太平洋' },
 ]
+
+// モーダル・ダイアログの表示状態（Phase 1: 表示確認用）
+const isSettingsOpen = ref(false)
+const isLoadingOpen = ref(false)
+const isOrientationOpen = ref(false)
+const isErrorOpen = ref(false)
+
+// 音声設定の状態（Phase 1: 表示確認用）
+const volumeLevel = ref(3)
+
+// SettingsModal イベントハンドラ
+const handleOpenSettings = () => {
+  isSettingsOpen.value = true
+}
+
+const handleCloseSettings = () => {
+  isSettingsOpen.value = false
+}
+
+const handleUpdateVolume = (level: number) => {
+  volumeLevel.value = level
+}
+
+// ErrorDialog イベントハンドラ
+const handleErrorAction = () => {
+  window.location.reload()
+}
+
+const handleCloseError = () => {
+  isErrorOpen.value = false
+}
 </script>
 
 <template>
   <div class="app-container">
     <!-- Header -->
-    <AppHeader />
+    <AppHeader @open-settings="handleOpenSettings" />
 
     <!-- Main Content Area -->
     <main class="main-content">
@@ -51,6 +87,26 @@ const dummyResults = [
         :show-user-answers="true"
       />
     </main>
+
+    <!-- Modals and Dialogs -->
+    <SettingsModal
+      :is-open="isSettingsOpen"
+      :volume-level="volumeLevel"
+      @close="handleCloseSettings"
+      @update-volume="handleUpdateVolume"
+    />
+
+    <LoadingDialog :is-open="isLoadingOpen" message="読み込み中..." />
+
+    <OrientationDialog :is-open="isOrientationOpen" />
+
+    <ErrorDialog
+      :is-open="isErrorOpen"
+      title="エラーが発生しました"
+      message="問題が発生しました。ページを再読み込みしてください。"
+      @action="handleErrorAction"
+      @close="handleCloseError"
+    />
   </div>
 </template>
 

@@ -57,7 +57,7 @@
   - レスポンシブテーブル表示の実装
   - _Requirements: 1.5_
 
-- [ ] 9. SettingsModalとDialogSystemの実装
+- [x] 9. SettingsModalとDialogSystemの実装
   - SettingsModal コンポーネント（オーバーレイ表示）
   - AudioSettings サブコンポーネント（音声ON/OFF・5段階音量調整）
   - PrivacyInfo サブコンポーネント（データ収集説明）

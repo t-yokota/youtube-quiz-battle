@@ -2,10 +2,14 @@
 // Header コンポーネント
 // タイトル表示と設定ボタンを含む
 
+// イベント定義
+const emit = defineEmits<{
+  openSettings: []
+}>()
+
 // 設定ボタンクリック時のイベント
 const handleSettingsClick = () => {
-  // TODO: Phase 2で設定モーダル表示の実装
-  console.log('Settings button clicked')
+  emit('openSettings')
 }
 </script>
 
