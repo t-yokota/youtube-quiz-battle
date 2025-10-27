@@ -1,16 +1,17 @@
 <script setup lang="ts">
 // YouTube Quiz Battle - メインアプリケーション
 import { ref } from 'vue'
-import AppHeader from './components/AppHeader.vue'
-import VideoPlayer from './components/VideoPlayer.vue'
-// import GameInfo from './components/GameInfo.vue'
-// import AnswerArea from './components/AnswerArea.vue'
-// import QuizButton from './components/QuizButton.vue'
-import ResultArea from './components/ResultArea.vue'
-import SettingsModal from './components/SettingsModal.vue'
-import LoadingDialog from './components/LoadingDialog.vue'
-import OrientationDialog from './components/OrientationDialog.vue'
-import ErrorDialog from './components/ErrorDialog.vue'
+import AppHeader from './components/common/AppHeader.vue'
+import VideoPlayer from './components/common/VideoPlayer.vue'
+import GamePanel from './components/game/GamePanel.vue'
+import QuizButton from './components/game/QuizButton.vue'
+import FinalScore from './components/result/FinalScore.vue'
+import ResultTable from './components/result/ResultTable.vue'
+import ResultActions from './components/result/ResultActions.vue'
+import SettingsModal from './components/dialogs/SettingsModal.vue'
+import LoadingDialog from './components/dialogs/LoadingDialog.vue'
+import OrientationDialog from './components/dialogs/OrientationDialog.vue'
+import ErrorDialog from './components/dialogs/ErrorDialog.vue'
 
 // ResultArea表示確認用のダミーデータ
 const dummyResults = [
@@ -63,29 +64,31 @@ const handleCloseError = () => {
       <!-- Video Player -->
       <VideoPlayer />
 
-      <!-- Game Info (通常のゲーム中) -->
-      <!-- <GameInfo :current-question="0" :total-questions="5" :correct-count="0" :incorrect-count="0" /> -->
+      <!-- Game UI (通常のゲーム中) -->
+      <!-- <div class="game-ui">
+        <GamePanel
+          mode="guide"
+          :current-question="0"
+          :total-questions="5"
+          :correct-count="0"
+          :incorrect-count="0"
+          :remaining-attempts="2"
+          :remaining-time="10"
+          answer-result="correct"
+          answer-input=""
+          :is-input-disabled="false"
+        />
+        <QuizButton button-state="standby" />
+      </div> -->
 
-      <!-- Answer Area (通常のゲーム中) -->
-      <!-- <AnswerArea
-        mode="answer"
-        :remaining-attempts="2"
-        :remaining-time="10"
-        answer-result="correct"
-        answer-input=""
-        :is-input-disabled="false"
-      /> -->
-
-      <!-- Quiz Button Area (通常のゲーム中) -->
-      <!-- <QuizButton button-state="standby" /> -->
-
-      <!-- Result Area (FINISHED状態) - 表示確認用 -->
-      <ResultArea
-        :correct-count="3"
-        :total-questions="5"
-        :results="dummyResults"
-        :show-user-answers="true"
-      />
+      <!-- Result UI (FINISHED状態) - 表示確認用 -->
+      <div class="result-ui">
+        <div class="result-content">
+          <FinalScore :correct-count="3" :total-questions="5" />
+          <ResultTable :results="dummyResults" :show-user-answers="true" />
+        </div>
+        <ResultActions />
+      </div>
     </main>
 
     <!-- Modals and Dialogs -->
@@ -133,11 +136,56 @@ const handleCloseError = () => {
   min-height: 0;
 }
 
+/* Game UI */
+.game-ui {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  min-height: 0;
+}
+
+/* Result UI */
+.result-ui {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  min-height: 0;
+}
+
+/* Result Content (スクロール可能領域) */
+.result-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  margin-bottom: 1.5rem;
+}
+
 /* モバイル対応 */
 @media (max-width: 640px) {
   .main-content {
     padding: 0.5rem;
     gap: 0.5rem;
+  }
+
+  .game-ui {
+    gap: 1rem;
+    padding: 0.75rem;
+  }
+
+  .result-ui {
+    padding: 0.75rem;
+  }
+
+  .result-content {
+    gap: 1rem;
+    margin-bottom: 1rem;
   }
 }
 
@@ -146,6 +194,20 @@ const handleCloseError = () => {
   .main-content {
     padding: 0.5rem;
     gap: 0.5rem;
+  }
+
+  .game-ui {
+    gap: 1rem;
+    padding: 0.75rem;
+  }
+
+  .result-ui {
+    padding: 0.75rem;
+  }
+
+  .result-content {
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
   }
 }
 </style>

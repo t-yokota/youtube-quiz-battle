@@ -1,12 +1,9 @@
 <script setup lang="ts">
-// AnswerArea コンポーネント
-// ゲーム状態に応じて解答エリアの表示を切り替え
+// AnswerContent コンポーネント
+// 解答入力エリア（QUESTIONING/ANSWERING/WAITING/REVEALING状態）
 
-// Props定義（Phase 2で状態管理と連携予定）
+// Props定義
 interface Props {
-  // 表示モード: 'guide' = ガイドテキスト, 'answer' = 解答コンテンツ
-  mode?: 'guide' | 'answer'
-  guideText?: string
   remainingAttempts?: number
   remainingTime?: number
   answerResult?: 'correct' | 'incorrect' | null
@@ -15,8 +12,6 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mode: 'answer',
-  guideText: 'ボタンを押してゲームを開始',
   remainingAttempts: 2,
   remainingTime: 10,
   answerResult: null,
@@ -41,72 +36,35 @@ const handleInput = (event: Event) => {
 </script>
 
 <template>
-  <section class="answer-area">
-    <!-- Guide Text Mode (LOADING/READY/TALKING状態) -->
-    <div v-if="mode === 'guide'" class="guide-text">
-      <p class="guide-message">{{ guideText }}</p>
+  <div class="answer-content">
+    <!-- Answer Meta Information -->
+    <div class="answer-meta">
+      <span class="attempts-counter">残り {{ remainingAttempts }}回</span>
+      <span class="answer-timer">残り {{ remainingTime }}秒</span>
+      <span v-if="answerResult" :class="['answer-result', answerResult]">
+        {{ answerResult === 'correct' ? '正解！' : '不正解！' }}
+      </span>
     </div>
 
-    <!-- Answer Content Mode (QUESTIONING/ANSWERING/WAITING/REVEALING状態) -->
-    <div v-else class="answer-content">
-      <!-- Answer Meta Information -->
-      <div class="answer-meta">
-        <span class="attempts-counter">残り {{ remainingAttempts }}回</span>
-        <span class="answer-timer">残り {{ remainingTime }}秒</span>
-        <span v-if="answerResult" :class="['answer-result', answerResult]">
-          {{ answerResult === 'correct' ? '正解！' : '不正解！' }}
-        </span>
-      </div>
-
-      <!-- Answer Input -->
-      <div class="answer-input-container">
-        <input
-          type="text"
-          class="answer-input"
-          placeholder="解答を入力"
-          maxlength="100"
-          :value="answerInput"
-          :disabled="isInputDisabled"
-          @input="handleInput"
-        />
-        <button class="submit-button" :disabled="isInputDisabled" @click="handleSubmit">
-          送信
-        </button>
-      </div>
+    <!-- Answer Input -->
+    <div class="answer-input-container">
+      <input
+        type="text"
+        class="answer-input"
+        placeholder="解答を入力"
+        maxlength="100"
+        :value="answerInput"
+        :disabled="isInputDisabled"
+        @input="handleInput"
+      />
+      <button class="submit-button" :disabled="isInputDisabled" @click="handleSubmit">
+        送信
+      </button>
     </div>
-  </section>
+  </div>
 </template>
 
 <style scoped>
-/* Answer Area */
-.answer-area {
-  flex-shrink: 0;
-  background-color: white;
-  padding: 0.875rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  height: 110px;
-  display: flex;
-  align-items: stretch;
-}
-
-/* Guide Text */
-.guide-text {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.guide-message {
-  margin: 0;
-  color: #6b7280;
-  font-size: 1rem;
-  line-height: 1.4;
-}
-
 /* Answer Content */
 .answer-content {
   width: 100%;
@@ -160,7 +118,6 @@ const handleInput = (event: Event) => {
 .answer-result.incorrect {
   background: #fef2f2;
   color: #dc2626;
-  /* padding-left: 1.1rem; */
   padding-right: 0.4rem;
 }
 
@@ -222,15 +179,6 @@ const handleInput = (event: Event) => {
 
 /* モバイル対応 */
 @media (max-width: 640px) {
-  .answer-area {
-    padding: 0.75rem;
-    height: 100px;
-  }
-
-  .guide-message {
-    font-size: 0.9375rem;
-  }
-
   .answer-meta {
     font-size: 0.8125rem;
     margin-bottom: 0.375rem;
@@ -253,15 +201,6 @@ const handleInput = (event: Event) => {
 
 /* 小さい画面での追加調整 */
 @media (max-height: 700px) {
-  .answer-area {
-    padding: 0.625rem;
-    height: 90px;
-  }
-
-  .guide-message {
-    font-size: 0.875rem;
-  }
-
   .answer-meta {
     font-size: 0.75rem;
     margin-bottom: 0.25rem;
