@@ -915,40 +915,65 @@ const RE_JP_FALLBACK = /[\u3040-\u309F\u30A0-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF
 
 ```
 App
-├── Header
+├── AppHeader (common/)
 │   ├── Title
 │   └── SettingsButton (歯車アイコン)
-├── VideoPlayer
+├── VideoPlayer (common/)
 │   └── YouTubePlayer
-├── GameInfo
-│   ├── ProgressDisplay
-│   └── ScoreDisplay
-├── AnswerArea
-│   ├── GuideText (LOADING/READY/TALKING状態)
-│   └── AnswerContent (QUESTIONING/ANSWERING/WAITING/REVEALING状態)
-│       ├── AnswerMeta
-│       │   ├── AttemptsCounter
-│       │   ├── AnswerTimer
-│       │   └── AnswerResult
-│       └── AnswerInput
-│           ├── TextInput
-│           └── SubmitButton
-├── QuizButton
-├── ResultArea (FINISHED状態)
-│   ├── FinalScore
-│   ├── ResultTable
-│   └── ActionButtons
-├── SettingsModal
-│   ├── AudioSettings
-│   │   ├── SoundToggle
-│   │   └── VolumeSlider
+├── GamePanel (game/) - ゲーム中の統合パネル
+│   ├── GameInfo
+│   │   ├── ProgressDisplay
+│   │   └── ScoreDisplay
+│   └── AnswerArea (内部でmode切り替え)
+│       ├── GuideText (LOADING/READY/TALKING状態)
+│       └── AnswerContent (QUESTIONING/ANSWERING/WAITING/REVEALING状態)
+│           ├── AnswerMeta
+│           │   ├── AttemptsCounter
+│           │   ├── AnswerTimer
+│           │   └── AnswerResult
+│           └── AnswerInput
+│               ├── TextInput
+│               └── SubmitButton
+├── QuizButton (game/)
+├── FinalScore (result/) - FINISHED状態で直接配置
+├── ResultTable (result/) - FINISHED状態で直接配置
+├── ResultActions (result/) - FINISHED状態で直接配置
+├── SettingsModal (dialogs/)
+│   ├── VolumeControl
+│   │   ├── VolumeIcon (音量0-4に応じて表示変化)
+│   │   └── VolumeSlider (0-4の5段階)
 │   ├── PrivacyInfo
 │   └── CloseButton
-└── DialogSystem
+└── DialogSystem (dialogs/)
     ├── LoadingDialog
     ├── OrientationDialog
     └── ErrorDialog
 ```
+
+**ディレクトリ構造:**
+```
+src/components/
+├── common/      - 共通コンポーネント
+├── game/        - ゲーム中のコンポーネント
+├── result/      - リザルト表示コンポーネント
+└── dialogs/     - モーダル/ダイアログ
+```
+
+**コンポーネント設計の特徴:**
+
+- **GamePanel**: GameInfoとAnswerAreaを一つのパネルとして統合
+  - 視覚的な一つの単位（白いパネル）とコンポーネント構造を一致
+  - GameInfo/AnswerArea間のgap管理を担当
+  - 内部でmode切り替えによりGuideText/AnswerContentを表示制御
+
+- **Result領域**: 統合役コンポーネントなし
+  - FinalScore、ResultTable、ResultActionsを個別コンポーネント化
+  - App.vueで直接配置し、`.result-ui`でpadding/gap管理
+
+- **レイアウト責任分担**:
+  - App.vue: `.game-ui`/`.result-ui`でpadding管理
+  - GamePanel: GameInfo/AnswerArea間のgap管理（背景色が見える隙間）
+  - 各コンポーネント: 内部スタイリングのみ担当
 
 ### Screen Layout
 
@@ -1635,6 +1660,10 @@ const ERROR_MESSAGES = {
 ```
 src/
 ├── components/          # UIコンポーネント
+│   ├── common/          # 共通コンポーネント (AppHeader, VideoPlayer)
+│   ├── game/            # ゲームコンポーネント (GamePanel, GameInfo, GuideText, AnswerContent, QuizButton)
+│   ├── result/          # リザルトコンポーネント (FinalScore, ResultTable, ResultActions)
+│   └── dialogs/         # モーダル/ダイアログ (SettingsModal, LoadingDialog, OrientationDialog, ErrorDialog)
 ├── composables/         # Composition API関数
 ├── stores/              # Pinia状態管理
 ├── services/            # 外部サービス連携
@@ -1755,12 +1784,24 @@ src/
 
 ### 開発フェーズ
 
-#### Phase 1: UI基盤とコンポーネント実装
+#### Phase 1: UI基盤とコンポーネント実装 ✓ 完了
 
-- **プロジェクト基盤**: Vue 3 + TypeScript + Vite + Tailwind CSS環境構築
+- **プロジェクト基盤**: Vue 3 + TypeScript + Vite + Tailwind CSS v4環境構築
 - **基本UI構造**: 全コンポーネントの静的実装とレスポンシブレイアウト
-- **コンポーネント作成**: Header, VideoPlayer, GameInfo, AnswerArea, QuizButton, ResultArea, SettingsModal
-- **レイアウト完成**: 縦画面専用の垂直配置レイアウトとカード型デザイン
+- **コンポーネント作成**:
+  - common/: AppHeader, VideoPlayer
+  - game/: GamePanel, GameInfo, GuideText, AnswerContent, QuizButton
+  - result/: FinalScore, ResultTable, ResultActions
+  - dialogs/: SettingsModal, LoadingDialog, OrientationDialog, ErrorDialog
+- **コンポーネント設計**:
+  - GamePanelによるGameInfo/AnswerAreaの統合管理
+  - GuideText/AnswerContentの分割とmode切り替え
+  - Result系コンポーネントの個別化（統合役なし）
+- **レイアウト設計**:
+  - 縦画面専用の垂直配置レイアウト
+  - App.vueでpadding管理、GamePanelでgap管理
+  - 視覚的な単位とコンポーネント構造の一致
+- **音量設定UI**: スライダー式（0-4の5段階）、音量レベル別アイコン表示
 
 #### Phase 2: 状態管理とゲームロジック
 
