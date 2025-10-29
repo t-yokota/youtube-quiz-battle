@@ -6,14 +6,14 @@ import { computed } from 'vue'
 
 // Props定義（Phase 2で状態管理と連携予定）
 interface Props {
-  currentQuestion?: number
+  currentQuestionNumber?: number // 0: 問題開始前, 1~: 問題番号（1-indexed）
   totalQuestions?: number
   correctCount?: number
   incorrectCount?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  currentQuestion: 0, // 0 = 問題開始前（READY/TALKING状態）
+  currentQuestionNumber: 0,
   totalQuestions: 5,
   correctCount: 0,
   incorrectCount: 0,
@@ -21,12 +21,12 @@ const props = withDefaults(defineProps<Props>(), {
 
 // 問題進捗の表示テキスト
 const progressText = computed(() => {
-  if (props.currentQuestion === 0) {
+  if (props.currentQuestionNumber === 0) {
     // 問題開始前：全問題数のみ表示
     return `問題: 全${props.totalQuestions}問`
   }
   // 問題進行中：現在の問題番号と総数を表示
-  return `問題: ${props.currentQuestion}/${props.totalQuestions}`
+  return `問題: ${props.currentQuestionNumber}/${props.totalQuestions}`
 })
 </script>
 

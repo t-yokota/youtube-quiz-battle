@@ -9,7 +9,7 @@ import AnswerContent from './AnswerContent.vue'
 // Props定義
 interface Props {
   // GameInfo props
-  currentQuestion?: number
+  currentQuestionNumber?: number // 0: 問題開始前, 1~: 問題番号（1-indexed）
   totalQuestions?: number
   correctCount?: number
   incorrectCount?: number
@@ -25,7 +25,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  currentQuestion: 0,
+  currentQuestionNumber: 0,
   totalQuestions: 5,
   correctCount: 0,
   incorrectCount: 0,
@@ -57,7 +57,7 @@ const handleUpdateInput = (value: string) => {
   <section class="game-panel">
     <!-- Game Info -->
     <GameInfo
-      :current-question="currentQuestion"
+      :current-question-number="currentQuestionNumber"
       :total-questions="totalQuestions"
       :correct-count="correctCount"
       :incorrect-count="incorrectCount"

@@ -68,7 +68,7 @@ const handleCloseError = () => {
       <!-- <div class="game-ui">
         <GamePanel
           mode="guide"
-          :current-question="0"
+          :current-question-number="0"
           :total-questions="5"
           :correct-count="0"
           :incorrect-count="0"

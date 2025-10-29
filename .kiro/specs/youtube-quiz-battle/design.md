@@ -1256,7 +1256,7 @@ interface AppState {
   watchedVideoTime: number
 
   // 問題管理
-  currentQuestionIndex: number
+  currentQuestionIndex: number // -1: 問題開始前, 0~: 配列インデックス
   remainingAttempts: number
   remainingAnswerTime: number
 
