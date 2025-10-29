@@ -1,18 +1,30 @@
-# temp-vue-project
+# YouTube Quiz Battle
 
-This template should help get you started developing with Vue 3 in Vite.
+## Overview
 
-## Recommended IDE Setup
+YouTube上のクイズ動画を使った「早押しクイズ」ができるWebアプリケーション。視聴者もプレイヤーとなり、動画出演者との疑似的な早押しクイズ対決を楽しむことを可能にする。
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+### Core Concept
 
-## Type Support for `.vue` Imports in TS
+```
+YouTubeクイズ動画 + 視聴中のリアルタイム早押し = インタラクティブな動画視聴体験
+```
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+**基本体験**: プレイヤーはYouTubeに投稿されたクイズ動画を視聴しながら、画面上の早押しボタンをタップすることで解答権を取得し、動画内で出題されたクイズに解答する
 
-## Customize configuration
+**プレイ可能人数**: 1人
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+**対象環境**
+
+- プライマリ: スマートフォンブラウザ（縦画面専用）
+- セカンダリ: PCブラウザ（開発・デバッグ機能も用意する）
+
+### Technical Stack
+
+- **Frontend**: Vue 3 (Composition API) + TypeScript + Vite
+- **State Management**: Pinia
+- **Styling**: Tailwind CSS
+- **Target Platform**: スマートフォンブラウザ（縦画面専用）、PCブラウザ（開発・デバッグ用）
 
 ## Project Setup
 
@@ -30,10 +42,4 @@ npm run dev
 
 ```sh
 npm run build
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
 ```
