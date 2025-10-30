@@ -75,7 +75,7 @@
   - 状態変更の監視とリアクティブ更新
   - _Requirements: 1.1, 5.1_
 
-- [ ] 11. クイズデータ管理システムの実装
+- [x] 11. クイズデータ管理システムの実装
   - QuizData・QuizQuestion・QuizSettings インターフェースの実装
   - URL パラメータからvideoId抽出機能
   - JSON データファイル読み込み機能

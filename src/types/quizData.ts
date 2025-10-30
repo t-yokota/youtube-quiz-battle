@@ -19,8 +19,7 @@ export interface OthersAnsweringPeriod {
 export interface QuizSettings {
   maxAttempts: number // 最大解答回数
   answerTimeLimit: number // 解答制限時間（秒）
-  jumpToRevealOnCorrect: boolean // 正解時に正解発表区間へジャンプするか
-  jumpToRevealOnIncorrect: boolean // 不正解時に正解発表区間へジャンプするか
+  jumpToRevealPeriod: boolean // 解答後に正解発表区間へジャンプするか
 }
 
 // クイズデータ全体の型定義
