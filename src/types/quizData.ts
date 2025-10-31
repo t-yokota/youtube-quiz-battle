@@ -19,7 +19,9 @@ export interface OthersAnsweringPeriod {
 export interface QuizSettings {
   maxAttempts: number // 最大解答回数
   answerTimeLimit: number // 解答制限時間（秒）
+  disableSeekbar: boolean // シークバーの操作を無効にする設定
   jumpToRevealPeriod: boolean // 解答後に正解発表区間へジャンプするか
+  hideVideoPlayerDuringAnswer: boolean // 解答中に動画プレイヤーを隠す設定
 }
 
 // クイズデータ全体の型定義

@@ -179,7 +179,9 @@ function convertToQuizData(rawData: RawQuizData): QuizData {
   const settings: QuizSettings = {
     maxAttempts: rawData.quizSettings.maxAttempts,
     answerTimeLimit: rawData.quizSettings.answerTimeLimit,
+    disableSeekbar: rawData.quizSettings.disableSeekbar ?? true,
     jumpToRevealPeriod: rawData.quizSettings.jumpToRevealPeriod ?? false,
+    hideVideoPlayerDuringAnswer: rawData.quizSettings.hideVideoPlayerDuringAnswer ?? false,
   }
 
   const questions: QuizQuestion[] = rawData.questions.map((q) => ({

@@ -1,44 +1,65 @@
 <script setup lang="ts">
-// VideoPlayer コンポーネント（プレースホルダー版）
-// Phase 2でYouTube IFrame Player APIを統合予定
+import { onMounted, ref } from 'vue'
+import { loadYouTubeIframeAPI, createYouTubePlayerManager } from '@/services/youtubePlayer'
+import type { YouTubePlayerManager, QuizSettings } from '@/types'
 
-// 将来的な状態管理の準備
-// interface Props {
-//   isVisible?: boolean
-// }
-// const props = withDefaults(defineProps<Props>(), {
-//   isVisible: true
-// })
+// 動作確認用の簡易実装
+const playerManager = ref<YouTubePlayerManager | null>(null)
+const isLoading = ref(true)
+const errorMessage = ref<string | null>(null)
+
+onMounted(async () => {
+  try {
+    console.log('Loading YouTube IFrame API...')
+    await loadYouTubeIframeAPI()
+    console.log('YouTube API loaded successfully')
+
+    // テスト用の設定
+    const settings: QuizSettings = {
+      maxAttempts: 3,
+      answerTimeLimit: 10,
+      disableSeekbar: true,
+      jumpToRevealPeriod: false,
+      hideVideoPlayerDuringAnswer: false,
+    }
+
+    console.log('Creating YouTube Player...')
+    playerManager.value = await createYouTubePlayerManager(
+      'youtube-player-element',
+      'E5200yjbvj8', // テスト用の動画ID
+      settings,
+    )
+    console.log('YouTube Player created successfully')
+
+    isLoading.value = false
+  } catch (error) {
+    console.error('Failed to load YouTube Player:', error)
+    errorMessage.value = error instanceof Error ? error.message : 'Unknown error'
+    isLoading.value = false
+  }
+})
 </script>
 
 <template>
   <div class="video-player-container">
     <div class="video-player-wrapper">
-      <div class="video-placeholder">
+      <!-- ローディング中 -->
+      <div v-if="isLoading" class="video-placeholder">
         <div class="placeholder-content">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="play-icon"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z"
-            />
-          </svg>
-          <p class="placeholder-text">Video Player</p>
-          <p class="placeholder-subtext">YouTube動画がここに表示されます</p>
+          <p class="placeholder-text">読み込み中...</p>
         </div>
       </div>
+
+      <!-- エラー時 -->
+      <div v-else-if="errorMessage" class="video-placeholder">
+        <div class="placeholder-content">
+          <p class="placeholder-text">エラー</p>
+          <p class="placeholder-subtext">{{ errorMessage }}</p>
+        </div>
+      </div>
+
+      <!-- YouTube Player -->
+      <div id="youtube-player-element"></div>
     </div>
   </div>
 </template>
@@ -58,6 +79,22 @@
   overflow: hidden;
   border-radius: 0.5rem;
   background-color: #000;
+}
+
+/* YouTube Player Element - iframeをコンテナに合わせる */
+#youtube-player-element {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* YouTube iframe（YT.Playerが自動生成）のスタイル調整 */
+#youtube-player-element :deep(iframe) {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0.5rem;
 }
 
 /* Placeholder */
