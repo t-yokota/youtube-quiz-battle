@@ -96,7 +96,7 @@
   - VideoPlayerコンポーネントとの統合
   - _Requirements: 1.1, 1.2_
 
-- [ ] 13. 時間管理システムの実装
+- [x] 13. 時間管理システムの実装
   - TimeManager の実装
   - 100〜200ms目安（例: 150ms）での動画時間更新機能（setInterval最適化）
   - currentVideoTime と watchedVideoTime の管理

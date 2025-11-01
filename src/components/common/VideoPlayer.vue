@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { loadYouTubeIframeAPI, createYouTubePlayerManager } from '@/services/youtubePlayer'
-import type { YouTubePlayerManager, QuizSettings } from '@/types'
+import { loadQuizData } from '@/services/quizDataLoader'
+import { createTimeManager } from '@/services/timeManager'
+import type { YouTubePlayerManager } from '@/types'
 
 // 動作確認用の簡易実装
 const playerManager = ref<YouTubePlayerManager | null>(null)
@@ -10,30 +12,83 @@ const errorMessage = ref<string | null>(null)
 
 onMounted(async () => {
   try {
-    console.log('Loading YouTube IFrame API...')
+    console.log('=== YouTube Quiz Battle 動作確認 ===')
+
+    // 1. クイズデータを読み込み
+    console.log('\n[1] Loading Quiz Data...')
+    const videoId = 'sample' // サンプルデータを使用
+    const quizData = await loadQuizData(videoId)
+    console.log('✓ Quiz Data loaded:', {
+      videoId: quizData.videoId,
+      questionCount: quizData.questions.length,
+      settings: quizData.settings,
+    })
+
+    // 2. TimeManager 動作確認
+    console.log('\n[2] Testing TimeManager...')
+    const timeManager = createTimeManager(quizData.questions)
+
+    // テスト: シーク検出（連続視聴のシミュレーション）
+    console.log('\n--- シーク検出テスト ---')
+    console.log('【連続視聴のシミュレーション】')
+
+    // 時刻 0秒
+    timeManager.updateCurrentVideoTime(0)
+    console.log('時刻 0秒 - シーク検出:', timeManager.isSeekDetected(0), '(期待: false)')
+    timeManager.updateWatchedVideoTime(0)
+
+    // 時刻 0.15秒
+    timeManager.updateCurrentVideoTime(0.15)
+    console.log('時刻 0.15秒 - シーク検出:', timeManager.isSeekDetected(0.15), '(期待: false)')
+    timeManager.updateWatchedVideoTime(0.15)
+
+    // 時刻 0.3秒
+    timeManager.updateCurrentVideoTime(0.3)
+    console.log('時刻 0.3秒 - シーク検出:', timeManager.isSeekDetected(0.3), '(期待: false)')
+    timeManager.updateWatchedVideoTime(0.3)
+
+    // 時刻 0.45秒
+    timeManager.updateCurrentVideoTime(0.45)
+    console.log('時刻 0.45秒 - シーク検出:', timeManager.isSeekDetected(0.45), '(期待: false)')
+    timeManager.updateWatchedVideoTime(0.45)
+
+    console.log('【シーク操作（15秒へジャンプ）】')
+    timeManager.updateCurrentVideoTime(15.0)
+    console.log('時刻 15.0秒 - シーク検出:', timeManager.isSeekDetected(15.0), '(期待: true!)')
+    // シーク検出時はwatchedVideoTimeを更新しない（または強制リセット）
+
+    // テスト: 状態判定
+    console.log('\n--- 状態判定テスト ---')
+
+    timeManager.updateCurrentVideoTime(0)
+    console.log('時刻 0秒, index=-1:', timeManager.getCurrentGameState(-1), '(期待: TALKING)')
+
+    timeManager.updateCurrentVideoTime(5.0)
+    console.log('時刻 5.0秒, index=0:', timeManager.getCurrentGameState(0), '(期待: QUESTIONING)')
+
+    timeManager.updateCurrentVideoTime(19.0)
+    console.log('時刻 19.0秒, index=0:', timeManager.getCurrentGameState(0), '(期待: REVEALING)')
+
+    timeManager.updateCurrentVideoTime(21.0)
+    console.log('時刻 21.0秒, index=0:', timeManager.getCurrentGameState(0), '(期待: TALKING)')
+
+    timeManager.updateCurrentVideoTime(90.0)
+    console.log('時刻 90.0秒, index=4:', timeManager.getCurrentGameState(4), '(期待: FINISHED)')
+
+    // 3. YouTube Player を作成
+    console.log('\n[3] Creating YouTube Player...')
     await loadYouTubeIframeAPI()
-    console.log('YouTube API loaded successfully')
-
-    // テスト用の設定
-    const settings: QuizSettings = {
-      maxAttempts: 3,
-      answerTimeLimit: 10,
-      disableSeekbar: true,
-      jumpToRevealPeriod: false,
-      hideVideoPlayerDuringAnswer: false,
-    }
-
-    console.log('Creating YouTube Player...')
     playerManager.value = await createYouTubePlayerManager(
       'youtube-player-element',
-      'E5200yjbvj8', // テスト用の動画ID
-      settings,
+      quizData.videoId, // データファイルに記載された実際の動画ID
+      quizData.settings,
     )
-    console.log('YouTube Player created successfully')
+    console.log('✓ YouTube Player created successfully')
 
+    console.log('\n=== 動作確認完了 ===\n')
     isLoading.value = false
   } catch (error) {
-    console.error('Failed to load YouTube Player:', error)
+    console.error('Failed to initialize:', error)
     errorMessage.value = error instanceof Error ? error.message : 'Unknown error'
     isLoading.value = false
   }

@@ -3,6 +3,7 @@
 // YouTube Player統合サービス
 import { YouTubePlayerState } from '@/types'
 import type { YouTubePlayerManager, YouTubePlayerVars, QuizSettings } from '@/types'
+import { TIME_UPDATE_INTERVAL_MS } from '@/constants/timing'
 
 /**
  * YouTube IFrame APIを動的に読み込み
@@ -163,7 +164,7 @@ export function createYouTubePlayerManager(
           const currentTime = player.getCurrentTime()
           timeUpdateCallback(currentTime)
         }
-      }, 150) // 150ms間隔
+      }, TIME_UPDATE_INTERVAL_MS)
     }
 
     // プレイヤー作成

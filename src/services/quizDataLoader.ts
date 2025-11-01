@@ -40,7 +40,10 @@ export function extractVideoIdFromUrl(): string | null {
  */
 export async function loadQuizData(videoId: string): Promise<QuizData> {
   try {
-    const response = await fetch(`/data/${videoId}/data.json`)
+    // videoId が "sample" の場合はサンプルデータを読み込む
+    const dataPath = videoId === 'sample' ? '/data/sample/data.json' : `/data/${videoId}/data.json`
+
+    const response = await fetch(dataPath)
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -81,8 +84,8 @@ function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
     throw new Error('QUIZ_DATA_INVALID: Questions array is empty')
   }
 
-  // 動画ID整合性チェック
-  if (data.youtubeVideoId !== expectedVideoId) {
+  // 動画ID整合性チェック（sampleの場合はスキップ）
+  if (expectedVideoId !== 'sample' && data.youtubeVideoId !== expectedVideoId) {
     throw new Error(
       `QUIZ_DATA_INVALID: Video ID mismatch (expected: ${expectedVideoId}, got: ${data.youtubeVideoId})`,
     )

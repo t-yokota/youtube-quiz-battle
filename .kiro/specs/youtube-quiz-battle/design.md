@@ -366,7 +366,7 @@ watchedVideoTimeは、currentVideoTimeの更新後にその値と同期させる
 - **シーク判定方法**: `|currentVideoTime - watchedVideoTime| > SEEK_TOLERANCE_SEC` を満たすとき
 - **同期更新方式**: `watchedVideoTime = Math.max(watchedVideoTime, currentVideoTime)` ※常に最大値を保持する
 - **監視頻度**: currentVideoTimeの更新ごと
- 
+
 推奨の許容幅（更新間隔との関係）:
 
 - 基本方針: 「TimeUpdateの更新間隔 × 2」を許容幅とし、最低でも0.2秒を確保する
@@ -500,8 +500,6 @@ flowchart TD
     Block --> End
 ```
 
-
-
 #### Time Update Loop（簡易実装例）
 
 動画時刻の定期更新処理（TimeUpdate）では、再生直後の誤検出を避けるウォームアップ猶予と、壁時計との差分による停滞チェックの枠組みを持たせる。
@@ -555,38 +553,54 @@ setInterval(timeUpdateTick, 150)
 
 ページ可視性・プレイヤー状態・再生停滞を検出し、ゲームの時間遷移・シーク検出・UIを一時停止/再開する。
 
-- 状態管理
-  - `externalPaused: boolean`（外部要因で一時停止中）
-  - `externalPausedReason: 'visibility' | 'user' | 'stall' | 'ad'`
-- 検出ポイント
-  - 可視性: `document.hidden` による検出（`visibilitychange`/`pagehide`/`pageshow`）
-  - プレイヤー状態: `onStateChange(PAUSED/PLAYING)`（内部操作は `gm.internalAction` で除外）
-  - 再生停滞: TimeUpdate内で `wallDelta` と `videoDelta` を比較（上記ループに統合）
-- 一時停止時の動作
-  - 時間遷移判定（`shouldTransition` / `processTimeWindow`）を停止
-  - `TimeManager.updateVideoTime()` 内で `watchedVideoTime` 更新と `isSeekDetected` を停止
-  - ANSWERING のカウントダウン停止
-  - UI に「一時停止中」オーバーレイを表示（ただし ANSWERING 中は表示しない）
-- 再開時の動作
-  - `RESUME_GRACE_MS ≈ 300ms` はシーク検出を無効化
-  - 再開直後に `watchedVideoTime = currentVideoTime` に同期して誤検出を回避
+**現在の実装方針（MVP版、仕様最終確定時に記述整理）:**
+
+- 外部一時停止検知時に `player.pauseVideo()` を明示的に呼び出す
+- 動画停止中は `getCurrentTime()` が進まないため、TimeManagerへの影響はない
+- GameManager側で状態管理とUI表示を実施
+- TimeManagerから外部一時停止関連のコードは削除済み
+
+**検出ポイント:**
+- 可視性: `document.hidden` による検出（`visibilitychange`/`pagehide`/`pageshow`）
+- プレイヤー状態: `onStateChange(PAUSED/PLAYING)`（内部操作は `gm.internalAction` で除外）
+- 再生停滞: TimeUpdate内で `wallDelta` と `videoDelta` を比較
+- 広告再生: YouTube広告中は `getCurrentTime()` が進まないため特別な処理不要
+
+**一時停止時の動作:**
+- `player.pauseVideo()` で動画を明示的に停止
+- ANSWERING のカウントダウン停止
+- UI に「一時停止中」オーバーレイを表示（ただし ANSWERING 中は表示しない）
+
+**再開時の動作:**
+- `player.playVideo()` で動画を再開
+- 同じ時間から再開されるため、シーク誤検出は起きない想定
+
+**将来の検討事項:**
+- タブ切り替え時の `setInterval` 遅延による誤検出が発生する場合、猶予期間（`RESUME_GRACE_MS ≈ 300ms`）の追加を検討
+- 動作確認で問題が確認されてから実装する
 
 可視性・プレイヤー状態のイベント例:
 
 ```typescript
 // 可視性変化
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) gm.pauseExternal('visibility')
-  else gm.resumeExternal()
+  if (document.hidden) {
+    player.pauseVideo()
+    gm.setExternalPaused(true, 'visibility')
+  } else {
+    player.playVideo()
+    gm.setExternalPaused(false)
+  }
 })
-
-window.addEventListener('pagehide', () => gm.pauseExternal('visibility'))
-window.addEventListener('pageshow', () => gm.resumeExternal())
 
 // プレイヤー状態
 player.onStateChange((s) => {
-  if (s === YouTubePlayerState.PAUSED && !gm.internalAction) gm.pauseExternal('user')
-  if (s === YouTubePlayerState.PLAYING && gm.externalPaused) gm.resumeExternal()
+  if (s === YouTubePlayerState.PAUSED && !gm.internalAction) {
+    gm.setExternalPaused(true, 'user')
+  }
+  if (s === YouTubePlayerState.PLAYING && gm.externalPaused) {
+    gm.setExternalPaused(false)
+  }
 })
 ```
 
@@ -754,24 +768,35 @@ const debugPlayerVars = {
 ```
 
 注意:
+
 - 本番は Strict を既定とし、`controls` は `disableSeekbar` 設定に基づく単一仕様で十分（実運用ではDebugに切り替えない）
 - `origin: window.location.origin` は buildPlayerVars で明示し、オリジン検証の安定性を高める
 
 ### Time Manager
 
+TimeManagerは時間管理のプリミティブなメソッドを提供する。動画時間に基づくシーク検出時の処理（player.seekTo()や状態遷移停止）はGameManager側で実施する。
+
 ```typescript
 interface TimeManager {
   // 時間管理
-  currentVideoTime: number
-  watchedVideoTime: number
+  getCurrentVideoTime(): number
+  getWatchedVideoTime(): number
+  updateCurrentVideoTime(time: number): void
+  updateWatchedVideoTime(time: number): void
 
   // シーク検出
-  updateVideoTime(time: number): boolean // returns isSeekDetected
-  isSeekDetected(newTime: number): boolean
+  isSeekDetected(time: number): boolean
 
   // 状態判定
   getCurrentGameState(questionIndex: number): GAME_STATE
   isInQuestionPeriod(time: number, question: QuizQuestion): boolean
+  isInRevealPeriod(time: number, question: QuizQuestion): boolean
+  isInOthersAnsweringPeriod(time: number, question: QuizQuestion): boolean
+  hasOthersAnsweringPeriodInRange(
+    startTime: number,
+    endTime: number,
+    question: QuizQuestion,
+  ): boolean
 }
 ```
 
@@ -951,6 +976,7 @@ App
 ```
 
 **ディレクトリ構造:**
+
 ```
 src/components/
 ├── common/      - 共通コンポーネント
