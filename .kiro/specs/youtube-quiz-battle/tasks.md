@@ -105,19 +105,27 @@
   - 状態遷移条件判定（shouldTransition関数）
   - _Requirements: 3.1, 3.4_
 
-- [ ] 14. 一回性トリガとExternal Pause Handlingの実装
-  - Single-Shot Guard（問題単位のstart/reveal/endフラグ管理）
-  - 1ティック内複数閾値走査処理
-  - External Pause検出（可視性・プレイヤー状態・再生停滞）
-    - 可視性イベント: `visibilitychange` / `pagehide` / `pageshow`
-    - プレイヤー状態: `onStateChange(PAUSED/PLAYING)`（内部操作は内部フラグで除外）
-  - 一時停止時の時間遷移判定停止
-  - UI方針: ANSWERING中は「一時停止中」オーバーレイを表示しない（解答カウントダウン停止のみ）
-  - 再開時のシーク検出猶予処理（`RESUME_GRACE_MS ≈ 300ms`の猶予中、シーク検出無効化）
-  - 復帰時の同期処理（`watchedVideoTime = currentVideoTime`）
+- [ ] 14. External Pause Handlingの実装
+  - External Pause検出
+    - 可視性変化: `visibilitychange` / `pagehide` / `pageshow`（全状態で有効）
+    - プレイヤー状態: `onStateChange(PAUSED/PLAYING)`（内部操作は内部フラグで除外、全状態で有効）
+    - 再生停滞: TimeUpdate内で `wallDelta` と `videoDelta` を比較（動画再生中のみ、ANSWERING中は無関係）
+  - 検出時の処理
+    - `player.pauseVideo()` で動画を明示的に停止（ANSWERING中は既に停止済み）
+    - GameManager内のexternalPausedフラグ管理
+  - 再開時の処理
+    - `player.playVideo()` で動画を再開（ANSWERING中はカウントダウン再開のみ）
+  - タブ切り替えテストで動作確認
+    - シーク誤検出が発生する場合、猶予処理（`RESUME_GRACE_MS ≈ 300ms`）を追加
+    - 発生しなければ猶予処理は不要
+  - UI方針
+    - ANSWERING以外: 「一時停止中」オーバーレイを表示
+    - ANSWERING中: オーバーレイ表示なし（カウントダウン停止・再開はTask 18で実装）
   - _Requirements: 3.1, 3.2, 3.4_
 
 - [ ] 15. ゲーム状態遷移システムの実装
+  - Single-Shot Guard（問題単位のstart/reveal/endフラグ管理）
+  - 1ティック内複数閾値走査処理（`(prev, curr]` 窓での処理）
   - 状態遷移ロジックの実装（時間経過起点・アクション起点）
   - OthersAnsweringPeriods処理（区間優先順位・完全包含検証）
   - QUESTIONING/WAITING/REVEALING状態の精密制御
