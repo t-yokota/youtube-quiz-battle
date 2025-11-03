@@ -561,21 +561,25 @@ setInterval(timeUpdateTick, 150)
 - TimeManagerから外部一時停止関連のコードは削除済み
 
 **検出ポイント:**
+
 - 可視性: `document.hidden` による検出（`visibilitychange`/`pagehide`/`pageshow`）
 - プレイヤー状態: `onStateChange(PAUSED/PLAYING)`（内部操作は `gm.internalAction` で除外）
 - 再生停滞: TimeUpdate内で `wallDelta` と `videoDelta` を比較
 - 広告再生: YouTube広告中は `getCurrentTime()` が進まないため特別な処理不要
 
 **一時停止時の動作:**
+
 - `player.pauseVideo()` で動画を明示的に停止
 - ANSWERING のカウントダウン停止
 - UI に「一時停止中」オーバーレイを表示（ただし ANSWERING 中は表示しない）
 
 **再開時の動作:**
+
 - `player.playVideo()` で動画を再開
 - 同じ時間から再開されるため、シーク誤検出は起きない想定
 
 **将来の検討事項:**
+
 - タブ切り替え時の `setInterval` 遅延による誤検出が発生する場合、猶予期間（`RESUME_GRACE_MS ≈ 300ms`）の追加を検討
 - 動作確認で問題が確認されてから実装する
 
@@ -585,21 +589,19 @@ setInterval(timeUpdateTick, 150)
 // 可視性変化
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    player.pauseVideo()
-    gm.setExternalPaused(true, 'visibility')
+    gm.pauseExternal('visibility')
   } else {
-    player.playVideo()
-    gm.setExternalPaused(false)
+    gm.resumeExternal()
   }
 })
 
 // プレイヤー状態
 player.onStateChange((s) => {
   if (s === YouTubePlayerState.PAUSED && !gm.internalAction) {
-    gm.setExternalPaused(true, 'user')
+    gm.pauseExternal('user')
   }
   if (s === YouTubePlayerState.PLAYING && gm.externalPaused) {
-    gm.setExternalPaused(false)
+    gm.resumeExternal()
   }
 })
 ```
@@ -670,6 +672,13 @@ interface GameManager {
   // 状態遷移
   transitionToState(newState: GAME_STATE): void
   checkTimeBasedTransitions(): void
+
+  // 外部要因による一時停止（External Pause）のハンドリング
+  pauseExternal(reason: 'visibility' | 'user' | 'stall'): void
+  resumeExternal(): void
+  isExternalPaused(): boolean
+  checkStall(currentWallMs: number, currentVideoTime: number): void
+  initializeExternalPauseHandling(): void
 }
 ```
 

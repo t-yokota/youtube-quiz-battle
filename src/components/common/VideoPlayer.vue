@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { loadYouTubeIframeAPI, createYouTubePlayerManager } from '@/services/youtubePlayer'
 import { loadQuizData } from '@/services/quizDataLoader'
 import { createTimeManager } from '@/services/timeManager'
+import { createGameManager } from '@/services/gameManager'
 import type { YouTubePlayerManager } from '@/types'
 
 // 動作確認用の簡易実装
@@ -84,6 +85,17 @@ onMounted(async () => {
       quizData.settings,
     )
     console.log('✓ YouTube Player created successfully')
+
+    // 4. GameManager を作成してExternal Pause Handlingを初期化
+    console.log('\n[4] Initializing GameManager...')
+    const gameManager = createGameManager(playerManager.value, quizData)
+    gameManager.initializeExternalPauseHandling()
+    console.log('✓ GameManager initialized with External Pause Handling')
+    console.log('  - Visibility change detection: active')
+    console.log('  - Player state change detection: active')
+    console.log('  - Stall detection: will be active during playback')
+    console.log('\nタブを切り替えてExternal Pause Handlingをテストできます。')
+    console.log('コンソールに "[GameManager] External pause started/ended" のログが表示されます。')
 
     console.log('\n=== 動作確認完了 ===\n')
     isLoading.value = false

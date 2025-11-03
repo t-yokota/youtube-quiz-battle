@@ -105,7 +105,7 @@
   - 状態遷移条件判定（shouldTransition関数）
   - _Requirements: 3.1, 3.4_
 
-- [ ] 14. External Pause Handlingの実装
+- [x] 14. External Pause Handlingの実装
   - External Pause検出
     - 可視性変化: `visibilitychange` / `pagehide` / `pageshow`（全状態で有効）
     - プレイヤー状態: `onStateChange(PAUSED/PLAYING)`（内部操作は内部フラグで除外、全状態で有効）
