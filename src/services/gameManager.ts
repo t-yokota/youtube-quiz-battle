@@ -249,13 +249,13 @@ export class GameManager {
     // 通常の状態遷移: 現在の問題の閾値を処理
     if (this.currentQuestionIndex >= 0 && this.currentQuestionIndex < this.quizData.questions.length) {
       const question = this.quizData.questions[this.currentQuestionIndex]
-      this.applyThresholds(prev, curr, this.currentQuestionIndex, question)
+      this.applyThresholds(prev, curr, question)
     }
 
     // 問題開始前（currentQuestionIndex === -1）の場合、最初の問題の start を監視
     if (this.currentQuestionIndex === -1 && this.quizData.questions.length > 0) {
       const firstQuestion = this.quizData.questions[0]
-      this.applyThresholds(prev, curr, 0, firstQuestion)
+      this.applyThresholds(prev, curr, firstQuestion)
     }
   }
 
@@ -266,32 +266,31 @@ export class GameManager {
    */
   private processBlockedTransition(prev: number, curr: number): void {
     // すべての問題で未消費の閾値を走査
-    for (let index = 0; index < this.quizData.questions.length; index++) {
-      const question = this.quizData.questions[index]
-      const c = this.consumed[index] ?? (this.consumed[index] = { start: false, reveal: false, end: false })
+    for (const question of this.quizData.questions) {
+      const c = this.consumed[question.index] ?? (this.consumed[question.index] = { start: false, reveal: false, end: false })
 
       // reveal/end の未消費閾値があれば処理
       if (!c.reveal && prev + TIME_EPSILON_SEC < question.revealTime && curr + TIME_EPSILON_SEC >= question.revealTime) {
         c.reveal = true
-        console.log('[GameManager] Consumed reveal threshold (blocked):', index)
+        console.log('[GameManager] Consumed reveal threshold (blocked):', question.index)
       }
       if (!c.end && prev + TIME_EPSILON_SEC < question.endTime && curr + TIME_EPSILON_SEC >= question.endTime) {
         c.end = true
-        console.log('[GameManager] Consumed end threshold (blocked):', index)
+        console.log('[GameManager] Consumed end threshold (blocked):', question.index)
       }
 
       // 次のQUIZ区間（startTime）に到達したら状態遷移を再開
       if (!c.start && prev + TIME_EPSILON_SEC < question.startTime && curr + TIME_EPSILON_SEC >= question.startTime) {
         this.transitionBlocked = false
-        this.applyThresholds(prev, curr, index, question)
-        console.log('[GameManager] Transition unblocked at question start:', index)
+        this.applyThresholds(prev, curr, question)
+        console.log('[GameManager] Transition unblocked at question start:', question.index)
         return
       }
     }
 
     // すべての問題で start が消費済みかつ未消費の end が残っていない場合、FINISHED へ遷移
-    const allStartConsumed = this.quizData.questions.every((_, index) => this.consumed[index]?.start === true)
-    const noUnconsumedEnd = this.quizData.questions.every((_, index) => this.consumed[index]?.end !== false)
+    const allStartConsumed = this.quizData.questions.every((q) => this.consumed[q.index]?.start === true)
+    const noUnconsumedEnd = this.quizData.questions.every((q) => this.consumed[q.index]?.end !== false)
     if (allStartConsumed && noUnconsumedEnd) {
       // TODO: Task 18 で FINISHED 状態への遷移を実装
       console.log('[GameManager] All questions completed, transitioning to FINISHED')
@@ -302,61 +301,60 @@ export class GameManager {
    * (prev, curr] 窓内の閾値を適用（Single-Shot Guard）
    * @param prev 前回の watchedVideoTime
    * @param curr 現在の watchedVideoTime
-   * @param questionIndex 対象の問題インデックス
    * @param question 対象の問題
    */
-  private applyThresholds(prev: number, curr: number, questionIndex: number, question: QuizQuestion): void {
-    const c = this.consumed[questionIndex] ?? (this.consumed[questionIndex] = { start: false, reveal: false, end: false })
+  private applyThresholds(prev: number, curr: number, question: QuizQuestion): void {
+    const c = this.consumed[question.index] ?? (this.consumed[question.index] = { start: false, reveal: false, end: false })
 
     // start 閾値
     if (!c.start && prev + TIME_EPSILON_SEC < question.startTime && curr + TIME_EPSILON_SEC >= question.startTime) {
       c.start = true
-      this.onStart(questionIndex)
+      this.onStart(question)
     }
 
     // reveal 閾値
     if (!c.reveal && prev + TIME_EPSILON_SEC < question.revealTime && curr + TIME_EPSILON_SEC >= question.revealTime) {
       c.reveal = true
-      this.onReveal(questionIndex)
+      this.onReveal(question)
     }
 
     // end 閾値
     if (!c.end && prev + TIME_EPSILON_SEC < question.endTime && curr + TIME_EPSILON_SEC >= question.endTime) {
       c.end = true
-      this.onEnd(questionIndex)
+      this.onEnd(question)
     }
   }
 
   /**
    * 問題開始ハンドラ（時間経過起点）
-   * @param questionIndex 問題インデックス
+   * @param question 問題データ
    */
-  private onStart(questionIndex: number): void {
-    console.log('[GameManager] onStart:', questionIndex)
-    this.currentQuestionIndex = questionIndex
+  private onStart(question: QuizQuestion): void {
+    console.log('[GameManager] onStart:', question.index)
+    this.currentQuestionIndex = question.index
     // TODO: Task 18 で QUESTIONING 状態への遷移とゲームストア更新を実装
   }
 
   /**
    * 正解発表開始ハンドラ（時間経過起点）
-   * @param questionIndex 問題インデックス
+   * @param question 問題データ
    */
-  private onReveal(questionIndex: number): void {
-    console.log('[GameManager] onReveal:', questionIndex)
+  private onReveal(question: QuizQuestion): void {
+    console.log('[GameManager] onReveal:', question.index)
     // TODO: Task 18 で REVEALING 状態への遷移とゲームストア更新を実装
   }
 
   /**
    * 正解発表終了ハンドラ（時間経過起点）
-   * @param questionIndex 問題インデックス
+   * @param question 問題データ
    */
-  private onEnd(questionIndex: number): void {
-    console.log('[GameManager] onEnd:', questionIndex)
+  private onEnd(question: QuizQuestion): void {
+    console.log('[GameManager] onEnd:', question.index)
 
     // 次の問題に進む（または最後の問題ならそのまま）
-    if (questionIndex < this.quizData.questions.length - 1) {
+    if (question.index < this.quizData.questions.length - 1) {
       // 次の問題のstartを監視するために、インデックスを次に進める
-      this.currentQuestionIndex = questionIndex + 1
+      this.currentQuestionIndex = question.index + 1
       console.log('[GameManager] Moving to next question:', this.currentQuestionIndex)
     } else {
       console.log('[GameManager] Last question completed')

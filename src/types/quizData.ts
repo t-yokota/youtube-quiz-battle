@@ -2,6 +2,7 @@
 
 // クイズ問題の型定義
 export interface QuizQuestion {
+  index: number // 配列インデックス（0-indexed）
   startTime: number // 問読み区間の開始時間（秒）
   revealTime: number // 正解発表区間の開始時間（秒）
   endTime: number // 正解発表区間の終了時間（秒）

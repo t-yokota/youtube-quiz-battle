@@ -318,9 +318,11 @@ stateDiagram-v2
 
 ```typescript
 interface QuizQuestion {
+  index: number // 配列インデックス（0-indexed、JSONのid（1-indexed）から変換）
   startTime: number // 問読み区間の開始時間（秒）
   revealTime: number // 正解発表区間の開始時間（秒）
   endTime: number // 正解発表区間の終了時間（秒）
+  answers: string[] // 正解パターンのリスト
   othersAnsweringPeriods?: OthersAnsweringPeriod[] // 動画内プレイヤーの解答区間
 }
 
@@ -1268,7 +1270,7 @@ interface QuizData {
 }
 
 interface QuizQuestion {
-  index: number
+  index: number // 配列インデックス（0-indexed、JSONのid（1-indexed）から変換）
   questionText?: string
   answers: string[]
   startTime: number
@@ -1885,6 +1887,11 @@ src/
 ### データファイル例
 
 `/public/data/E5200yjbvj8/data.json`
+
+**注記**:
+- JSONファイルの `id` フィールドは1-indexed（第1問=1, 第2問=2, ...）で人間が管理しやすい形式
+- プログラム内部では `index` フィールドに変換され、0-indexed（第1問=0, 第2問=1, ...）の配列インデックスとして扱われる
+- 変換時にid検証が行われ、`id !== arrayIndex + 1` の場合はエラー
 
 ```json
 {

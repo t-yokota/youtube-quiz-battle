@@ -187,13 +187,23 @@ function convertToQuizData(rawData: RawQuizData): QuizData {
     hideVideoPlayerDuringAnswer: rawData.quizSettings.hideVideoPlayerDuringAnswer ?? false,
   }
 
-  const questions: QuizQuestion[] = rawData.questions.map((q) => ({
-    startTime: q.startTime,
-    revealTime: q.revealTime,
-    endTime: q.endTime,
-    answers: q.answers,
-    othersAnsweringPeriods: q.othersAnsweringPeriods,
-  }))
+  const questions: QuizQuestion[] = rawData.questions.map((q, idx) => {
+    // JSONのid（1-indexed）を検証
+    if (q.id !== undefined && q.id !== idx + 1) {
+      throw new Error(
+        `QUIZ_DATA_INVALID: Question ${idx + 1} has id mismatch (expected: ${idx + 1}, got: ${q.id})`,
+      )
+    }
+
+    return {
+      index: idx, // 配列インデックス（0-indexed）を割り当て
+      startTime: q.startTime,
+      revealTime: q.revealTime,
+      endTime: q.endTime,
+      answers: q.answers,
+      othersAnsweringPeriods: q.othersAnsweringPeriods,
+    }
+  })
 
   return {
     videoId: rawData.youtubeVideoId,
