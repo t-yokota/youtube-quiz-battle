@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { loadYouTubeIframeAPI, createYouTubePlayerManager } from '@/services/youtubePlayer'
 import { loadQuizData } from '@/services/quizDataLoader'
-import { createTimeManager } from '@/services/timeManager'
-import { createGameManager } from '@/services/gameManager'
+import { createGameManager, type GameManager } from '@/services/gameManager'
 import type { YouTubePlayerManager } from '@/types'
+import { TIME_UPDATE_INTERVAL_MS, STARTUP_GRACE_MS } from '@/constants/timing'
 
 // 動作確認用の簡易実装
 const playerManager = ref<YouTubePlayerManager | null>(null)
+const gameManager = ref<GameManager | null>(null)
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
+let timeUpdateIntervalId: number | null = null
 
 onMounted(async () => {
   try {
@@ -25,59 +27,8 @@ onMounted(async () => {
       settings: quizData.settings,
     })
 
-    // 2. TimeManager 動作確認
-    console.log('\n[2] Testing TimeManager...')
-    const timeManager = createTimeManager(quizData.questions)
-
-    // テスト: シーク検出（連続視聴のシミュレーション）
-    console.log('\n--- シーク検出テスト ---')
-    console.log('【連続視聴のシミュレーション】')
-
-    // 時刻 0秒
-    timeManager.updateCurrentVideoTime(0)
-    console.log('時刻 0秒 - シーク検出:', timeManager.isSeekDetected(0), '(期待: false)')
-    timeManager.updateWatchedVideoTime(0)
-
-    // 時刻 0.15秒
-    timeManager.updateCurrentVideoTime(0.15)
-    console.log('時刻 0.15秒 - シーク検出:', timeManager.isSeekDetected(0.15), '(期待: false)')
-    timeManager.updateWatchedVideoTime(0.15)
-
-    // 時刻 0.3秒
-    timeManager.updateCurrentVideoTime(0.3)
-    console.log('時刻 0.3秒 - シーク検出:', timeManager.isSeekDetected(0.3), '(期待: false)')
-    timeManager.updateWatchedVideoTime(0.3)
-
-    // 時刻 0.45秒
-    timeManager.updateCurrentVideoTime(0.45)
-    console.log('時刻 0.45秒 - シーク検出:', timeManager.isSeekDetected(0.45), '(期待: false)')
-    timeManager.updateWatchedVideoTime(0.45)
-
-    console.log('【シーク操作（15秒へジャンプ）】')
-    timeManager.updateCurrentVideoTime(15.0)
-    console.log('時刻 15.0秒 - シーク検出:', timeManager.isSeekDetected(15.0), '(期待: true!)')
-    // シーク検出時はwatchedVideoTimeを更新しない（または強制リセット）
-
-    // テスト: 状態判定
-    console.log('\n--- 状態判定テスト ---')
-
-    timeManager.updateCurrentVideoTime(0)
-    console.log('時刻 0秒, index=-1:', timeManager.getCurrentGameState(-1), '(期待: TALKING)')
-
-    timeManager.updateCurrentVideoTime(5.0)
-    console.log('時刻 5.0秒, index=0:', timeManager.getCurrentGameState(0), '(期待: QUESTIONING)')
-
-    timeManager.updateCurrentVideoTime(19.0)
-    console.log('時刻 19.0秒, index=0:', timeManager.getCurrentGameState(0), '(期待: REVEALING)')
-
-    timeManager.updateCurrentVideoTime(21.0)
-    console.log('時刻 21.0秒, index=0:', timeManager.getCurrentGameState(0), '(期待: TALKING)')
-
-    timeManager.updateCurrentVideoTime(90.0)
-    console.log('時刻 90.0秒, index=4:', timeManager.getCurrentGameState(4), '(期待: FINISHED)')
-
-    // 3. YouTube Player を作成
-    console.log('\n[3] Creating YouTube Player...')
+    // 2. YouTube Player を作成
+    console.log('\n[2] Creating YouTube Player...')
     await loadYouTubeIframeAPI()
     playerManager.value = await createYouTubePlayerManager(
       'youtube-player-element',
@@ -86,23 +37,55 @@ onMounted(async () => {
     )
     console.log('✓ YouTube Player created successfully')
 
-    // 4. GameManager を作成してExternal Pause Handlingを初期化
-    console.log('\n[4] Initializing GameManager...')
-    const gameManager = createGameManager(playerManager.value, quizData)
-    gameManager.initializeExternalPauseHandling()
-    console.log('✓ GameManager initialized with External Pause Handling')
-    console.log('  - Visibility change detection: active')
-    console.log('  - Player state change detection: active')
-    console.log('  - Stall detection: will be active during playback')
-    console.log('\nタブを切り替えてExternal Pause Handlingをテストできます。')
-    console.log('コンソールに "[GameManager] External pause started/ended" のログが表示されます。')
+    // 3. GameManager を作成してExternal Pause Handlingを初期化
+    console.log('\n[3] Initializing GameManager...')
+    gameManager.value = createGameManager(playerManager.value, quizData)
+    gameManager.value.initializeExternalPauseHandling()
+    console.log('✓ GameManager initialized')
 
+    // 4. Time Update Loop を開始
+    console.log('\n[4] Starting Time Update Loop...')
+    const startedAt = performance.now()
+
+    function timeUpdateTick() {
+      if (!playerManager.value || !gameManager.value) return
+
+      const now = performance.now()
+      const current = playerManager.value.getCurrentTime()
+
+      // 再生開始直後の誤検出回避
+      if (now - startedAt < STARTUP_GRACE_MS) {
+        return
+      }
+
+      // 再生停滞（stall）検出
+      gameManager.value.checkStall(now, current)
+
+      // 通常の時間更新・シーク検出・状態判定を実施
+      gameManager.value.updateVideoTime(current)
+    }
+
+    timeUpdateIntervalId = window.setInterval(timeUpdateTick, TIME_UPDATE_INTERVAL_MS)
+    console.log('✓ Time Update Loop started (interval:', TIME_UPDATE_INTERVAL_MS, 'ms)')
+
+    console.log('\n=== 初期化完了 ===')
+    console.log('動画を再生して、状態遷移を確認してください。')
+    console.log('コンソールに "[GameManager] onStart/onReveal/onEnd" のログが表示されます。')
     console.log('\n=== 動作確認完了 ===\n')
     isLoading.value = false
   } catch (error) {
     console.error('Failed to initialize:', error)
     errorMessage.value = error instanceof Error ? error.message : 'Unknown error'
     isLoading.value = false
+  }
+})
+
+onUnmounted(() => {
+  // Time Update Loop のクリーンアップ
+  if (timeUpdateIntervalId !== null) {
+    window.clearInterval(timeUpdateIntervalId)
+    timeUpdateIntervalId = null
+    console.log('[VideoPlayer] Time Update Loop stopped')
   }
 })
 </script>

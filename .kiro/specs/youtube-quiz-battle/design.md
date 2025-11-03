@@ -414,9 +414,18 @@ const EPS = 1e-3
 
 function applyThresholds(prev: number, curr: number, q: QuizQuestion) {
   const c = consumed[q.index] ?? (consumed[q.index] = { start: false, reveal: false, end: false })
-  if (!c.start && prev + EPS < q.startTime && curr + EPS >= q.startTime) { c.start = true; onStart(q) }
-  if (!c.reveal && prev + EPS < q.revealTime && curr + EPS >= q.revealTime) { c.reveal = true; onReveal(q) }
-  if (!c.end && prev + EPS < q.endTime && curr + EPS >= q.endTime) { c.end = true; onEnd(q) }
+  if (!c.start && prev + EPS < q.startTime && curr + EPS >= q.startTime) {
+    c.start = true
+    onStart(q)
+  }
+  if (!c.reveal && prev + EPS < q.revealTime && curr + EPS >= q.revealTime) {
+    c.reveal = true
+    onReveal(q)
+  }
+  if (!c.end && prev + EPS < q.endTime && curr + EPS >= q.endTime) {
+    c.end = true
+    onEnd(q)
+  }
 }
 ```
 
