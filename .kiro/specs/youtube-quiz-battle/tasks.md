@@ -123,6 +123,20 @@
     - ANSWERING中: オーバーレイ表示なし（カウントダウン停止・再開はTask 18で実装）
   - _Requirements: 3.1, 3.2, 3.4_
 
+---
+
+**【仕様変更の注意】**
+Task 13〜14の記述は、当初設計の`watchedVideoTime`ベース（最大視聴地点を記録）のアプローチを反映しているが、実装過程で以下の仕様変更を実施した。
+
+- **シーク検出方式の変更**: `watchedVideoTime` → `previousVideoTime`（直前の再生位置を記録）に変更
+- **最大視聴地点の判別方法**: `watchedVideoTime`ではなく、`consumed`フラグ（問題単位のstart/reveal/endフラグ）で判別
+- **ロジック変更による変数の変更** シーク検出の閾値(`SEEK_TOLERANCE_SEC`)を1秒に固定、タブ切り替え時のシーク検出の猶予期間(`RESUME_GRACE_MS`)を削除
+
+Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提としている。
+詳細は`design.md`の「2. Time Management（時間管理）」セクションを参照。
+
+---
+
 - [ ] 15. ゲーム状態遷移システムの実装
   - Single-Shot Guard（問題単位のstart/reveal/endフラグ管理）
   - 1ティック内複数閾値走査処理（`(prev, curr]` 窓での処理）
