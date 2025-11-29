@@ -8,11 +8,11 @@ export const TIME_UPDATE_INTERVAL_MS = 150
 
 /**
  * シーク検出の許容誤差時間（秒）
- * setIntervalの揺らぎやgetCurrentTime()の量子化によるシーク操作の誤検出を防ぐため、
- * 時間更新間隔の2倍以上、動画の再生時間がジャンプしたらシーク操作が発生したとする。
- * ただし、この値が小さくなりすぎると誤検出リスクが高くなるため、最小値として0.2秒の許容誤差を保証する。
+ * タブ切り替え時のsetInterval遅延（通常0.3〜0.5秒）を許容しつつ、
+ * 実際のシーク操作（UIで10秒単位のジャンプ）を確実に検出できる値。
+ * 1秒に設定することで、タブ切り替え時の誤検出を防ぎつつ、意図的なシーク操作は確実に検出できる。
  */
-export const SEEK_TOLERANCE_SEC = Math.max(0.2, (TIME_UPDATE_INTERVAL_MS / 1000) * 2)
+export const SEEK_TOLERANCE_SEC = 1.0
 
 /**
  * 時間閾値比較の許容誤差（秒）

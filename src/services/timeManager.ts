@@ -9,7 +9,7 @@ import { SEEK_TOLERANCE_SEC } from '@/constants/timing'
  */
 export class TimeManager {
   private currentVideoTime: number = 0
-  private watchedVideoTime: number = 0
+  private previousVideoTime: number = 0
 
   constructor(private questions: QuizQuestion[]) {}
 
@@ -21,10 +21,10 @@ export class TimeManager {
   }
 
   /**
-   * 視聴済み最大時間を取得
+   * 直前の動画再生位置を取得（シーク検出用）
    */
-  getWatchedVideoTime(): number {
-    return this.watchedVideoTime
+  getPreviousVideoTime(): number {
+    return this.previousVideoTime
   }
 
   /**
@@ -36,11 +36,11 @@ export class TimeManager {
   }
 
   /**
-   * 視聴済み最大時間を更新
+   * 直前の動画再生位置を更新（シーク検出用）
    * @param time 新しい動画時間
    */
-  updateWatchedVideoTime(time: number): void {
-    this.watchedVideoTime = Math.max(this.watchedVideoTime, time)
+  updatePreviousVideoTime(time: number): void {
+    this.previousVideoTime = time
   }
 
   /**
@@ -49,7 +49,7 @@ export class TimeManager {
    * @returns シークが検出された場合true
    */
   isSeekDetected(newTime: number): boolean {
-    return Math.abs(newTime - this.watchedVideoTime) > SEEK_TOLERANCE_SEC
+    return Math.abs(newTime - this.previousVideoTime) > SEEK_TOLERANCE_SEC
   }
 
   /**
@@ -177,11 +177,12 @@ export class TimeManager {
   }
 
   /**
-   * リセット（テスト用）
+   * 時間変数をリセット
+   * ゲームリセット時に使用
    */
-  reset(): void {
+  resetTimeValues(): void {
     this.currentVideoTime = 0
-    this.watchedVideoTime = 0
+    this.previousVideoTime = 0
   }
 }
 
