@@ -137,7 +137,7 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
 
 ---
 
-- [ ] 15. ゲーム状態遷移システムの実装
+- [x] 15. ゲーム状態遷移システムの実装
   - Single-Shot Guard（問題単位のstart/reveal/endフラグ管理）
   - 1ティック内複数閾値走査処理（`(prev, curr]` 窓での処理）
   - 状態遷移ロジックの実装（時間経過起点・アクション起点）
@@ -146,6 +146,7 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
   - `jumpToRevealPeriod`条件: `currentVideoTime < revealTime`のときのみ`seekTo(revealTime)`実行
   - `disableSeekbar=false`のWAITING固定解除: 次のQUIZ開始（`startTime`到達）で解除
   - FINISHED状態への遷移処理
+  - FINISHED状態の固定（シークバー操作で変化なし、resetGame()でのみ解除）
   - 状態遷移イベントの発火とコンポーネント連携
   - _Requirements: 1.2, 1.4, 5.1_
 

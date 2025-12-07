@@ -195,6 +195,9 @@ REVEALING → [⏰ 正解発表区間終了] →
             └── [続きの問題がある場合] → TALKING
 
 TALKING → [⏰ 問読み区間開始] → QUESTIONING
+
+FINISHED → [👆 シークバー操作等] → FINISHED（状態固定、時間ベース遷移なし）
+        └── [👆 もう一度プレイ押下] → LOADING（リセットのみ許可）
 ```
 
 ### State Transition Flow
@@ -926,8 +929,8 @@ resetGame(): void {
   // 問題の消費フラグをリセット
   this.consumed = {}
 
-  // 現在の問題インデックスをリセット
-  this.currentQuestionIndex = -1
+  // ゲームストアの状態をリセット
+  this.gameStore.resetGame()
 
   // 時間管理システムの時間変数をリセット（currentVideoTime, previousVideoTimeを0に）
   this.timeManager.resetTimeValues()
@@ -939,8 +942,10 @@ resetGame(): void {
 リセット内容:
 - `hasPassedRewindThreshold`: `false` に戻す（YouTube Player巻き戻り検出の初期化）
 - `consumed`: 空オブジェクト `{}` に戻す（すべての問題を未消費状態に）
-- `currentQuestionIndex`: `-1` に戻す（問題開始前の状態に）
+- `gameStore.resetGame()`: ゲームストアの状態をすべてリセット（currentState, currentQuestionIndex, スコア等）
 - `currentVideoTime`, `previousVideoTime`: `0` に戻す（TimeManager.resetTimeValues() 経由）
+
+このリセットにより、FINISHED状態の固定が解除され、再度ゲームをプレイ可能になる。
 
 **GameStore.resetGame() の実装:**
 
