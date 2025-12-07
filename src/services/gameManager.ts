@@ -1,7 +1,9 @@
 // ゲーム管理サービス
 import type { QuizData, QuizQuestion, YouTubePlayerManager } from '@/types'
+import { GameState } from '@/types'
 import { createTimeManager, TimeManager } from './timeManager'
 import { STALL_WALL_MS, STALL_VIDEO_DELTA_SEC, TIME_EPSILON_SEC } from '@/constants/timing'
+import type { useGameStore } from '@/stores/gameStore'
 
 /**
  * Single-Shot Guard: 問題単位のstart/reveal/end消費フラグ
@@ -20,6 +22,7 @@ export class GameManager {
   private timeManager: TimeManager
   private playerManager: YouTubePlayerManager
   private quizData: QuizData
+  private gameStore: ReturnType<typeof useGameStore>
 
   // External Pause関連
   private externalPaused: boolean = false
@@ -33,9 +36,6 @@ export class GameManager {
   // Single-Shot Guard: 問題ごとの閾値消費フラグ
   private consumed: Record<number, ConsumedFlags> = {}
 
-  // 状態遷移制御
-  private currentQuestionIndex: number = -1 // 現在の問題インデックス (-1: 問題開始前)
-
   // YouTube Playerによる巻き戻し関連
   private readonly YOUTUBE_REWIND_THRESHOLD_SEC = 5.5 // 巻き戻り発生の閾値（秒）
   private hasPassedRewindThreshold: boolean = false // 閾値通過フラグ
@@ -43,9 +43,11 @@ export class GameManager {
   constructor(
     playerManager: YouTubePlayerManager,
     quizData: QuizData,
+    gameStore: ReturnType<typeof useGameStore>,
   ) {
     this.playerManager = playerManager
     this.quizData = quizData
+    this.gameStore = gameStore
     this.timeManager = createTimeManager(quizData.questions)
   }
 
@@ -60,8 +62,8 @@ export class GameManager {
     // 問題の消費フラグをリセット
     this.consumed = {}
 
-    // 現在の問題インデックスをリセット
-    this.currentQuestionIndex = -1
+    // ゲームストアの状態をリセット
+    this.gameStore.resetGame()
 
     // 時間管理システムの時間変数をリセット（currentVideoTime, previousVideoTimeを0に）
     this.timeManager.resetTimeValues()
@@ -301,6 +303,11 @@ export class GameManager {
       return
     }
 
+    // FINISHED状態の場合は時間更新・状態遷移をスキップ（resetGame()でのみ解除）
+    if (this.gameStore.currentState === GameState.FINISHED) {
+      return
+    }
+
     const prev = this.timeManager.getPreviousVideoTime()
 
     // 現在時刻を更新
@@ -373,7 +380,8 @@ export class GameManager {
       }
     }
 
-    // TODO: Task 18でWAITING状態への遷移を実装
+    // シーク後は WAITING 状態へ遷移（問題をスキップした状態）
+    this.gameStore.transitionToState(GameState.WAITING)
   }
 
   /**
@@ -399,8 +407,8 @@ export class GameManager {
 
     // start 閾値
     if (prev + TIME_EPSILON_SEC < question.startTime && curr + TIME_EPSILON_SEC >= question.startTime) {
-      // currentQuestionIndexは常に更新（動画再生位置ベースの表示用）
-      this.currentQuestionIndex = question.index
+      // currentQuestionIndexを更新（動画再生位置ベースの表示用）
+      this.gameStore.currentQuestionIndex = question.index
 
       if (!c.start) {
         c.start = true
@@ -408,8 +416,28 @@ export class GameManager {
       } else {
         // 消費済み：不参加、スキップとして記録
         this.recordSkippedQuestion(question.index)
-        // TODO: Task 18でWAITING状態への遷移を実装
+        // 副作用なしで WAITING 状態へ遷移（スキップ済み問題）
+        this.gameStore.transitionToState(GameState.WAITING)
         console.log('[GameManager] Skipped question (already consumed):', question.index)
+      }
+    }
+
+    // othersAnsweringPeriods 閾値（問題区間内の動画内プレイヤー解答期間）
+    if (question.othersAnsweringPeriods) {
+      for (const period of question.othersAnsweringPeriods) {
+        // 期間開始閾値
+        if (prev + TIME_EPSILON_SEC < period.startTime && curr + TIME_EPSILON_SEC >= period.startTime) {
+          // WAITING 状態へ遷移（動画内プレイヤーの解答中）
+          this.gameStore.transitionToState(GameState.WAITING)
+          console.log('[GameManager] Entered OthersAnsweringPeriod:', period.startTime, '-', period.endTime)
+        }
+
+        // 期間終了閾値
+        if (prev + TIME_EPSILON_SEC < period.endTime && curr + TIME_EPSILON_SEC >= period.endTime) {
+          // QUESTIONING 状態へ復帰
+          this.gameStore.transitionToState(GameState.QUESTIONING)
+          console.log('[GameManager] Exited OthersAnsweringPeriod:', period.startTime, '-', period.endTime)
+        }
       }
     }
 
@@ -419,7 +447,8 @@ export class GameManager {
         c.reveal = true
         this.onReveal(question) // 副作用あり：正解表示、REVEALING状態へ
       } else {
-        // TODO: Task 18でREVEALING状態への遷移を実装（副作用なし）
+        // 副作用なしで REVEALING 状態へ遷移（既に消費済み）
+        this.gameStore.transitionToState(GameState.REVEALING)
         console.log('[GameManager] Already revealed (consumed):', question.index)
       }
     }
@@ -431,7 +460,6 @@ export class GameManager {
         this.onEnd(question) // 副作用あり：スコア集計、TALKING/FINISHED状態へ
       } else {
         // 消費済み：既に終了済み
-        // TODO: Task 18でTALKING状態への遷移を実装
         console.log('[GameManager] Already ended (consumed):', question.index)
 
         // すべての問題が消費済みかチェック
@@ -442,8 +470,12 @@ export class GameManager {
         // 最後の問題のendTimeを通過したかチェック
         const lastQuestion = this.quizData.questions[this.quizData.questions.length - 1]
         if (allConsumed && question.index === lastQuestion.index) {
-          // TODO: Task 18でFINISHED状態への遷移を実装
+          // 副作用なしで FINISHED 状態へ遷移
+          this.gameStore.transitionToState(GameState.FINISHED)
           console.log('[GameManager] All questions consumed and last question ended, transitioning to FINISHED')
+        } else {
+          // 副作用なしで TALKING 状態へ遷移
+          this.gameStore.transitionToState(GameState.TALKING)
         }
       }
     }
@@ -464,7 +496,12 @@ export class GameManager {
    */
   private onStart(question: QuizQuestion): void {
     console.log('[GameManager] onStart:', question.index)
-    // TODO: Task 18 で QUESTIONING 状態への遷移とゲームストア更新を実装
+
+    // ゲームストアの currentQuestionIndex を更新
+    this.gameStore.currentQuestionIndex = question.index
+
+    // QUESTIONING 状態へ遷移
+    this.gameStore.transitionToState(GameState.QUESTIONING)
   }
 
   /**
@@ -473,7 +510,9 @@ export class GameManager {
    */
   private onReveal(question: QuizQuestion): void {
     console.log('[GameManager] onReveal:', question.index)
-    // TODO: Task 18 で REVEALING 状態への遷移とゲームストア更新を実装
+
+    // REVEALING 状態へ遷移
+    this.gameStore.transitionToState(GameState.REVEALING)
   }
 
   /**
@@ -483,8 +522,17 @@ export class GameManager {
   private onEnd(question: QuizQuestion): void {
     console.log('[GameManager] onEnd:', question.index)
 
-    // TODO: Task 18 で TALKING/FINISHED 状態への遷移とゲームストア更新を実装
     // TODO: Task 18 でスコア記録を実装
+
+    // 最後の問題かどうかをチェック
+    const lastQuestion = this.quizData.questions[this.quizData.questions.length - 1]
+    if (question.index === lastQuestion.index) {
+      // 最後の問題 → FINISHED 状態へ遷移
+      this.gameStore.transitionToState(GameState.FINISHED)
+    } else {
+      // 次の問題がある → TALKING 状態へ遷移
+      this.gameStore.transitionToState(GameState.TALKING)
+    }
   }
 
   /**
@@ -529,6 +577,7 @@ export class GameManager {
 export function createGameManager(
   playerManager: YouTubePlayerManager,
   quizData: QuizData,
+  gameStore: ReturnType<typeof useGameStore>,
 ): GameManager {
-  return new GameManager(playerManager, quizData)
+  return new GameManager(playerManager, quizData, gameStore)
 }

@@ -5,8 +5,10 @@ import { loadQuizData } from '@/services/quizDataLoader'
 import { createGameManager, type GameManager } from '@/services/gameManager'
 import type { YouTubePlayerManager } from '@/types'
 import { TIME_UPDATE_INTERVAL_MS, STARTUP_GRACE_MS } from '@/constants/timing'
+import { useGameStore } from '@/stores/gameStore'
 
 // 動作確認用の簡易実装
+const gameStore = useGameStore()
 const playerManager = ref<YouTubePlayerManager | null>(null)
 const gameManager = ref<GameManager | null>(null)
 const isLoading = ref(true)
@@ -39,7 +41,7 @@ onMounted(async () => {
 
     // 3. GameManager を作成してExternal Pause Handlingを初期化
     console.log('\n[3] Initializing GameManager...')
-    gameManager.value = createGameManager(playerManager.value, quizData)
+    gameManager.value = createGameManager(playerManager.value, quizData, gameStore)
     gameManager.value.initializeExternalPauseHandling()
     console.log('✓ GameManager initialized')
 
