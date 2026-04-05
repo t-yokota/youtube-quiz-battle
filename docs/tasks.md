@@ -1,6 +1,6 @@
 # Tasks
 
-**次のタスク: 15-2（ゲーム状態遷移ロジックのテスト実装）**
+**次のタスク: 16（解答検証システムの実装）**
 
 ---
 
@@ -156,7 +156,7 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
 
 ---
 
-### [ ] 15-2. ゲーム状態遷移ロジックのテスト実装
+### [x] 15-2. ゲーム状態遷移ロジックのテスト実装
 
 **目的**: Task 15で実装したゲームコアロジックの品質保証
 
@@ -169,13 +169,13 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
 **まず必要な作業**: Vitestを導入する（テストフレームワーク未導入）
 
 **完了の定義**:
-- [ ] `npm test` が全件パス
-- [ ] `isSeekDetected` の境界値（閾値前後）をカバー
-- [ ] Single-Shot Guard（`consumed`フラグ）の一回性を検証
-- [ ] `(prev, curr]` 窓での複数閾値走査（`applyThresholds`）をテスト
-- [ ] QUESTIONING/WAITING/REVEALING/FINISHED 状態遷移の正確性をテスト
-- [ ] FINISHED状態の固定（resetGame()でのみ解除）をテスト
-- [ ] External Pause（可視性変化・再生停滞検出）のテスト
+- [x] `npm test` が全件パス
+- [x] `isSeekDetected` の境界値（閾値前後）をカバー
+- [x] Single-Shot Guard（`consumed`フラグ）の一回性を検証
+- [x] `(prev, curr]` 窓での複数閾値走査（`applyThresholds`）をテスト
+- [x] QUESTIONING/WAITING/REVEALING/FINISHED 状態遷移の正確性をテスト
+- [x] FINISHED状態の固定（resetGame()でのみ解除）をテスト
+- [x] External Pause（可視性変化・再生停滞検出）のテスト
 
 **設計上の注意**:
 - シーク閾値は `SEEK_TOLERANCE_SEC = 1秒固定`（当初の動的算出から変更済み）
