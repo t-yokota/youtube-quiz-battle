@@ -139,35 +139,6 @@ export const useGameStore = defineStore('game', () => {
   }
 
   /**
-   * ボタン押下処理（ストア内部用）
-   * UIからのボタン押下は GameManager.handleButtonPress() を経由する
-   */
-  function handleButtonPress() {
-    if (!isButtonEnabled.value) return
-
-    console.log(`[GameStore] Button pressed in state: ${currentState.value}`)
-
-    // ボタン状態遷移: STANDBY -> PUSHED -> RELEASED
-    buttonState.value = ButtonState.PUSHED
-    setTimeout(() => {
-      buttonState.value = ButtonState.RELEASED
-
-      if (currentState.value === GameState.READY) {
-        // ボタンチェック: 1500ms後にTALKING状態へ遷移
-        // 動画再生は GameManager.handleButtonPress() で実行
-        setTimeout(() => {
-          buttonState.value = ButtonState.STANDBY
-          transitionToState(GameState.TALKING)
-        }, 1500)
-      } else if (currentState.value === GameState.QUESTIONING) {
-        // 早押し: ANSWERING状態へ遷移
-        // 動画一時停止は GameManager.handleButtonPress() で実行
-        transitionToState(GameState.ANSWERING)
-      }
-    }, 100)
-  }
-
-  /**
    * 解答送信処理
    */
   function handleAnswerSubmit(answer: string) {
@@ -294,7 +265,6 @@ export const useGameStore = defineStore('game', () => {
     gamePanelMode,
     // Actions
     transitionToState,
-    handleButtonPress,
     handleAnswerSubmit,
     updateAnswerInput,
     initializeForQuestion,

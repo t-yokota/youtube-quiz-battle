@@ -18,6 +18,7 @@ import { createGameManager, type GameManager } from './services/gameManager'
 import { GameState } from './types'
 import type { QuizData, YouTubePlayerManager } from './types'
 import { TIME_UPDATE_INTERVAL_MS, STARTUP_GRACE_MS } from './constants/timing'
+import { shouldHandleSpaceKey } from './utils/keyboardHandler'
 
 const gameStore = useGameStore()
 
@@ -109,23 +110,7 @@ function handleButtonPress() {
 
 // スペースキー早押し（グローバルキーボードハンドラ）
 function handleKeyDown(e: KeyboardEvent) {
-  if (e.code !== 'Space') return
-  if (e.repeat) return // キー長押しの連続発火を無視
-  if (e.altKey || e.ctrlKey || e.metaKey) return // 修飾キー付きは OS/ブラウザショートカット優先
-
-  // フォーカスが当たっている要素への入力・操作を妨げない
-  const target = e.target as HTMLElement
-  if (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target.isContentEditable ||
-    target instanceof HTMLButtonElement || // ボタン自身の Space→click を妨げない
-    target instanceof HTMLAnchorElement ||
-    target instanceof HTMLSelectElement
-  ) {
-    return
-  }
-
+  if (!shouldHandleSpaceKey(e)) return
   e.preventDefault() // スペースキーによるページスクロールを抑止
   handleButtonPress()
 }

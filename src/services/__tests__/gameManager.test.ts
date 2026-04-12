@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { GameManager, createGameManager } from '../gameManager'
 import { useGameStore } from '@/stores/gameStore'
-import { GameState } from '@/types'
+import { GameState, ButtonState } from '@/types'
 import type { QuizData, YouTubePlayerManager } from '@/types'
 import { YouTubePlayerState } from '@/types'
 import { STALL_WALL_MS, STALL_VIDEO_DELTA_SEC } from '@/constants/timing'
@@ -399,5 +399,114 @@ describe('External Pause: 再生停滞（stall）検出', () => {
     gm.checkStall(initWall + STALL_WALL_MS + 2, STALL_VIDEO_DELTA_SEC + 0.1)
     expect(gm.isExternalPaused()).toBe(false)
     expect(player.playVideo).toHaveBeenCalled()
+  })
+})
+
+// ============================================================================
+// ボタン押下時の状態遷移（handleButtonPress）
+// ============================================================================
+
+describe('handleButtonPress: ボタン状態遷移', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('READY状態で押下: PUSHED → 100ms後 RELEASED → 1500ms後 TALKING遷移 + playVideo', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    store.transitionToState(GameState.READY)
+
+    gm.handleButtonPress()
+
+    // 即座に PUSHED
+    expect(store.buttonState).toBe(ButtonState.PUSHED)
+    expect(store.currentState).toBe(GameState.READY)
+
+    // 100ms後: RELEASED
+    vi.advanceTimersByTime(100)
+    expect(store.buttonState).toBe(ButtonState.RELEASED)
+    expect(store.currentState).toBe(GameState.READY)
+
+    // 1500ms後: TALKING遷移 + playVideo
+    // transitionToState(TALKING) 内の updateButtonStateForGameState が STANDBY → DISABLED にする
+    vi.advanceTimersByTime(1500)
+    expect(store.buttonState).toBe(ButtonState.DISABLED)
+    expect(store.currentState).toBe(GameState.TALKING)
+    expect(player.playVideo).toHaveBeenCalledTimes(1)
+  })
+
+  it('QUESTIONING状態で押下: PUSHED → 100ms後 RELEASED + ANSWERING遷移 + pauseVideo', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    // QUESTIONING に進める
+    simulatePlayback(gm, 10.1)
+    expect(store.currentState).toBe(GameState.QUESTIONING)
+
+    gm.handleButtonPress()
+
+    // 即座に PUSHED
+    expect(store.buttonState).toBe(ButtonState.PUSHED)
+
+    // 100ms後: RELEASED + ANSWERING + pauseVideo
+    vi.advanceTimersByTime(100)
+    expect(store.buttonState).toBe(ButtonState.RELEASED)
+    expect(store.currentState).toBe(GameState.ANSWERING)
+    expect(player.pauseVideo).toHaveBeenCalled()
+  })
+
+  it('ボタン無効時（isButtonEnabled=false）は何もしない', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    // LOADING状態（初期状態）はボタン無効
+    expect(store.isButtonEnabled).toBe(false)
+
+    gm.handleButtonPress()
+
+    expect(store.buttonState).toBe(ButtonState.STANDBY)
+    vi.advanceTimersByTime(200)
+    // 状態変化なし
+    expect(store.buttonState).toBe(ButtonState.STANDBY)
+  })
+
+  it('PUSHED中の連打は無視される（isButtonEnabled=falseになるため）', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    store.transitionToState(GameState.READY)
+
+    gm.handleButtonPress()
+    expect(store.buttonState).toBe(ButtonState.PUSHED)
+
+    // 連打: isButtonEnabled は buttonState===STANDBY のみ true なので無視される
+    gm.handleButtonPress()
+
+    // 正常遷移が壊れていないことを確認
+    vi.advanceTimersByTime(100)
+    expect(store.buttonState).toBe(ButtonState.RELEASED)
+
+    vi.advanceTimersByTime(1500)
+    // transitionToState(TALKING) 内の updateButtonStateForGameState が DISABLED にする
+    expect(store.buttonState).toBe(ButtonState.DISABLED)
+    expect(store.currentState).toBe(GameState.TALKING)
+    // playVideo は1回だけ
+    expect(player.playVideo).toHaveBeenCalledTimes(1)
+  })
+
+  it('DISABLED状態では押下できない', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    // TALKING状態に遷移させるとボタンは DISABLED になる
+    store.transitionToState(GameState.TALKING)
+    expect(store.buttonState).toBe(ButtonState.DISABLED)
+
+    gm.handleButtonPress()
+
+    // 状態変化なし
+    expect(store.buttonState).toBe(ButtonState.DISABLED)
+    vi.advanceTimersByTime(200)
+    expect(store.buttonState).toBe(ButtonState.DISABLED)
   })
 })
