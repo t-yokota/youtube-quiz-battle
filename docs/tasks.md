@@ -1,6 +1,6 @@
 # Tasks
 
-**次のタスク: 16（解答検証システムの実装）**
+**次のタスク: 15-3（App/storeの最小統合）**
 
 ---
 
@@ -185,6 +185,37 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
 
 ---
 
+### [ ] 15-3. App/storeの最小統合
+
+**目的**: 表示確認用の固定UIをstore駆動に切り替え、Task 16以降の解答判定・キーボード対応・全体統合を載せる土台を作る
+
+**前提条件**: Task 15-2 完了済み ✅
+
+**実装対象ファイル**:
+- `src/App.vue`
+- `src/components/common/VideoPlayer.vue`
+- `src/stores/gameStore.ts`
+
+**完了の定義**:
+- [ ] Appが固定propsではなくgameStoreの状態を参照してGamePanelを描画する
+- [ ] AppがgameStoreの状態を参照してQuizButtonの表示・状態を切り替える
+- [ ] QuizButton押下がGameManager.handleButtonPress()に接続される
+- [ ] GamePanelの入力更新と送信がgameStore.updateAnswerInput() / handleAnswerSubmit()に接続される
+- [ ] VideoPlayer初期化完了時にquizDataをgameStoreに設定し、READY状態へ遷移できる
+- [ ] クイズデータ読み込みがURLパラメータ優先、未指定時はsampleフォールバックで動作する
+- [ ] LOADING / READY / TALKING / QUESTIONINGの表示差分がApp上で確認できる
+- [ ] ダミー結果データと表示確認用の固定propsがAppから除去される
+
+**設計上の注意**:
+- design.mdの呼び出しフロー（App → GameManager → playerManager）に従い、AppがGameManagerインスタンスを保持する。QuizButtonのpressイベントはAppが中継してGameManager.handleButtonPress()を呼ぶ
+- 現在VideoPlayer.vueのローカル変数に閉じているplayerManager/GameManagerの参照を、Appが保持する形に移動する
+- gameStore.handleButtonPress()内の動画再生開始/一時停止のTODOはGameManager側の実装に置き換える
+- 正誤判定ロジックの中身はTask 16で実装する。このタスクでは判定処理は実装しない
+- スペースキー対応はTask 17で実装する
+- ResultAreaの完全表示、再プレイ、ANSWERING中のカウントダウン制御はTask 18で実装する
+
+---
+
 ### [ ] 16. 解答検証システムの実装（Phase 2 MVP版）
 
 **目的**: 早押しボタン押下後の解答正誤判定
@@ -254,7 +285,7 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
 
 **目的**: 全コンポーネントを状態管理と連携させ、ゲーム開始〜終了の完全フローを実現
 
-**前提条件**: Task 15, 16, 17 完了後
+**前提条件**: Task 15-3, 16, 17 完了後
 
 **実装対象ファイル**:
 - `src/App.vue`
