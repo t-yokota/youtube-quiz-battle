@@ -1,6 +1,6 @@
 // ゲーム管理サービス
 import type { QuizData, QuizQuestion, YouTubePlayerManager } from '@/types'
-import { GameState } from '@/types'
+import { GameState, ButtonState } from '@/types'
 import { createTimeManager, TimeManager } from './timeManager'
 import { STALL_WALL_MS, STALL_VIDEO_DELTA_SEC, TIME_EPSILON_SEC } from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
@@ -69,6 +69,44 @@ export class GameManager {
     this.timeManager.resetTimeValues()
 
     console.log('[GameManager] Game reset')
+  }
+
+  /**
+   * ボタン押下処理
+   * QuizButton の press イベントから App 経由で呼び出される
+   * ボタン状態遷移・ゲーム状態遷移・動画制御を統合的に処理する
+   */
+  handleButtonPress(): void {
+    if (!this.gameStore.isButtonEnabled) return
+
+    console.log(`[GameManager] Button pressed in state: ${this.gameStore.currentState}`)
+
+    const stateAtPress = this.gameStore.currentState
+
+    // ボタン状態遷移: STANDBY -> PUSHED -> RELEASED
+    this.gameStore.buttonState = ButtonState.PUSHED
+    setTimeout(() => {
+      this.gameStore.buttonState = ButtonState.RELEASED
+
+      if (stateAtPress === GameState.READY) {
+        // ボタンチェック: 1500ms後にTALKING状態へ遷移し、動画再生開始
+        setTimeout(() => {
+          this.gameStore.buttonState = ButtonState.STANDBY
+          this.gameStore.transitionToState(GameState.TALKING)
+          // 動画再生開始
+          this.internalAction = true
+          this.playerManager.playVideo()
+          this.internalAction = false
+        }, 1500)
+      } else if (stateAtPress === GameState.QUESTIONING) {
+        // 早押し: ANSWERING状態へ遷移し、動画一時停止
+        this.gameStore.transitionToState(GameState.ANSWERING)
+        // 動画一時停止
+        this.internalAction = true
+        this.playerManager.pauseVideo()
+        this.internalAction = false
+      }
+    }, 100)
   }
 
   /**

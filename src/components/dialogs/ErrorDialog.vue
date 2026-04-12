@@ -9,6 +9,7 @@ interface Props {
   message?: string
   actionLabel?: string
   showAction?: boolean
+  showClose?: boolean
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -18,6 +19,7 @@ const props = withDefaults(defineProps<Props>(), {
   message: '問題が発生しました。もう一度お試しください。',
   actionLabel: 'ページを再読み込み',
   showAction: true,
+  showClose: true,
 })
 
 // イベント定義
@@ -69,7 +71,7 @@ const handleClose = () => {
             <button v-if="showAction" class="action-button" @click="handleAction">
               {{ actionLabel }}
             </button>
-            <button class="close-button" @click="handleClose">閉じる</button>
+            <button v-if="showClose" class="close-button" @click="handleClose">閉じる</button>
           </div>
         </div>
       </div>

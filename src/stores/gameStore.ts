@@ -34,10 +34,10 @@ export const useGameStore = defineStore('game', () => {
   // Getters
   // ============================================================================
 
-  // 総問題数（quizDataが必須、デフォルト値なし）
+  // 総問題数（quizDataがない場合は0を返す）
   const totalQuestions = computed(() => {
     if (!quizData.value) {
-      throw new Error('Quiz data is not loaded')
+      return 0
     }
     return quizData.value.questions.length
   })
@@ -138,7 +138,8 @@ export const useGameStore = defineStore('game', () => {
   }
 
   /**
-   * ボタン押下処理
+   * ボタン押下処理（ストア内部用）
+   * UIからのボタン押下は GameManager.handleButtonPress() を経由する
    */
   function handleButtonPress() {
     if (!isButtonEnabled.value) return
@@ -151,16 +152,16 @@ export const useGameStore = defineStore('game', () => {
       buttonState.value = ButtonState.RELEASED
 
       if (currentState.value === GameState.READY) {
-        // ボタンチェック: 1500ms後にTALKING状態へ遷移し、動画再生開始
+        // ボタンチェック: 1500ms後にTALKING状態へ遷移
+        // 動画再生は GameManager.handleButtonPress() で実行
         setTimeout(() => {
           buttonState.value = ButtonState.STANDBY
           transitionToState(GameState.TALKING)
-          // TODO: 動画再生開始（Phase 2で実装）
         }, 1500)
       } else if (currentState.value === GameState.QUESTIONING) {
-        // 早押し: ANSWERING状態へ遷移し、動画一時停止
+        // 早押し: ANSWERING状態へ遷移
+        // 動画一時停止は GameManager.handleButtonPress() で実行
         transitionToState(GameState.ANSWERING)
-        // TODO: 動画一時停止（Phase 2で実装）
       }
     }, 100)
   }

@@ -1,6 +1,6 @@
 # Tasks
 
-**次のタスク: 15-3（App/storeの最小統合）**
+**次のタスク: 16（解答検証システムの実装）**
 
 ---
 
@@ -185,7 +185,7 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
 
 ---
 
-### [ ] 15-3. App/storeの最小統合
+### [x] 15-3. App/storeの最小統合
 
 **目的**: 表示確認用の固定UIをstore駆動に切り替え、Task 16以降の解答判定・キーボード対応・全体統合を載せる土台を作る
 
@@ -197,14 +197,14 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
 - `src/stores/gameStore.ts`
 
 **完了の定義**:
-- [ ] Appが固定propsではなくgameStoreの状態を参照してGamePanelを描画する
-- [ ] AppがgameStoreの状態を参照してQuizButtonの表示・状態を切り替える
-- [ ] QuizButton押下がGameManager.handleButtonPress()に接続される
-- [ ] GamePanelの入力更新と送信がgameStore.updateAnswerInput() / handleAnswerSubmit()に接続される
-- [ ] VideoPlayer初期化完了時にquizDataをgameStoreに設定し、READY状態へ遷移できる
-- [ ] クイズデータ読み込みがURLパラメータ優先、未指定時はsampleフォールバックで動作する
-- [ ] LOADING / READY / TALKING / QUESTIONINGの表示差分がApp上で確認できる
-- [ ] ダミー結果データと表示確認用の固定propsがAppから除去される
+- [x] Appが固定propsではなくgameStoreの状態を参照してGamePanelを描画する
+- [x] AppがgameStoreの状態を参照してQuizButtonの表示・状態を切り替える
+- [x] QuizButton押下がGameManager.handleButtonPress()に接続される
+- [x] GamePanelの入力更新と送信がgameStore.updateAnswerInput() / handleAnswerSubmit()に接続される
+- [x] VideoPlayer初期化完了時にquizDataをgameStoreに設定し、READY状態へ遷移できる
+- [x] クイズデータ読み込みがURLパラメータ優先、未指定時はsampleフォールバックで動作する
+- [x] LOADING / READY / TALKING / QUESTIONINGの表示差分がApp上で確認できる
+- [x] ダミー結果データと表示確認用の固定propsがAppから除去される
 
 **設計上の注意**:
 - design.mdの呼び出しフロー（App → GameManager → playerManager）に従い、AppがGameManagerインスタンスを保持する。QuizButtonのpressイベントはAppが中継してGameManager.handleButtonPress()を呼ぶ

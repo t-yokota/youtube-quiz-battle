@@ -1,93 +1,43 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { loadYouTubeIframeAPI, createYouTubePlayerManager } from '@/services/youtubePlayer'
-import { loadQuizData } from '@/services/quizDataLoader'
-import { createGameManager, type GameManager } from '@/services/gameManager'
-import type { YouTubePlayerManager } from '@/types'
-import { TIME_UPDATE_INTERVAL_MS, STARTUP_GRACE_MS } from '@/constants/timing'
-import { useGameStore } from '@/stores/gameStore'
+import type { YouTubePlayerManager, QuizSettings } from '@/types'
 
-// 動作確認用の簡易実装
-const gameStore = useGameStore()
-const playerManager = ref<YouTubePlayerManager | null>(null)
-const gameManager = ref<GameManager | null>(null)
+// Props定義
+interface Props {
+  videoId: string
+  settings: QuizSettings
+}
+
+const props = defineProps<Props>()
+
+// Emit定義
+const emit = defineEmits<{
+  ready: [playerManager: YouTubePlayerManager]
+  error: [message: string]
+}>()
+
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
-let timeUpdateIntervalId: number | null = null
 
 onMounted(async () => {
   try {
-    console.log('=== YouTube Quiz Battle 動作確認 ===')
-
-    // 1. クイズデータを読み込み
-    console.log('\n[1] Loading Quiz Data...')
-    const videoId = 'sample' // サンプルデータを使用
-    const quizData = await loadQuizData(videoId)
-    console.log('✓ Quiz Data loaded:', {
-      videoId: quizData.videoId,
-      questionCount: quizData.questions.length,
-      settings: quizData.settings,
-    })
-
-    // 2. YouTube Player を作成
-    console.log('\n[2] Creating YouTube Player...')
+    // YouTube Player を作成
     await loadYouTubeIframeAPI()
-    playerManager.value = await createYouTubePlayerManager(
+    const playerManager = await createYouTubePlayerManager(
       'youtube-player-element',
-      quizData.videoId, // データファイルに記載された実際の動画ID
-      quizData.settings,
+      props.videoId,
+      props.settings,
     )
-    console.log('✓ YouTube Player created successfully')
 
-    // 3. GameManager を作成してExternal Pause Handlingを初期化
-    console.log('\n[3] Initializing GameManager...')
-    gameManager.value = createGameManager(playerManager.value, quizData, gameStore)
-    gameManager.value.initializeExternalPauseHandling()
-    console.log('✓ GameManager initialized')
-
-    // 4. Time Update Loop を開始
-    console.log('\n[4] Starting Time Update Loop...')
-    const startedAt = performance.now()
-
-    function timeUpdateTick() {
-      if (!playerManager.value || !gameManager.value) return
-
-      const now = performance.now()
-      const current = playerManager.value.getCurrentTime()
-
-      // 再生開始直後の誤検出回避
-      if (now - startedAt < STARTUP_GRACE_MS) {
-        return
-      }
-
-      // 再生停滞（stall）検出
-      gameManager.value.checkStall(now, current)
-
-      // 通常の時間更新・シーク検出・状態判定を実施
-      gameManager.value.updateVideoTime(current)
-    }
-
-    timeUpdateIntervalId = window.setInterval(timeUpdateTick, TIME_UPDATE_INTERVAL_MS)
-    console.log('✓ Time Update Loop started (interval:', TIME_UPDATE_INTERVAL_MS, 'ms)')
-
-    console.log('\n=== 初期化完了 ===')
-    console.log('動画を再生して、状態遷移を確認してください。')
-    console.log('コンソールに "[GameManager] onStart/onReveal/onEnd" のログが表示されます。')
-    console.log('\n=== 動作確認完了 ===\n')
     isLoading.value = false
+    emit('ready', playerManager)
   } catch (error) {
-    console.error('Failed to initialize:', error)
-    errorMessage.value = error instanceof Error ? error.message : 'Unknown error'
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[VideoPlayer] Failed to initialize:', error)
+    errorMessage.value = message
     isLoading.value = false
-  }
-})
-
-onUnmounted(() => {
-  // Time Update Loop のクリーンアップ
-  if (timeUpdateIntervalId !== null) {
-    window.clearInterval(timeUpdateIntervalId)
-    timeUpdateIntervalId = null
-    console.log('[VideoPlayer] Time Update Loop stopped')
+    emit('error', message)
   }
 })
 </script>
