@@ -51,6 +51,15 @@ watch(() => props.isInputDisabled, (disabled) => {
     })
   }
 })
+
+// 誤答リトライ時のフォーカス復帰（ANSWERING維持のまま answerResult が 'incorrect' に変わる場合）
+watch(() => props.answerResult, (result) => {
+  if (result === 'incorrect' && !props.isInputDisabled) {
+    nextTick(() => {
+      inputRef.value?.focus()
+    })
+  }
+})
 </script>
 
 <template>

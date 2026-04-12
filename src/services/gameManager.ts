@@ -538,6 +538,9 @@ export class GameManager {
     // ゲームストアの currentQuestionIndex を更新
     this.gameStore.currentQuestionIndex = question.index
 
+    // 問題単位の状態初期化（remainingAttempts / answerResult / answerInput をリセット）
+    this.gameStore.initializeForQuestion()
+
     // QUESTIONING 状態へ遷移
     this.gameStore.transitionToState(GameState.QUESTIONING)
   }

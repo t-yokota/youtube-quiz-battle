@@ -227,6 +227,17 @@ export const useGameStore = defineStore('game', () => {
   }
 
   /**
+   * 問題開始時の状態初期化
+   * onStart() から呼ばれ、問題単位でリセットが必要な状態を初期化する
+   */
+  function initializeForQuestion() {
+    remainingAttempts.value = quizData.value?.settings.maxAttempts ?? 2
+    answerTimeRemaining.value = quizData.value?.settings.answerTimeLimit ?? 10
+    answerInput.value = ''
+    answerResult.value = null
+  }
+
+  /**
    * 解答入力更新処理
    */
   function updateAnswerInput(value: string) {
@@ -286,6 +297,7 @@ export const useGameStore = defineStore('game', () => {
     handleButtonPress,
     handleAnswerSubmit,
     updateAnswerInput,
+    initializeForQuestion,
     setQuizData,
     resetGame,
   }
