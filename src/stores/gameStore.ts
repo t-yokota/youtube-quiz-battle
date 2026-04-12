@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { GameState, ButtonState } from '@/types'
 import type { QuizData, QuestionResult } from '@/types'
+import { validate } from '@/services/answerValidator'
 
 export const useGameStore = defineStore('game', () => {
   // ============================================================================
@@ -67,9 +68,9 @@ export const useGameStore = defineStore('game', () => {
     )
   })
 
-  // 解答入力無効状態
+  // 解答入力無効状態（入力欄の制御用）
   const isInputDisabled = computed(() => {
-    return currentState.value !== GameState.ANSWERING || answerInput.value.trim() === ''
+    return currentState.value !== GameState.ANSWERING
   })
 
   // ガイドテキスト
@@ -170,13 +171,59 @@ export const useGameStore = defineStore('game', () => {
    * 解答送信処理
    */
   function handleAnswerSubmit(answer: string) {
+    if (currentState.value !== GameState.ANSWERING) return
+
+    const question = currentQuestionData.value
+    if (!question) return
+
     console.log(`[GameStore] Answer submitted: ${answer}`)
 
-    // TODO: 解答検証処理（Phase 2で実装）
-    // TODO: 正誤判定後の状態遷移（Phase 2で実装）
+    const isCorrect = validate(answer, question.answers)
 
-    // 仮の実装: 入力をクリア
-    answerInput.value = ''
+    if (isCorrect) {
+      // 正解
+      answerResult.value = 'correct'
+      correctCount.value++
+      answerInput.value = ''
+
+      // 結果を記録
+      results.value.push({
+        questionNumber: question.index + 1,
+        isCorrect: true,
+        correctAnswer: question.answers[0],
+        userAnswer: answer,
+      })
+
+      console.log(`[GameStore] Correct! Score: ${correctCount.value}`)
+    } else {
+      // 不正解
+      remainingAttempts.value--
+      answerResult.value = 'incorrect'
+
+      if (remainingAttempts.value <= 0) {
+        // 残り回数なし → 不正解確定
+        incorrectCount.value++
+        answerInput.value = ''
+
+        // 結果を記録
+        results.value.push({
+          questionNumber: question.index + 1,
+          isCorrect: false,
+          correctAnswer: question.answers[0],
+          userAnswer: answer,
+        })
+
+        console.log(`[GameStore] Incorrect (no attempts left). Score: ${incorrectCount.value}`)
+      } else {
+        // まだ回数が残っている → 再入力可能
+        console.log(`[GameStore] Incorrect. Remaining attempts: ${remainingAttempts.value}`)
+        return // ANSWERING状態を維持
+      }
+    }
+
+    // 正解または回数切れの不正解: WAITING状態へ遷移
+    // （動画再開はTask 18でGameManager経由で実装）
+    transitionToState(GameState.WAITING)
   }
 
   /**

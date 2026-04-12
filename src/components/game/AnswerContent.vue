@@ -2,6 +2,8 @@
 // AnswerContent コンポーネント
 // 解答入力エリア（QUESTIONING/ANSWERING/WAITING/REVEALING状態）
 
+import { ref, watch, nextTick } from 'vue'
+
 // Props定義
 interface Props {
   remainingAttempts?: number
@@ -25,7 +27,14 @@ const emit = defineEmits<{
   updateInput: [value: string]
 }>()
 
+// 入力欄の参照（オートフォーカス用）
+const inputRef = ref<HTMLInputElement | null>(null)
+
+// 送信ボタンの無効状態（入力欄が無効 or 入力が空）
+const isSubmitDisabled = () => props.isInputDisabled || props.answerInput.trim() === ''
+
 const handleSubmit = () => {
+  if (isSubmitDisabled()) return
   emit('submit', props.answerInput)
 }
 
@@ -33,6 +42,15 @@ const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   emit('updateInput', target.value)
 }
+
+// ANSWERING遷移時にオートフォーカス
+watch(() => props.isInputDisabled, (disabled) => {
+  if (!disabled) {
+    nextTick(() => {
+      inputRef.value?.focus()
+    })
+  }
+})
 </script>
 
 <template>
@@ -49,6 +67,7 @@ const handleInput = (event: Event) => {
     <!-- Answer Input -->
     <div class="answer-input-container">
       <input
+        ref="inputRef"
         type="text"
         class="answer-input"
         placeholder="解答を入力"
@@ -57,7 +76,7 @@ const handleInput = (event: Event) => {
         :disabled="isInputDisabled"
         @input="handleInput"
       />
-      <button class="submit-button" :disabled="isInputDisabled" @click="handleSubmit">
+      <button class="submit-button" :disabled="isSubmitDisabled()" @click="handleSubmit">
         送信
       </button>
     </div>
