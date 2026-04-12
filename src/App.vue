@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // YouTube Quiz Battle - メインアプリケーション
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import VideoPlayer from './components/common/VideoPlayer.vue'
 import GamePanel from './components/game/GamePanel.vue'
@@ -107,6 +107,33 @@ function handleButtonPress() {
   gameManager.value?.handleButtonPress()
 }
 
+// スペースキー早押し（グローバルキーボードハンドラ）
+function handleKeyDown(e: KeyboardEvent) {
+  if (e.code !== 'Space') return
+  if (e.repeat) return // キー長押しの連続発火を無視
+  if (e.altKey || e.ctrlKey || e.metaKey) return // 修飾キー付きは OS/ブラウザショートカット優先
+
+  // フォーカスが当たっている要素への入力・操作を妨げない
+  const target = e.target as HTMLElement
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target.isContentEditable ||
+    target instanceof HTMLButtonElement || // ボタン自身の Space→click を妨げない
+    target instanceof HTMLAnchorElement ||
+    target instanceof HTMLSelectElement
+  ) {
+    return
+  }
+
+  e.preventDefault() // スペースキーによるページスクロールを抑止
+  handleButtonPress()
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
 // GamePanel 解答送信
 function handleAnswerSubmit(answer: string) {
   gameStore.handleAnswerSubmit(answer)
@@ -137,6 +164,7 @@ const handleErrorAction = () => {
 
 // --- クリーンアップ ---
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
   if (timeUpdateIntervalId !== null) {
     window.clearInterval(timeUpdateIntervalId)
     timeUpdateIntervalId = null
