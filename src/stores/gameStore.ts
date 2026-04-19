@@ -27,6 +27,7 @@ export const useGameStore = defineStore('game', () => {
   const answerTimeRemaining = ref(10) // デフォルト値（秒）
   const answerInput = ref('')
   const answerResult = ref<'correct' | 'incorrect' | null>(null)
+  const pendingUserAnswers = ref<string[]>([]) // 問題単位の解答履歴
 
   // 結果
   const results = ref<QuestionResult[]>([])
@@ -120,7 +121,7 @@ export const useGameStore = defineStore('game', () => {
     switch (state) {
       case GameState.READY:
       case GameState.QUESTIONING:
-        if (buttonState.value === ButtonState.DISABLED) {
+        if (buttonState.value === ButtonState.DISABLED || buttonState.value === ButtonState.RELEASED) {
           buttonState.value = ButtonState.STANDBY
         }
         break
@@ -139,62 +140,106 @@ export const useGameStore = defineStore('game', () => {
   }
 
   /**
-   * 解答送信処理
+   * 結果を記録する（全ての結果記録の唯一の窓口）
+   * @param questionNumber 問題番号（1-indexed）
+   * @param isCorrect 正解かどうか
+   * @param correctAnswer 正解文字列
+   * @param userAnswers ユーザーの解答履歴
+   * @param skipped スキップされた問題かどうか
    */
-  function handleAnswerSubmit(answer: string) {
-    if (currentState.value !== GameState.ANSWERING) return
+  function recordResult(
+    questionNumber: number,
+    isCorrect: boolean,
+    correctAnswer: string,
+    userAnswers: string[],
+    skipped: boolean,
+  ): void {
+    // 既に記録済みの場合はスキップ
+    if (results.value.some(r => r.questionNumber === questionNumber)) return
+
+    if (isCorrect) {
+      correctCount.value++
+    } else if (!skipped && userAnswers.length > 0) {
+      // 解答試行があった不正解（タイムアウトの空文字送信を含む）
+      incorrectCount.value++
+    }
+
+    results.value.push({
+      questionNumber,
+      isCorrect,
+      correctAnswer,
+      userAnswers,
+      skipped,
+    })
+  }
+
+  /**
+   * 記録済みの結果を削除する（巻き戻り補正でskipped結果をクリアする用途）
+   * skipped結果はスコアに影響しないため、スコア巻き戻しは不要
+   */
+  function removeResult(questionNumber: number): void {
+    const index = results.value.findIndex(r => r.questionNumber === questionNumber)
+    if (index !== -1) {
+      results.value.splice(index, 1)
+    }
+  }
+
+  /**
+   * 解答送信処理
+   * @returns 判定結果（isCorrect: 正解か, isFinal: この問題の解答が確定したか）。ANSWERING以外ではnull
+   */
+  function handleAnswerSubmit(answer: string): { isCorrect: boolean; isFinal: boolean } | null {
+    if (currentState.value !== GameState.ANSWERING) return null
 
     const question = currentQuestionData.value
-    if (!question) return
+    if (!question) return null
 
     console.log(`[GameStore] Answer submitted: ${answer}`)
 
     const isCorrect = validate(answer, question.answers)
 
+    // 解答履歴に追加
+    pendingUserAnswers.value.push(answer)
+
     if (isCorrect) {
       // 正解
       answerResult.value = 'correct'
-      correctCount.value++
       answerInput.value = ''
 
       // 結果を記録
-      results.value.push({
-        questionNumber: question.index + 1,
-        isCorrect: true,
-        correctAnswer: question.answers[0],
-        userAnswer: answer,
-      })
+      recordResult(question.index + 1, true, question.answers[0], [...pendingUserAnswers.value], false)
 
       console.log(`[GameStore] Correct! Score: ${correctCount.value}`)
-    } else {
-      // 不正解
-      remainingAttempts.value--
-      answerResult.value = 'incorrect'
 
-      if (remainingAttempts.value <= 0) {
-        // 残り回数なし → 不正解確定
-        incorrectCount.value++
-        answerInput.value = ''
-
-        // 結果を記録
-        results.value.push({
-          questionNumber: question.index + 1,
-          isCorrect: false,
-          correctAnswer: question.answers[0],
-          userAnswer: answer,
-        })
-
-        console.log(`[GameStore] Incorrect (no attempts left). Score: ${incorrectCount.value}`)
-      } else {
-        // まだ回数が残っている → 再入力可能
-        console.log(`[GameStore] Incorrect. Remaining attempts: ${remainingAttempts.value}`)
-        return // ANSWERING状態を維持
-      }
+      // WAITING状態へ遷移
+      transitionToState(GameState.WAITING)
+      return { isCorrect: true, isFinal: true }
     }
 
-    // 正解または回数切れの不正解: WAITING状態へ遷移
-    // （動画再開はTask 18でGameManager経由で実装）
-    transitionToState(GameState.WAITING)
+    // 不正解
+    remainingAttempts.value--
+    answerResult.value = 'incorrect'
+
+    if (remainingAttempts.value <= 0) {
+      // 残り回数なし → 不正解確定
+      answerInput.value = ''
+
+      // 結果を記録
+      recordResult(question.index + 1, false, question.answers[0], [...pendingUserAnswers.value], false)
+
+      console.log(`[GameStore] Incorrect (no attempts left). Score: ${incorrectCount.value}`)
+
+      // WAITING状態へ遷移
+      transitionToState(GameState.WAITING)
+      return { isCorrect: false, isFinal: true }
+    }
+
+    // 残り回数あり → QUESTIONING に戻す（動画再開して再早押し可能に）
+    answerInput.value = ''
+    answerResult.value = null // QUESTIONING では結果表示を非表示にする
+    console.log(`[GameStore] Incorrect. Remaining attempts: ${remainingAttempts.value}`)
+    transitionToState(GameState.QUESTIONING)
+    return { isCorrect: false, isFinal: false }
   }
 
   /**
@@ -206,6 +251,7 @@ export const useGameStore = defineStore('game', () => {
     answerTimeRemaining.value = quizData.value?.settings.answerTimeLimit ?? 10
     answerInput.value = ''
     answerResult.value = null
+    pendingUserAnswers.value = []
   }
 
   /**
@@ -238,6 +284,7 @@ export const useGameStore = defineStore('game', () => {
     incorrectCount.value = 0
     answerInput.value = ''
     answerResult.value = null
+    pendingUserAnswers.value = []
     results.value = []
   }
 
@@ -253,6 +300,7 @@ export const useGameStore = defineStore('game', () => {
     answerTimeRemaining,
     answerInput,
     answerResult,
+    pendingUserAnswers,
     results,
     // Getters
     totalQuestions,
@@ -265,6 +313,8 @@ export const useGameStore = defineStore('game', () => {
     gamePanelMode,
     // Actions
     transitionToState,
+    recordResult,
+    removeResult,
     handleAnswerSubmit,
     updateAnswerInput,
     initializeForQuestion,

@@ -2,13 +2,7 @@
 // ResultTable コンポーネント
 // 個別問題の結果テーブル表示
 
-// 個別結果の型定義
-interface QuestionResult {
-  questionNumber: number
-  isCorrect: boolean
-  correctAnswer: string
-  userAnswer: string
-}
+import type { QuestionResult } from '@/types/result'
 
 // Props定義
 interface Props {
@@ -37,12 +31,13 @@ withDefaults(defineProps<Props>(), {
         <tr v-for="result in results" :key="result.questionNumber">
           <td>第{{ result.questionNumber }}問</td>
           <td>
-            <span :class="['result-badge', result.isCorrect ? 'correct' : 'incorrect']">
+            <span v-if="result.skipped">―</span>
+            <span v-else-if="result.userAnswers.length > 0" :class="['result-badge', result.isCorrect ? 'correct' : 'incorrect']">
               {{ result.isCorrect ? '○' : '×' }}
             </span>
           </td>
           <td>{{ result.correctAnswer }}</td>
-          <td v-if="showUserAnswers">{{ result.userAnswer }}</td>
+          <td v-if="showUserAnswers">{{ result.userAnswers.findLast((a: string) => a !== '') ?? '' }}</td>
         </tr>
       </tbody>
     </table>

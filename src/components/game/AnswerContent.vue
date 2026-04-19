@@ -67,7 +67,7 @@ watch(() => props.answerResult, (result) => {
     <!-- Answer Meta Information -->
     <div class="answer-meta">
       <span class="attempts-counter">残り {{ remainingAttempts }}回</span>
-      <span class="answer-timer">残り {{ remainingTime }}秒</span>
+      <span v-if="!isInputDisabled" class="answer-timer">残り {{ remainingTime }}秒</span>
       <span v-if="answerResult" :class="['answer-result', answerResult]">
         {{ answerResult === 'correct' ? '正解！' : '不正解！' }}
       </span>

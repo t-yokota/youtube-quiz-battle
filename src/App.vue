@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // YouTube Quiz Battle - メインアプリケーション
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import VideoPlayer from './components/common/VideoPlayer.vue'
 import GamePanel from './components/game/GamePanel.vue'
@@ -21,6 +21,11 @@ import { TIME_UPDATE_INTERVAL_MS, STARTUP_GRACE_MS } from './constants/timing'
 import { shouldHandleSpaceKey } from './utils/keyboardHandler'
 
 const gameStore = useGameStore()
+
+// QuizButton の button-state props 用（テンプレート内の union type が vue/no-deprecated-filter に誤検出されるため computed 化）
+const buttonStateProp = computed(() => {
+  return gameStore.buttonState.toLowerCase() as 'standby' | 'pushed' | 'released' | 'disabled'
+})
 
 // GameManager とタイマーの参照
 const gameManager = ref<GameManager | null>(null)
@@ -119,14 +124,19 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
 })
 
-// GamePanel 解答送信
+// GamePanel 解答送信 → GameManager に委譲
 function handleAnswerSubmit(answer: string) {
-  gameStore.handleAnswerSubmit(answer)
+  gameManager.value?.handleAnswerSubmit(answer)
 }
 
 // GamePanel 入力更新
 function handleUpdateInput(value: string) {
   gameStore.updateAnswerInput(value)
+}
+
+// ResultActions もう一度プレイ → GameManager に委譲
+function handleReplay() {
+  gameManager.value?.handleReplay()
 }
 
 // SettingsModal
@@ -193,7 +203,7 @@ onUnmounted(() => {
         />
         <QuizButton
           v-if="gameStore.isButtonVisible"
-          :button-state="gameStore.buttonState.toLowerCase() as 'standby' | 'pushed' | 'released' | 'disabled'"
+          :button-state="buttonStateProp"
           @press="handleButtonPress"
         />
       </div>
@@ -204,7 +214,7 @@ onUnmounted(() => {
           <FinalScore :correct-count="gameStore.correctCount" :total-questions="gameStore.totalQuestions" />
           <ResultTable :results="gameStore.results" :show-user-answers="true" />
         </div>
-        <ResultActions />
+        <ResultActions @replay="handleReplay" />
       </div>
     </main>
 

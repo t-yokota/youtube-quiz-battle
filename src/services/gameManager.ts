@@ -40,6 +40,9 @@ export class GameManager {
   private readonly YOUTUBE_REWIND_THRESHOLD_SEC = 5.5 // 巻き戻り発生の閾値（秒）
   private hasPassedRewindThreshold: boolean = false // 閾値通過フラグ
 
+  // 解答カウントダウンタイマー（ANSWERING中の制限時間管理）
+  private answerCountdownInterval: number | null = null
+
   constructor(
     playerManager: YouTubePlayerManager,
     quizData: QuizData,
@@ -56,6 +59,9 @@ export class GameManager {
    * 「もう一度プレイ」ボタン押下時に呼び出される
    */
   resetGame(): void {
+    // カウントダウンタイマーを停止
+    this.stopAnswerCountdown()
+
     // YouTube Player巻き戻しフラグをリセット
     this.hasPassedRewindThreshold = false
 
@@ -69,6 +75,124 @@ export class GameManager {
     this.timeManager.resetTimeValues()
 
     console.log('[GameManager] Game reset')
+  }
+
+  /**
+   * もう一度プレイ
+   * FINISHED状態からゲームリセット → 動画を0秒にシーク → READY状態へ遷移
+   */
+  handleReplay(): void {
+    if (this.gameStore.currentState !== GameState.FINISHED) return
+
+    console.log('[GameManager] Replay requested')
+
+    // External Pause状態もクリア
+    this.externalPaused = false
+    this.externalPausedReason = null
+
+    // ゲームリセット
+    this.resetGame()
+
+    // 動画を0秒にシーク
+    this.internalAction = true
+    this.playerManager.seekTo(0)
+    this.internalAction = false
+
+    // READY状態へ遷移
+    this.gameStore.transitionToState(GameState.READY)
+  }
+
+  /**
+   * 解答カウントダウンタイマーを開始
+   * ANSWERING状態に入った時に呼び出す
+   */
+  private startAnswerCountdown(): void {
+    this.stopAnswerCountdown()
+
+    // answerTimeRemainingをリセット（再入場時のため）
+    this.gameStore.answerTimeRemaining = this.gameStore.quizData?.settings.answerTimeLimit ?? 10
+
+    this.resumeAnswerCountdown()
+  }
+
+  /**
+   * 解答カウントダウンタイマーを再開（External Pause復帰時用）
+   * answerTimeRemainingはリセットせず、現在値から継続する
+   */
+  private resumeAnswerCountdown(): void {
+    this.stopAnswerCountdown()
+
+    this.answerCountdownInterval = window.setInterval(() => {
+      this.gameStore.answerTimeRemaining--
+
+      if (this.gameStore.answerTimeRemaining <= 0) {
+        this.handleAnswerTimeout()
+      }
+    }, 1000)
+
+    console.log('[GameManager] Answer countdown started:', this.gameStore.answerTimeRemaining)
+  }
+
+  /**
+   * 解答カウントダウンタイマーを停止
+   */
+  private stopAnswerCountdown(): void {
+    if (this.answerCountdownInterval !== null) {
+      window.clearInterval(this.answerCountdownInterval)
+      this.answerCountdownInterval = null
+    }
+  }
+
+  /**
+   * 解答制限時間切れ処理
+   * カウントダウンが0になった時に呼ばれる。空文字で送信して不正解扱いにする。
+   */
+  private handleAnswerTimeout(): void {
+    this.stopAnswerCountdown()
+    console.log('[GameManager] Answer timeout')
+
+    // 空文字で送信（不正解扱い）
+    const result = this.gameStore.handleAnswerSubmit('')
+    if (result) {
+      this.resumeVideoAfterAnswer(result)
+    }
+  }
+
+  /**
+   * 解答送信処理（App.vueから呼び出される）
+   * gameStoreの判定を呼び出し、結果に応じて動画再開・タイマー停止を行う
+   */
+  handleAnswerSubmit(answer: string): void {
+    this.stopAnswerCountdown()
+
+    const result = this.gameStore.handleAnswerSubmit(answer)
+    if (!result) return
+
+    this.resumeVideoAfterAnswer(result)
+  }
+
+  /**
+   * 解答結果に応じて動画を再開する
+   * @param result handleAnswerSubmitの戻り値
+   */
+  private resumeVideoAfterAnswer(result: { isCorrect: boolean; isFinal: boolean }): void {
+    if (result.isFinal) {
+      // 正解 or 最終不正解 → 動画再開（jumpToRevealPeriod対応）
+      const questionIndex = this.gameStore.currentQuestionIndex
+      this.submitAnswer(questionIndex, result.isCorrect)
+
+      // jumpToRevealPeriodでない場合は通常の動画再開
+      if (!this.quizData.settings.jumpToRevealPeriod) {
+        this.internalAction = true
+        this.playerManager.playVideo()
+        this.internalAction = false
+      }
+    } else {
+      // リトライ可能（QUESTIONING に戻った） → 動画再開
+      this.internalAction = true
+      this.playerManager.playVideo()
+      this.internalAction = false
+    }
   }
 
   /**
@@ -105,6 +229,8 @@ export class GameManager {
         this.internalAction = true
         this.playerManager.pauseVideo()
         this.internalAction = false
+        // カウントダウンタイマー開始
+        this.startAnswerCountdown()
       }
     }, 100)
   }
@@ -136,11 +262,14 @@ export class GameManager {
     })
 
     // 動画を停止
-    // TODO: ANSWERING状態のチェックを追加（Task 15）
-    // ANSWERING中は既に停止済みなので、pauseVideo()は不要だが、現時点では常に呼び出す
-    this.internalAction = true
-    this.playerManager.pauseVideo()
-    this.internalAction = false
+    // ANSWERING中は既に動画停止済みなのでpauseVideo()不要、カウントダウンのみ停止
+    if (this.gameStore.currentState === GameState.ANSWERING) {
+      this.stopAnswerCountdown()
+    } else {
+      this.internalAction = true
+      this.playerManager.pauseVideo()
+      this.internalAction = false
+    }
   }
 
   /**
@@ -177,15 +306,18 @@ export class GameManager {
         for (const question of this.quizData.questions) {
           const c = this.consumed[question.index]
           if (c) {
-            // TODO: Task 18で実装される解答記録システムを参照
-            // 解答記録がない（またはskippedフラグが立っている）場合のみリセット
-            // if (!results[question.index] || results[question.index].skipped) {
-            //   this.consumed[question.index] = { start: false, reveal: false, end: false }
-            // }
-
-            // 暫定対応：常にリセット（Task 18で修正）
-            this.consumed[question.index] = { start: false, reveal: false, end: false }
-            console.log('[GameManager] Reset consumed flags for question:', question.index)
+            // 解答記録がない場合のみリセット（既に結果が記録された問題はリセットしない）
+            const recorded = this.gameStore.results.find(
+              (r) => r.questionNumber === question.index + 1,
+            )
+            if (!recorded || recorded.skipped) {
+              // skipped結果が残っていると重複ガードで再記録できないため削除
+              if (recorded?.skipped) {
+                this.gameStore.removeResult(question.index + 1)
+              }
+              this.consumed[question.index] = { start: false, reveal: false, end: false }
+              console.log('[GameManager] Reset consumed flags for question:', question.index)
+            }
           }
         }
       }
@@ -203,11 +335,14 @@ export class GameManager {
     })
 
     // 動画を再開
-    // TODO: ANSWERING状態のチェックを追加（Task 15, Task 18）
-    // ANSWERING中は動画再開せず、カウントダウン再開のみ（Task 18で実装）
-    this.internalAction = true
-    this.playerManager.playVideo()
-    this.internalAction = false
+    // ANSWERING中は動画再開せず、カウントダウン再開のみ
+    if (this.gameStore.currentState === GameState.ANSWERING) {
+      this.resumeAnswerCountdown()
+    } else {
+      this.internalAction = true
+      this.playerManager.playVideo()
+      this.internalAction = false
+    }
   }
 
   /**
@@ -216,9 +351,9 @@ export class GameManager {
   setupVisibilityHandlers(): void {
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-        // タブが非表示になった時：動画が再生中の場合のみpause
+        // タブが非表示になった時：動画が再生中またはANSWERING中にpause
         const playerState = this.playerManager.getPlayerState()
-        if (playerState === 1) { // PLAYING
+        if (playerState === 1 || this.gameStore.currentState === GameState.ANSWERING) {
           this.pauseExternal('visibility')
         }
       } else {
@@ -231,11 +366,13 @@ export class GameManager {
 
     window.addEventListener('pagehide', () => {
       const playerState = this.playerManager.getPlayerState()
+      const isAnswering = this.gameStore.currentState === GameState.ANSWERING
       console.log('[GameManager] Page hide', {
         playerState,
-        willPause: playerState === 1,
+        isAnswering,
+        willPause: playerState === 1 || isAnswering,
       })
-      if (playerState === 1) {
+      if (playerState === 1 || isAnswering) {
         this.pauseExternal('visibility')
       }
     })
@@ -262,19 +399,21 @@ export class GameManager {
       // ユーザ操作による状態変化（user）をハンドリング
       // PAUSED状態になった場合
       if (state === 2) { // YouTubePlayerState.PAUSED
+        // ANSWERING中の一時停止は内部操作（handleButtonPress由来）の
+        // 非同期到達なので無視する
+        if (this.gameStore.currentState === GameState.ANSWERING) return
         this.pauseExternal('user')
       }
 
       // PLAYING状態になった場合
       if (state === 1) { // YouTubePlayerState.PLAYING
-        // TODO: ANSWERING状態のチェックを追加（Task 15）
-        // if (currentState === ANSWERING) {
-        //   // ANSWERING中にユーザーが再生ボタンを押した場合、即座に停止
-        //   this.internalAction = true
-        //   this.playerManager.pauseVideo()
-        //   this.internalAction = false
-        //   return
-        // }
+        // ANSWERING中にユーザーが再生ボタンを押した場合、即座に停止
+        if (this.gameStore.currentState === GameState.ANSWERING) {
+          this.internalAction = true
+          this.playerManager.pauseVideo()
+          this.internalAction = false
+          return
+        }
 
         // External Pauseから復帰
         if (this.externalPaused) {
@@ -361,17 +500,18 @@ export class GameManager {
     if (this.timeManager.isSeekDetected(current)) {
       console.log('[GameManager] Seek detected:', prev, '->', current)
 
-      if (this.quizData.settings.disableSeekbar) {
-        // disableSeekbar=true: 動画時間を強制リセット
+      if (this.gameStore.currentState === GameState.ANSWERING || this.quizData.settings.disableSeekbar) {
+        // ANSWERING中 or disableSeekbar=true: 動画時間を強制リセット
         this.internalAction = true
         this.playerManager.seekTo(prev)
         this.internalAction = false
+        // currentVideoTimeも元に戻す（submitAnswer内のrevealTime比較に影響するため）
+        this.timeManager.updateCurrentVideoTime(prev)
         console.log('[GameManager] Forced reset to:', prev)
         // previousVideoTimeは維持（更新しない）
       } else {
         // disableSeekbar=false: シークで飛ばした問題を消費（不参加）扱いに
         this.consumeQuestionsBySeek(prev, current)
-        // TODO: Task 18でWAITING状態への遷移を実装
         // previousVideoTimeを更新
         this.timeManager.updatePreviousVideoTime(current)
       }
@@ -401,6 +541,7 @@ export class GameManager {
           c.start = true
           c.reveal = true
           c.end = true
+          this.recordSkippedQuestion(question.index, true)
           console.log('[GameManager] Consumed question by forward seek:', question.index)
         }
       }
@@ -413,13 +554,29 @@ export class GameManager {
           c.start = true
           c.reveal = true
           c.end = true
+          this.recordSkippedQuestion(question.index, true)
           console.log('[GameManager] Consumed question by backward seek:', question.index)
         }
       }
     }
 
-    // シーク後は WAITING 状態へ遷移（問題をスキップした状態）
-    this.gameStore.transitionToState(GameState.WAITING)
+    // シーク後の状態遷移
+    const lastQuestion = this.quizData.questions[this.quizData.questions.length - 1]
+    const allConsumed = this.quizData.questions.every((q) => {
+      const c = this.consumed[q.index]
+      return c && c.start && c.reveal && c.end
+    })
+    if (allConsumed && curr >= lastQuestion.endTime) {
+      this.gameStore.transitionToState(GameState.FINISHED)
+    } else {
+      // シーク先が未消費の問題区間内ならWAITING、それ以外はTALKING
+      const inUnconsumedQuestionRange = this.quizData.questions.some((q) => {
+        const c = this.consumed[q.index]
+        const isConsumed = c && c.start && c.reveal && c.end
+        return !isConsumed && curr >= q.startTime && curr < q.endTime
+      })
+      this.gameStore.transitionToState(inUnconsumedQuestionRange ? GameState.WAITING : GameState.TALKING)
+    }
   }
 
   /**
@@ -453,7 +610,7 @@ export class GameManager {
         this.onStart(question) // 副作用あり：初期化、QUESTIONING状態へ
       } else {
         // 消費済み：不参加、スキップとして記録
-        this.recordSkippedQuestion(question.index)
+        this.recordSkippedQuestion(question.index, true)
         // 副作用なしで WAITING 状態へ遷移（スキップ済み問題）
         this.gameStore.transitionToState(GameState.WAITING)
         console.log('[GameManager] Skipped question (already consumed):', question.index)
@@ -520,12 +677,28 @@ export class GameManager {
   }
 
   /**
-   * スキップした問題を記録（0点、不参加扱い）
+   * スキップ・未解答の問題を記録（0点、不参加扱い）
    * @param questionIndex 問題インデックス
+   * @param isSkip 真のスキップか（consumed start経由=true、onEnd経由=false）
    */
-  private recordSkippedQuestion(questionIndex: number): void {
-    // TODO: Task 18でスコア記録を実装
-    console.log('[GameManager] Recording skipped question:', questionIndex)
+  private recordSkippedQuestion(questionIndex: number, isSkip: boolean): void {
+    const question = this.quizData.questions[questionIndex]
+    if (!question) return
+
+    // pendingUserAnswersは現在解答中の問題にのみ紐付ける
+    const isCurrentQuestion = questionIndex === this.gameStore.currentQuestionIndex
+    const userAnswers = isCurrentQuestion ? [...this.gameStore.pendingUserAnswers] : []
+    const hasAttempted = isCurrentQuestion && this.gameStore.pendingUserAnswers.length > 0
+
+    this.gameStore.recordResult(
+      questionIndex + 1,
+      false,
+      question.answers[0],
+      userAnswers,
+      isSkip && !hasAttempted,
+    )
+
+    console.log('[GameManager] Recording', isSkip ? 'skipped' : hasAttempted ? 'incomplete answer' : 'unanswered', 'question:', questionIndex)
   }
 
   /**
@@ -563,7 +736,8 @@ export class GameManager {
   private onEnd(question: QuizQuestion): void {
     console.log('[GameManager] onEnd:', question.index)
 
-    // TODO: Task 18 でスコア記録を実装
+    // この問題の結果が未記録（スキップ・未解答）の場合、未解答として記録
+    this.recordSkippedQuestion(question.index, false)
 
     // 最後の問題かどうかをチェック
     const lastQuestion = this.quizData.questions[this.quizData.questions.length - 1]
@@ -582,7 +756,6 @@ export class GameManager {
    * @param isCorrect 正解かどうか
    */
   submitAnswer(questionIndex: number, isCorrect: boolean): void {
-    // TODO: Task 18 で解答検証とスコア更新を実装
     console.log('[GameManager] submitAnswer:', questionIndex, 'isCorrect:', isCorrect)
 
     if (!this.quizData.settings.jumpToRevealPeriod) {
@@ -605,9 +778,10 @@ export class GameManager {
       this.playerManager.playVideo()
       this.internalAction = false
 
-      console.log('[GameManager] Jumped to reveal period:', question.revealTime)
+      // REVEALING 状態への遷移
+      this.gameStore.transitionToState(GameState.REVEALING)
 
-      // TODO: Task 18 で REVEALING 状態への遷移を実装
+      console.log('[GameManager] Jumped to reveal period:', question.revealTime)
     }
   }
 }

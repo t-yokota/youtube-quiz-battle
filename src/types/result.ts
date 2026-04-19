@@ -5,5 +5,6 @@ export interface QuestionResult {
   questionNumber: number // 問題番号（1-indexed）
   isCorrect: boolean // 正解かどうか
   correctAnswer: string // 正解（answers配列の最初の要素）
-  userAnswer: string // ユーザーの解答
+  userAnswers: string[] // ユーザーの解答履歴（複数回解答の場合は複数要素）
+  skipped: boolean // スキップされた問題かどうか
 }
