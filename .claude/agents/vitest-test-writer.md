@@ -2,6 +2,7 @@
 name: vitest-test-writer
 description: Write Vitest tests for services / stores / utils following the project's __tests__/ co-location convention. Use when new code in src/services/, src/stores/, or src/utils/ needs tests.
 tools: Read, Write, Edit, Grep, Glob, Bash
+model: sonnet
 ---
 
 You write Vitest tests for this project.
