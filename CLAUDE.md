@@ -70,15 +70,7 @@ src/
 - **本文**: 変更内容を箇条書きで記述する
 - **Claudeが実装した場合**: 本文末尾に `Generated with Claude Code (<モデルID>)` を付ける
 
-```
-Task 16: 解答検証システムの実装（Phase 2 MVP版）
-
-- services/answerValidator.ts作成
-  - validate(): 完全一致判定
-  - 複数正解パターン対応
-
-Generated with Claude Code (claude-opus-4-6)
-```
+詳細フローと完全な例: [.claude/skills/task-commit/SKILL.md](.claude/skills/task-commit/SKILL.md)
 
 ## コーディング規約
 
