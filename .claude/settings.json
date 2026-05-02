@@ -1,4 +1,36 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx vitest *)",
+      "Bash(npx prettier *)",
+      "Bash(npx eslint *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git restore *)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(cat *)",
+      "mcp__context7__*",
+      "mcp__playwright__*"
+    ],
+    "ask": [
+      "Bash(rm *)",
+      "Bash(rmdir *)",
+      "Bash(chmod *)",
+      "Bash(chown *)",
+      "Bash(npm install *)",
+      "Bash(npm uninstall *)",
+      "Bash(git push *)",
+      "Bash(git reset *)",
+      "Bash(git checkout *)"
+    ],
+    "deny": []
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -6,7 +38,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/format-on-edit.mjs"
+            "command": "node .claude/hooks/format-on-edit.mjs",
+            "timeout": 10000,
+            "async": true,
+            "statusMessage": "format-on-edit"
           }
         ]
       }
@@ -17,7 +52,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/typecheck-on-stop.mjs"
+            "command": "node .claude/hooks/typecheck-on-stop.mjs",
+            "timeout": 60000,
+            "async": false,
+            "statusMessage": "vue-tsc"
           }
         ]
       }
