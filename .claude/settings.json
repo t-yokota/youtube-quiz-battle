@@ -1,6 +1,8 @@
 {
   "permissions": {
     "allow": [
+      "Edit(/**)",
+      "Write(/**)",
       "mcp__playwright__*"
     ]
   },
