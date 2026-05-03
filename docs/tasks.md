@@ -318,6 +318,30 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
 
 ---
 
+### [ ] 18-3. quizDataLoader のテスト実装
+
+**実装対象**: `src/services/__tests__/quizDataLoader.test.ts`（新規）
+
+**目的**: JSON スキーマと内部型の変換契約を直接検証し、JSON キー名や検証ロジックの将来変更時に回帰を即座に検知できるようにする。現状は統合テスト経由の間接検証のみで、契約変更に対して脆い。
+
+**完了の定義**:
+- [ ] `getVideoIdFromUrl()` のテスト: `?v=` / `?video=` / 不正 URL のケース
+- [ ] `validateQuizData()` のテスト:
+  - [ ] 必須フィールド欠落（videoId / questions / settings、settings.answerTimeLimit / settings.maxAttempts、各 question の answers / startTime / revealTime / endTime）
+  - [ ] 動画 ID 不一致
+  - [ ] 時間データ妥当性違反（startTime < revealTime < endTime）
+  - [ ] QUIZ 区間の被り
+  - [ ] 解答配列の空文字・非配列
+  - [ ] questionNumber が配列インデックス + 1 と不一致のケース
+- [ ] `convertToQuizData()` のテスト:
+  - [ ] JSON キー（videoId / settings / questionNumber）が内部型に正しくマップされる
+  - [ ] settings の任意フィールド（disableSeekbar 等）のデフォルト値補完
+  - [ ] questionNumber → index（0-indexed）変換
+
+**前提条件**: なし（既存実装の検証）
+
+---
+
 ## Phase 3: 高度な機能と最適化
 
 ### [ ] 19. 音声管理システムの実装
