@@ -1,7 +1,7 @@
 {
-  "youtubeVideoId": "E5200yjbvj8",
+  "videoId": "E5200yjbvj8",
   "quizTitle": "QuizBattleDemo",
-  "quizSettings": {
+  "settings": {
     "maxAttempts": 3,
     "answerTimeLimit": 10,
     "disableSeekbar": true,
@@ -10,7 +10,7 @@
   },
   "questions": [
     {
-      "id": 1,
+      "questionNumber": 1,
       "questionText": "「あかい」「まるい」「おおきい」「うまい」の頭文字をとって名付けられた、福岡の特産であるイチゴの品種は何でしょう？",
       "answers": ["あまおう"],
       "startTime": 4.01,
@@ -18,7 +18,7 @@
       "endTime": 20.3
     },
     {
-      "id": 2,
+      "questionNumber": 2,
       "questionText": "特に粒の大きいものは「大納言」と呼ばれる、マメ科の植物は何でしょう？",
       "answers": ["小豆"],
       "startTime": 21.8,
@@ -26,7 +26,7 @@
       "endTime": 35.45
     },
     {
-      "id": 3,
+      "questionNumber": 3,
       "questionText": "英語で「花びら」を表す言葉が由来となっている、炭酸飲料のペットボトルの底にデザインされている加工を何というでしょう？",
       "answers": ["ペタロイド"],
       "startTime": 36.95,
@@ -34,7 +34,7 @@
       "endTime": 54.13
     },
     {
-      "id": 4,
+      "questionNumber": 4,
       "questionText": "ボウリングで「パーフェクトゲーム」を達成したとき、スコアは何点でしょう？",
       "answers": ["300"],
       "startTime": 55.63,
@@ -42,7 +42,7 @@
       "endTime": 69.01
     },
     {
-      "id": 5,
+      "questionNumber": 5,
       "questionText": "「どっどど　どどうど　どどうど　どどう」という書き出しで始まる、宮沢賢治の童話は何でしょう？",
       "answers": ["風の又三郎"],
       "startTime": 70.51,

@@ -197,7 +197,7 @@ REVEALING → [⏰ 正解発表区間終了] →
 TALKING → [⏰ 問読み区間開始] → QUESTIONING
 
 FINISHED → [👆 シークバー操作等] → FINISHED（状態固定、時間ベース遷移なし）
-        └── [👆 もう一度プレイ押下] → LOADING（リセットのみ許可）
+        └── [👆 もう一度プレイ押下] → READY（リセット後、動画を0秒にシーク。自動再生はしない）
 ```
 
 ### State Transition Flow
@@ -237,7 +237,7 @@ flowchart TD
 
   TALKING --> |⏰ 次の問題の<br>問読み区間開始| QUESTIONING
 
-  FINISHED --> |👆 もう一度プレイ| LOADING
+  FINISHED --> |👆 もう一度プレイ| READY
 ```
 
 ## Button State Management
@@ -322,7 +322,7 @@ stateDiagram-v2
 
 ```typescript
 interface QuizQuestion {
-  index: number // 配列インデックス（0-indexed、JSONのid（1-indexed）から変換）
+  index: number // 配列インデックス（0-indexed、JSONのquestionNumber（1-indexed）から変換）
   startTime: number // 問読み区間の開始時間（秒）
   revealTime: number // 正解発表区間の開始時間（秒）
   endTime: number // 正解発表区間の終了時間（秒）
@@ -443,7 +443,7 @@ export const SEEK_TOLERANCE_SEC = 1.0
 | disableSeekbar設定 | シーク検出時の動作 |
 |---------------|------------------|
 | true | 動画の再生時間をpreviousVideoTimeまで強制リセットする |
-| false | 以下に記すようにクイズ区間を消費することで、対象となった問題を途中参加あるいは途中離脱扱いにする<br><br>**前方ジャンプ（current > previous）の場合:**<br>- `[previousVideoTime, currentVideoTime]`区間と重なるすべてのクイズ区間を消費（consumed = {start: true, reveal: true, end: true}）<br>- 区間の重なり判定: `q.startTime < currentVideoTime && q.endTime > previousVideoTime`<br>- ゲーム状態をWAITINGへ遷移<br>- 消費されていないクイズ区間に到達したら、状態遷移を再開<br>- すべてのクイズ区間を消費した場合、最後のクイズ区間のendTimeを通過するまでWAITINGを維持し、通過後にFINISHEDへ遷移<br><br>**後方ジャンプ（current < previous）の場合:**<br>- previousVideoTimeがクイズ区間内の場合、そのクイズ区間全体を消費（途中離脱として扱う）<br>- ゲーム状態をWAITINGへ遷移 |
+| false | 以下に記すようにクイズ区間を消費することで、対象となった問題を途中参加あるいは途中離脱扱いにする<br><br>**前方ジャンプ（current > previous）の場合:**<br>- `[previousVideoTime, currentVideoTime]`区間と重なるすべてのクイズ区間を消費（consumed = {start: true, reveal: true, end: true}）<br>- 区間の重なり判定: `q.startTime < currentVideoTime && q.endTime > previousVideoTime`<br>- シーク後の状態遷移（3分岐）:<br>　• すべてのクイズ区間を消費済みかつ最後のクイズ区間のendTimeを通過した場合 → FINISHEDへ遷移<br>　• シーク先が未消費の問題区間内の場合 → WAITINGへ遷移<br>　• それ以外（問題区間外） → TALKINGへ遷移<br>- 消費されていないクイズ区間に到達したら、状態遷移を再開<br><br>**後方ジャンプ（current < previous）の場合:**<br>- previousVideoTimeがクイズ区間内の場合、そのクイズ区間全体を消費（途中離脱として扱う）<br>- シーク後の状態遷移は前方ジャンプと同じルールで3分岐 |
 
 ### Single‑Shot Guard（一回性トリガ）
 
@@ -521,14 +521,16 @@ function applyThresholds(prev: number, curr: number, q: QuizQuestion) {
 
 **実装:**
 ```typescript
-function recordSkippedQuestion(questionIndex: number) {
-  // スコア記録（0点、スキップフラグ付き）
-  results[questionIndex] = {
-    score: 0,
-    skipped: true,
-    playerAnswer: '',
-    correctAnswer: questions[questionIndex].answers[0]
-  }
+function recordSkippedQuestion(questionIndex: number, isSkip: boolean) {
+  // gameStore.recordResult() 経由で記録
+  // 重複ガードにより同一問題の二重記録は防止される
+  gameStore.recordResult(
+    questionIndex + 1,  // questionNumber（1-indexed）
+    false,              // isCorrect
+    questions[questionIndex].answers[0],  // correctAnswer
+    [],                 // userAnswers（スキップなので空）
+    isSkip              // skipped
+  )
 }
 ```
 
@@ -538,11 +540,8 @@ function recordSkippedQuestion(questionIndex: number) {
 function onStart(q: QuizQuestion) {
   // 状態とカウンタを問題開始用に初期化
   currentQuestionIndex = q.index
-  remainingAttempts = quizSettings.attemptLimit
-  remainingAnswerTime = q.answerTimeLimit ?? quizSettings.answerTimeLimit
+  gameStore.initializeForQuestion()  // remainingAttempts, answerTimeRemaining, answerInput, answerResult, pendingUserAnswers をリセット
 
-  // 入力/UIの初期化
-  currentAnswerInput = ''
   // QUESTIONING でボタンを押下可能に
   transitionToState(GAME_STATE.QUESTIONING)
 }
@@ -889,15 +888,11 @@ interface GameManager {
   buttonState: BUTTON_STATE
 
   // ゲーム制御
-  startGame(): void
   resetGame(): void
+  handleReplay(): void
   handleButtonPress(): void
   handleAnswerSubmit(answer: string): void
   updateVideoTime(time: number): void
-
-  // 状態遷移
-  transitionToState(newState: GAME_STATE): void
-  checkTimeBasedTransitions(): void
 
   // 外部要因による一時停止（External Pause）のハンドリング
   pauseExternal(reason: 'visibility' | 'user' | 'stall'): void
@@ -907,6 +902,11 @@ interface GameManager {
   initializeExternalPauseHandling(): void
 }
 ```
+
+**不正解かつ残り回数ありの場合の挙動:**
+
+不正解だが解答回数が残っている場合、ANSWERING → QUESTIONING に戻し、動画を再開して再早押しを可能にする。
+`gameStore.handleAnswerSubmit()` が `{ isCorrect: false, isFinal: false }` を返した場合にこの分岐に入る。
 
 #### ゲームのリセット機能
 
@@ -961,6 +961,7 @@ function resetGame() {
   incorrectCount.value = 0
   answerInput.value = ''
   answerResult.value = null
+  pendingUserAnswers.value = []
   results.value = []
 }
 ```
@@ -972,21 +973,27 @@ function resetGame() {
 - `correctCount`, `incorrectCount`: `0` に戻す
 - `answerInput`: 空文字列に戻す
 - `answerResult`: `null` に戻す
+- `pendingUserAnswers`: 空配列に戻す
 - `results`: 空配列に戻す
+
+**`removeResult(questionNumber)` について:**
+
+YouTube巻き戻り補正でskipped結果をクリアする用途で、`gameStore.removeResult(questionNumber)` が提供されている。skipped結果はスコアに影響しないため、スコア巻き戻しは不要。巻き戻り補正セクション（YouTube Player Rewind Handling）を参照。
 
 **呼び出しフロー:**
 
 1. ユーザーがリザルト画面で「もう一度プレイ」ボタンを押下
 2. `ResultActions` コンポーネントが `replay` イベントを emit
-3. `App.vue` が `replay` イベントをハンドル
-4. `gameStore.resetGame()` を呼び出してストア状態をリセット
-5. `gameManager.resetGame()` を呼び出して内部状態をリセット
-6. 動画を先頭（0秒）にシーク
-7. 動画を再生開始（`LOADING` → `GUIDE` → `QUESTIONING` と遷移）
+3. `App.vue` が `replay` イベントをハンドル → `gameManager.handleReplay()` を呼び出し
+4. `handleReplay()` 内で以下を実行:
+   - External Pause状態をクリア
+   - `resetGame()` でストア・内部状態をリセット
+   - 動画を先頭（0秒）にシーク
+   - `READY` 状態へ遷移（自動再生はしない。ユーザーがボタンチェックで開始）
 
 **注意点:**
-- **動画の再生位置**: resetGame() 後は動画を0秒にシークして再生を開始する必要がある
-- **External Pause状態**: リセット時にExternal Pause状態がある場合は解除する
+- **自動再生なし**: リプレイ後は `READY` 状態で待機し、ユーザーのボタンチェック操作で動画再生を開始する
+- **External Pause状態**: `handleReplay()` 内でクリアされる
 - **タイマー**: TimeManagerの各種タイマー（解答時間カウントダウンなど）は、次の問題開始時に自動的に初期化される
 
 ### YouTube Player Manager
@@ -1560,76 +1567,109 @@ _Privacy Info_
 
 ### Quiz Data Structure
 
+JSONファイル（生データ）とプログラム内部型は `quizDataLoader` によって変換される。
+
+**JSONファイルの構造（RawQuizData）:**
+
+```typescript
+// 実際のJSONファイルの構造
+interface RawQuizData {
+  videoId: string
+  quizTitle?: string
+  settings: {
+    maxAttempts: number
+    answerTimeLimit: number
+    disableSeekbar?: boolean
+    jumpToRevealPeriod?: boolean
+    hideVideoPlayerDuringAnswer?: boolean
+  }
+  questions: Array<{
+    questionNumber?: number // 問題番号（1-indexed）
+    questionText?: string // 将来のUI拡張用（現状は未使用）
+    answers: string[]
+    startTime: number
+    revealTime: number
+    endTime: number
+    othersAnsweringPeriods?: Array<{
+      startTime: number
+      endTime: number
+    }>
+  }>
+}
+```
+
+**プログラム内部型（QuizData）:**
+
 ```typescript
 interface QuizData {
-  youtubeVideoId: string
-  quizTitle?: string
-  quizSettings: QuizSettings
+  videoId: string // YouTubeの動画ID
   questions: QuizQuestion[]
+  settings: QuizSettings
 }
 
 interface QuizQuestion {
-  index: number // 配列インデックス（0-indexed、JSONのid（1-indexed）から変換）
-  questionText?: string
+  index: number // 配列インデックス（0-indexed、JSONのquestionNumber（1-indexed）から変換）
   answers: string[]
   startTime: number
   revealTime: number
   endTime: number
   othersAnsweringPeriods?: OthersAnsweringPeriod[]
-  answerTimeLimit?: number
 }
 
 interface QuizSettings {
   answerTimeLimit: number
-  attemptLimit: number
+  maxAttempts: number
   disableSeekbar: boolean
   jumpToRevealPeriod: boolean
   hideVideoPlayerDuringAnswer: boolean
 }
 ```
 
+**変換時の注意:**
+- JSONの `questionNumber`（1-indexed）→ 内部型の `index`（0-indexed）、`questionNumber !== arrayIndex + 1` の場合はエラー
+- JSONの `questionText` は現状の内部型に含まれない（将来のUI拡張用）
+- `disableSeekbar`, `jumpToRevealPeriod`, `hideVideoPlayerDuringAnswer` はデフォルト値あり（それぞれ `true`, `false`, `false`）
+
 ### Application State
 
+アプリケーションの状態は Pinia ストア（`gameStore`）のリアクティブ変数群で管理される。以下は概念的な状態モデルである。
+
 ```typescript
-interface AppState {
-  // ゲーム状態
-  gameState: GAME_STATE
-  buttonState: BUTTON_STATE
+// gameStore のリアクティブ変数（概念モデル）
+// 実装では ref() で定義され、Composition API 経由でアクセスする
 
-  // 時間管理
-  currentVideoTime: number
-  previousVideoTime: number
+// ゲーム状態
+currentState: GameState          // 現在のゲーム状態
+buttonState: ButtonState         // ボタン状態
 
-  // 問題管理
-  currentQuestionIndex: number // -1: 問題開始前, 0~: 配列インデックス
-  remainingAttempts: number
-  remainingAnswerTime: number
+// クイズデータ
+quizData: QuizData | null        // ロードされたクイズデータ
 
-  // プレイヤー状態
-  isPlayerAnswering: boolean
-  currentAnswerInput: string
-  correctAnswerCount: number
-  incorrectAnswerCount: number
+// 進行状況
+currentQuestionIndex: number     // -1: 問題開始前, 0~: 配列インデックス
+correctCount: number             // 正解数
+incorrectCount: number           // 不正解数
 
-  // エラー状態
-  error: string | null
+// 解答状態
+remainingAttempts: number        // 残り解答回数
+answerTimeRemaining: number      // 解答制限時間の残り（秒）
+answerInput: string              // 現在の解答入力
+answerResult: 'correct' | 'incorrect' | null  // 解答結果表示
+pendingUserAnswers: string[]     // 問題単位の解答履歴
 
-  // ゲーム結果
-  gameResult: GameResult | null
-}
+// 結果
+results: QuestionResult[]        // 全問題の解答結果
+```
 
-interface GameResult {
-  totalQuestions: number
-  correctAnswers: number
-  accuracyRate: number
-  questionResults: QuestionResult[]
-}
+### QuestionResult
 
+```typescript
 interface QuestionResult {
-  questionIndex: number
+  questionNumber: number  // 問題番号（1-indexed）
   isCorrect: boolean
-  correctAnswer: string // 正解の最初の要素
-  userAnswer: string // プレイヤーの入力内容
+  correctAnswer: string   // 正解の最初の要素
+  userAnswers: string[]   // ユーザーの解答履歴（複数回解答の場合は複数要素）
+  skipped: boolean        // スキップされた問題かどうか
 }
 ```
 
@@ -1643,9 +1683,9 @@ interface QuestionResult {
 - **Measurement Range**: 早押しボタン押下時点から解答送信まで
 - **Timeout Processing**: その時点でのフォームへの入力内容で強制的に正誤判定を実施
 - **UI Display**: カウントダウンタイマーで残り時間を表示
-- **Question-specific Setting**: `QuizQuestion.answerTimeLimit`で個別上書き可能
+- **Note**: 問題ごとの個別上書き（`QuizQuestion.answerTimeLimit`）は将来検討事項。現在は全問共通の設定値のみ使用
 
-**attemptLimit（解答可能な回数）**
+**maxAttempts（解答可能な回数）**
 
 - **Type**: number
 - **Management Unit**: 問題ごと
@@ -1658,7 +1698,7 @@ interface QuestionResult {
 
 - **Type**: boolean
 - **When true**: シーク検出で`previousVideoTime`まで強制リセット
-- **When false**: シーク検出で強制的にWAITING状態遷移
+- **When false**: シーク検出で問題を消費し、シーク先に応じた状態へ遷移（TALKING/WAITING/FINISHED）
 - **Detection Method**: `|currentVideoTime - previousVideoTime| > SEEK_TOLERANCE_SEC`でシーク判定
 - **Purpose**: 順次視聴の担保
 
@@ -1682,7 +1722,7 @@ interface QuestionResult {
 ```typescript
 interface QuizSettings {
   answerTimeLimit: number // 解答の時間制限（秒）
-  attemptLimit: number // 解答可能な回数
+  maxAttempts: number // 解答可能な回数
   disableSeekbar: boolean // シークバーの操作を無効にする設定
   jumpToRevealPeriod: boolean // 解答終了後に正解発表区間へ遷移する設定
   hideVideoPlayerDuringAnswer: boolean // 解答中に動画プレイヤーを隠す設定
@@ -1782,10 +1822,13 @@ public/
 
 #### 検証項目
 
-- **必須フィールド**: youtubeVideoId, questions
+- **必須フィールド**: videoId, questions, settings
+  - settings 内の必須: answerTimeLimit（>0）, maxAttempts（>0）
+  - 各 question の必須: answers（非空配列）, startTime, revealTime, endTime
 - **動画ID整合性**: URLとデータファイルのvideoId一致
 - **時間データ妥当性**: startTime < revealTime < endTime, 各QUIZ区間の被りなし
 - **解答データ**: 空でない文字列配列
+- **問題番号の整合性**: questionNumber が指定されている場合、配列インデックス + 1 と一致する必要がある（1-indexed）
 
 ## Error Handling
 
@@ -2188,15 +2231,15 @@ src/
 `/public/data/E5200yjbvj8/data.json`
 
 **注記**:
-- JSONファイルの `id` フィールドは1-indexed（第1問=1, 第2問=2, ...）で人間が管理しやすい形式
+- JSONファイルの `questionNumber` フィールドは1-indexed（第1問=1, 第2問=2, ...）で人間が管理しやすい形式
 - プログラム内部では `index` フィールドに変換され、0-indexed（第1問=0, 第2問=1, ...）の配列インデックスとして扱われる
-- 変換時にid検証が行われ、`id !== arrayIndex + 1` の場合はエラー
+- 変換時にquestionNumber検証が行われ、`questionNumber !== arrayIndex + 1` の場合はエラー
 
 ```json
 {
-  "youtubeVideoId": "E5200yjbvj8",
+  "videoId": "E5200yjbvj8",
   "quizTitle": "QuizBattleDemo",
-  "quizSettings": {
+  "settings": {
     "maxAttempts": 3,
     "answerTimeLimit": 10,
     "disableSeekbar": true,
@@ -2205,7 +2248,7 @@ src/
   },
   "questions": [
     {
-      "id": 1,
+      "questionNumber": 1,
       "questionText": "「あかい」「まるい」「おおきい」「うまい」の頭文字をとって名付けられた、福岡の特産であるイチゴの品種は何でしょう？",
       "answers": ["あまおう"],
       "startTime": 4.01,
@@ -2213,7 +2256,7 @@ src/
       "endTime": 20.3
     },
     {
-      "id": 2,
+      "questionNumber": 2,
       "questionText": "特に粒の大きいものは「大納言」と呼ばれる、マメ科の植物は何でしょう？",
       "answers": ["小豆"],
       "startTime": 21.8,
@@ -2221,7 +2264,7 @@ src/
       "endTime": 35.45
     },
     {
-      "id": 3,
+      "questionNumber": 3,
       "questionText": "英語で「花びら」を表す言葉が由来となっている、炭酸飲料のペットボトルの底にデザインされている加工を何というでしょう？",
       "answers": ["ペタロイド"],
       "startTime": 36.95,
@@ -2229,7 +2272,7 @@ src/
       "endTime": 54.13
     },
     {
-      "id": 4,
+      "questionNumber": 4,
       "questionText": "ボウリングで「パーフェクトゲーム」を達成したとき、スコアは何点でしょう？",
       "answers": ["300"],
       "startTime": 55.63,
@@ -2237,7 +2280,7 @@ src/
       "endTime": 69.01
     },
     {
-      "id": 5,
+      "questionNumber": 5,
       "questionText": "「どっどど　どどうど　どどうど　どどう」という書き出しで始まる、宮沢賢治の童話は何でしょう？",
       "answers": ["風の又三郎"],
       "startTime": 70.51,
@@ -2250,8 +2293,9 @@ src/
 
 ### データ作成ガイドライン
 
-- **youtubeVideoId**: YouTube動画のID（URLの`v=`パラメータ）
+- **videoId**: YouTube動画のID（URLの`v=`パラメータ）
 - **quizTitle**: クイズのタイトル（任意）
+- **questionNumber**: 問題番号（任意、1-indexed）。指定する場合は配列順と一致させる（第1問=1、第2問=2、...）。検証時に不一致だとエラーになる
 - **startTime/revealTime/endTime**: 秒単位で指定
 - **answers**: 正解の配列（複数の表記を許可する場合）
 - **questionText**: 問題文（任意、動画内で読み上げられる場合は省略可）

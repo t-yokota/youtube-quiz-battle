@@ -3,9 +3,9 @@ import type { QuizData, QuizQuestion, QuizSettings } from '@/types'
 
 // データファイルの型定義（実際のJSONファイルの構造）
 interface RawQuizData {
-  youtubeVideoId: string
+  videoId: string
   quizTitle?: string
-  quizSettings: {
+  settings: {
     maxAttempts: number
     answerTimeLimit: number
     disableSeekbar?: boolean
@@ -13,7 +13,7 @@ interface RawQuizData {
     hideVideoPlayerDuringAnswer?: boolean
   }
   questions: Array<{
-    id?: number // 問題番号（1-indexed）
+    questionNumber?: number // 問題番号（1-indexed）
     questionText?: string
     answers: string[]
     startTime: number
@@ -72,8 +72,8 @@ export async function loadQuizData(videoId: string): Promise<QuizData> {
  */
 function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
   // 必須フィールドのチェック
-  if (!data.youtubeVideoId) {
-    throw new Error('QUIZ_DATA_INVALID: Missing youtubeVideoId')
+  if (!data.videoId) {
+    throw new Error('QUIZ_DATA_INVALID: Missing videoId')
   }
 
   if (!data.questions || !Array.isArray(data.questions)) {
@@ -85,25 +85,26 @@ function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
   }
 
   // 動画ID整合性チェック（sampleの場合はスキップ）
-  if (expectedVideoId !== 'sample' && data.youtubeVideoId !== expectedVideoId) {
+  if (expectedVideoId !== 'sample' && data.videoId !== expectedVideoId) {
     throw new Error(
-      `QUIZ_DATA_INVALID: Video ID mismatch (expected: ${expectedVideoId}, got: ${data.youtubeVideoId})`,
+      `QUIZ_DATA_INVALID: Video ID mismatch (expected: ${expectedVideoId}, got: ${data.videoId})`,
+
     )
   }
 
   // クイズ設定のチェック
-  if (!data.quizSettings) {
-    throw new Error('QUIZ_DATA_INVALID: Missing quizSettings')
+  if (!data.settings) {
+    throw new Error('QUIZ_DATA_INVALID: Missing settings')
   }
 
   if (
-    typeof data.quizSettings.answerTimeLimit !== 'number' ||
-    data.quizSettings.answerTimeLimit <= 0
+    typeof data.settings.answerTimeLimit !== 'number' ||
+    data.settings.answerTimeLimit <= 0
   ) {
     throw new Error('QUIZ_DATA_INVALID: Invalid answerTimeLimit')
   }
 
-  if (typeof data.quizSettings.maxAttempts !== 'number' || data.quizSettings.maxAttempts <= 0) {
+  if (typeof data.settings.maxAttempts !== 'number' || data.settings.maxAttempts <= 0) {
     throw new Error('QUIZ_DATA_INVALID: Invalid maxAttempts')
   }
 
@@ -180,18 +181,18 @@ function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
  */
 function convertToQuizData(rawData: RawQuizData): QuizData {
   const settings: QuizSettings = {
-    maxAttempts: rawData.quizSettings.maxAttempts,
-    answerTimeLimit: rawData.quizSettings.answerTimeLimit,
-    disableSeekbar: rawData.quizSettings.disableSeekbar ?? true,
-    jumpToRevealPeriod: rawData.quizSettings.jumpToRevealPeriod ?? false,
-    hideVideoPlayerDuringAnswer: rawData.quizSettings.hideVideoPlayerDuringAnswer ?? false,
+    maxAttempts: rawData.settings.maxAttempts,
+    answerTimeLimit: rawData.settings.answerTimeLimit,
+    disableSeekbar: rawData.settings.disableSeekbar ?? true,
+    jumpToRevealPeriod: rawData.settings.jumpToRevealPeriod ?? false,
+    hideVideoPlayerDuringAnswer: rawData.settings.hideVideoPlayerDuringAnswer ?? false,
   }
 
   const questions: QuizQuestion[] = rawData.questions.map((q, idx) => {
-    // JSONのid（1-indexed）を検証
-    if (q.id !== undefined && q.id !== idx + 1) {
+    // JSONのquestionNumber（1-indexed）を検証
+    if (q.questionNumber !== undefined && q.questionNumber !== idx + 1) {
       throw new Error(
-        `QUIZ_DATA_INVALID: Question ${idx + 1} has id mismatch (expected: ${idx + 1}, got: ${q.id})`,
+        `QUIZ_DATA_INVALID: Question ${idx + 1} has questionNumber mismatch (expected: ${idx + 1}, got: ${q.questionNumber})`,
       )
     }
 
@@ -206,7 +207,7 @@ function convertToQuizData(rawData: RawQuizData): QuizData {
   })
 
   return {
-    videoId: rawData.youtubeVideoId,
+    videoId: rawData.videoId,
     settings,
     questions,
   }
