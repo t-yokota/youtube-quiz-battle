@@ -88,7 +88,6 @@ function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
   if (expectedVideoId !== 'sample' && data.videoId !== expectedVideoId) {
     throw new Error(
       `QUIZ_DATA_INVALID: Video ID mismatch (expected: ${expectedVideoId}, got: ${data.videoId})`,
-
     )
   }
 
@@ -97,10 +96,7 @@ function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
     throw new Error('QUIZ_DATA_INVALID: Missing settings')
   }
 
-  if (
-    typeof data.settings.answerTimeLimit !== 'number' ||
-    data.settings.answerTimeLimit <= 0
-  ) {
+  if (typeof data.settings.answerTimeLimit !== 'number' || data.settings.answerTimeLimit <= 0) {
     throw new Error('QUIZ_DATA_INVALID: Invalid answerTimeLimit')
   }
 
@@ -160,6 +156,17 @@ function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
           )
         }
       })
+
+      // 複数期間の昇順・非重複チェック（design.md 仕様: periods[i].end <= periods[i+1].start）
+      for (let i = 0; i < q.othersAnsweringPeriods.length - 1; i++) {
+        const current = q.othersAnsweringPeriods[i]
+        const next = q.othersAnsweringPeriods[i + 1]
+        if (current.endTime > next.startTime) {
+          throw new Error(
+            `QUIZ_DATA_INVALID: Question ${index + 1} has overlapping othersAnsweringPeriods (${i + 1} and ${i + 2})`,
+          )
+        }
+      }
     }
   })
 

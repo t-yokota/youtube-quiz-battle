@@ -318,27 +318,34 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
 
 ---
 
-### [ ] 18-3. quizDataLoader のテスト実装
+### [x] 18-3. quizDataLoader のテスト実装
 
 **実装対象**: `src/services/__tests__/quizDataLoader.test.ts`（新規）
 
 **目的**: JSON スキーマと内部型の変換契約を直接検証し、JSON キー名や検証ロジックの将来変更時に回帰を即座に検知できるようにする。現状は統合テスト経由の間接検証のみで、契約変更に対して脆い。
 
 **完了の定義**:
-- [ ] `getVideoIdFromUrl()` のテスト: `?v=` / `?video=` / 不正 URL のケース
-- [ ] `validateQuizData()` のテスト:
-  - [ ] 必須フィールド欠落（videoId / questions / settings、settings.answerTimeLimit / settings.maxAttempts、各 question の answers / startTime / revealTime / endTime）
-  - [ ] 動画 ID 不一致
-  - [ ] 時間データ妥当性違反（startTime < revealTime < endTime）
-  - [ ] QUIZ 区間の被り
-  - [ ] 解答配列の空文字・非配列
-  - [ ] questionNumber が配列インデックス + 1 と不一致のケース
-- [ ] `convertToQuizData()` のテスト:
-  - [ ] JSON キー（videoId / settings / questionNumber）が内部型に正しくマップされる
-  - [ ] settings の任意フィールド（disableSeekbar 等）のデフォルト値補完
-  - [ ] questionNumber → index（0-indexed）変換
+- [x] `extractVideoIdFromUrl()` のテスト: `?v=` / `?video=` / 両方ある場合の優先 / 不正 URL のケース
+- [x] バリデーション（`validateQuizData` 内部関数 → `loadQuizData` 経由で検証）:
+  - [x] 必須フィールド欠落（videoId / questions / settings、settings.answerTimeLimit / settings.maxAttempts、各 question の answers / startTime / revealTime / endTime）
+  - [x] 動画 ID 不一致
+  - [x] 時間データ妥当性違反（startTime < revealTime < endTime）
+  - [x] QUIZ 区間の被り（境界値 endTime == 次の startTime は許容）
+  - [x] 解答配列の空文字・空白のみ・非配列
+  - [x] othersAnsweringPeriods の各種違反（型不正・start/end 逆転・QUIZ 区間外）
+  - [x] othersAnsweringPeriods の複数期間の昇順・非重複（境界値 end == 次の start は許容）
+  - [x] HTTP 404 / 5xx エラー
+- [x] 変換（`convertToQuizData` 内部関数 → `loadQuizData` 経由で検証）:
+  - [x] JSON キー（videoId / settings / questionNumber）が内部型に正しくマップされる
+  - [x] settings の任意フィールド（disableSeekbar 等）のデフォルト値補完と上書き
+  - [x] questionNumber → index（0-indexed）変換、questionNumber 省略時の index 割当
+  - [x] questionNumber が配列インデックス + 1 と不一致のケース
 
 **前提条件**: なし（既存実装の検証）
+
+**実装メモ**:
+- `validateQuizData` / `convertToQuizData` は private 関数のため、vitest-test.md ルールに従い public API（`loadQuizData`）経由で検証。`fetch` を `vi.stubGlobal` でモックし、`extractVideoIdFromUrl` は `window.history.replaceState` で URL を切り替えてテスト。
+- テスト実装中に `quizDataLoader.ts` の `othersAnsweringPeriods` 検証で複数期間の昇順・非重複チェック漏れを発見（design.md `periods[i].end <= periods[i+1].start` 仕様に未追従）。検証ロジックを追加して修正。
 
 ---
 
