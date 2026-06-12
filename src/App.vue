@@ -15,22 +15,25 @@ import ErrorDialog from './components/dialogs/ErrorDialog.vue'
 import { useGameStore } from './stores/gameStore'
 import { extractVideoIdFromUrl, loadQuizData } from './services/quizDataLoader'
 import { createGameManager, type GameManager } from './services/gameManager'
+import { useGameLoop } from './composables/useGameLoop'
 import { GameState } from './types'
 import type { QuizData, YouTubePlayerManager } from './types'
-import { TIME_UPDATE_INTERVAL_MS, STARTUP_GRACE_MS } from './constants/timing'
 import { shouldHandleSpaceKey } from './utils/keyboardHandler'
 import { logger } from './utils/logger'
 
 const gameStore = useGameStore()
+
+// 時間更新ループ（getCurrentTime() ポーリングに一本化）
+const gameLoop = useGameLoop()
 
 // QuizButton の button-state props 用（テンプレート内の union type が vue/no-deprecated-filter に誤検出されるため computed 化）
 const buttonStateProp = computed(() => {
   return gameStore.buttonState.toLowerCase() as 'standby' | 'pushed' | 'released' | 'disabled'
 })
 
-// GameManager とタイマーの参照
+// GameManager の参照
 const gameManager = ref<GameManager | null>(null)
-let timeUpdateIntervalId: number | null = null
+const playerManagerRef = ref<YouTubePlayerManager | null>(null)
 
 // クイズデータ（VideoPlayerに渡す）
 const quizData = ref<QuizData | null>(null)
@@ -70,33 +73,14 @@ function handlePlayerReady(playerManager: YouTubePlayerManager) {
   if (!quizData.value) return
 
   // GameManager を作成して初期化
-  gameManager.value = createGameManager(playerManager, quizData.value, gameStore)
-  gameManager.value.initializeExternalPauseHandling()
+  const manager = createGameManager(playerManager, quizData.value, gameStore)
+  manager.initializeExternalPauseHandling()
+  gameManager.value = manager
+  playerManagerRef.value = playerManager
   logger.log('[App] GameManager initialized')
 
-  // Time Update Loop を開始
-  const startedAt = performance.now()
-
-  function timeUpdateTick() {
-    if (!gameManager.value) return
-
-    const now = performance.now()
-    const current = playerManager.getCurrentTime()
-
-    // 再生開始直後の誤検出回避
-    if (now - startedAt < STARTUP_GRACE_MS) {
-      return
-    }
-
-    // 再生停滞（stall）検出
-    gameManager.value.checkStall(now, current)
-
-    // 通常の時間更新・シーク検出・状態判定を実施
-    gameManager.value.updateVideoTime(current)
-  }
-
-  timeUpdateIntervalId = window.setInterval(timeUpdateTick, TIME_UPDATE_INTERVAL_MS)
-  logger.log(`[App] Time Update Loop started (interval: ${TIME_UPDATE_INTERVAL_MS}ms)`)
+  // Time Update Loop を開始（getCurrentTime() ポーリングに一本化）
+  gameLoop.start(playerManager, manager)
 
   // READY 状態へ遷移
   gameStore.transitionToState(GameState.READY)
@@ -161,11 +145,12 @@ const handleErrorAction = () => {
 // --- クリーンアップ ---
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
-  if (timeUpdateIntervalId !== null) {
-    window.clearInterval(timeUpdateIntervalId)
-    timeUpdateIntervalId = null
-    logger.log('[App] Time Update Loop stopped')
-  }
+
+  // 時間更新ループ停止 → GameManager 破棄 → Player 破棄 の順でリソースを解放
+  gameLoop.stop()
+  gameManager.value?.destroy()
+  playerManagerRef.value?.destroy()
+  playerManagerRef.value = null
 })
 </script>
 

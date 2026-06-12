@@ -4,7 +4,6 @@
 import { YouTubePlayerState } from '@/types'
 import type { YouTubePlayerManager, YouTubePlayerVars, QuizSettings } from '@/types'
 import {
-  TIME_UPDATE_INTERVAL_MS,
   YT_API_LOAD_TIMEOUT_MS,
   YT_API_POLL_INTERVAL_MS,
   LOAD_VIDEO_SETTLE_MS,
@@ -23,11 +22,17 @@ export function loadYouTubeIframeAPI(): Promise<void> {
 
     // APIスクリプトが既に存在する場合
     if (document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-      // APIの読み込み完了を待つ
-      const checkInterval = setInterval(() => {
+      // APIの読み込み完了を待つ（タイムアウトで打ち切り、リークを防止）
+      const startedAt = Date.now()
+      const checkInterval = window.setInterval(() => {
         if (window.YT && window.YT.Player) {
           clearInterval(checkInterval)
           resolve()
+          return
+        }
+        if (Date.now() - startedAt >= YT_API_LOAD_TIMEOUT_MS) {
+          clearInterval(checkInterval)
+          reject(new Error('YouTube IFrame API failed to load'))
         }
       }, YT_API_POLL_INTERVAL_MS)
       return
@@ -39,15 +44,16 @@ export function loadYouTubeIframeAPI(): Promise<void> {
     const firstScriptTag = document.getElementsByTagName('script')[0]
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
 
-    // グローバルコールバックを設定
-    window.onYouTubeIframeAPIReady = () => {
-      resolve()
-    }
-
-    // タイムアウト処理
-    setTimeout(() => {
+    // タイムアウト処理（成功時は clearTimeout でタイマーを解放する）
+    const timeoutId = window.setTimeout(() => {
       reject(new Error('YouTube IFrame API failed to load'))
     }, YT_API_LOAD_TIMEOUT_MS)
+
+    // グローバルコールバックを設定
+    window.onYouTubeIframeAPIReady = () => {
+      clearTimeout(timeoutId)
+      resolve()
+    }
   })
 }
 
@@ -78,15 +84,10 @@ export function createYouTubePlayerManager(
 ): Promise<YouTubePlayerManager> {
   return new Promise((resolve, reject) => {
     let player: YT.Player | null = null
-    let timeUpdateCallback: ((time: number) => void) | null = null
     let stateChangeCallback: ((state: YouTubePlayerState) => void) | null = null
-    let timeUpdateInterval: number | null = null
 
     // プレイヤーの初期化
     const onReady = () => {
-      // 時間更新のポーリング開始
-      startTimeUpdate()
-
       const manager: YouTubePlayerManager = {
         loadVideo: async (newVideoId: string) => {
           if (!player) throw new Error('Player not initialized')
@@ -127,19 +128,11 @@ export function createYouTubePlayerManager(
           return player.getPlayerState() as unknown as YouTubePlayerState
         },
 
-        onTimeUpdate: (callback: (time: number) => void) => {
-          timeUpdateCallback = callback
-        },
-
         onStateChange: (callback: (state: YouTubePlayerState) => void) => {
           stateChangeCallback = callback
         },
 
         destroy: () => {
-          if (timeUpdateInterval !== null) {
-            clearInterval(timeUpdateInterval)
-            timeUpdateInterval = null
-          }
           if (player) {
             player.destroy()
             player = null
@@ -158,17 +151,6 @@ export function createYouTubePlayerManager(
 
     const onError = (event: YT.OnErrorEvent) => {
       reject(new Error(`YouTube Player Error: ${event.data}`))
-    }
-
-    const startTimeUpdate = () => {
-      if (timeUpdateInterval !== null) return
-
-      timeUpdateInterval = window.setInterval(() => {
-        if (player && timeUpdateCallback) {
-          const currentTime = player.getCurrentTime()
-          timeUpdateCallback(currentTime)
-        }
-      }, TIME_UPDATE_INTERVAL_MS)
     }
 
     // プレイヤー作成

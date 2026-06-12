@@ -33,7 +33,6 @@ export interface YouTubePlayerManager {
   getPlayerState(): YouTubePlayerState
 
   // イベント処理
-  onTimeUpdate(callback: (time: number) => void): void
   onStateChange(callback: (state: YouTubePlayerState) => void): void
 
   // クリーンアップ

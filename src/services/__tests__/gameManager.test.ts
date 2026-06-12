@@ -82,7 +82,6 @@ function makePlayerMock(): YouTubePlayerManager {
     getCurrentTime: vi.fn(() => 0),
     getDuration: vi.fn(() => 60),
     getPlayerState: vi.fn(() => YouTubePlayerState.PLAYING),
-    onTimeUpdate: vi.fn(),
     onStateChange: vi.fn(),
     destroy: vi.fn(),
   }
@@ -554,6 +553,69 @@ describe('External Pause: 可視性変化', () => {
     // pause 中に startTime を超えても状態変化しない
     gm.updateVideoTime(10.1)
     expect(store.currentState).toBe(GameState.LOADING)
+  })
+})
+
+// ============================================================================
+// destroy(): リソースリーク防止
+// ============================================================================
+
+describe('destroy()', () => {
+  it('destroy() 後は visibilitychange リスナーが発火せず pauseVideo が呼ばれない', () => {
+    const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
+    const { gm } = makeGameManager(makeQuizData(), player)
+    gm.setupVisibilityHandlers()
+
+    gm.destroy()
+
+    // destroy() 後にタブを隠してもリスナーは解除済みなので反応しない
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(player.pauseVideo).not.toHaveBeenCalled()
+  })
+
+  it('destroy() 後は pagehide / pageshow リスナーが発火しない', () => {
+    const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
+    const { gm } = makeGameManager(makeQuizData(), player)
+    gm.setupVisibilityHandlers()
+
+    gm.destroy()
+
+    window.dispatchEvent(new Event('pagehide'))
+    window.dispatchEvent(new Event('pageshow'))
+
+    expect(player.pauseVideo).not.toHaveBeenCalled()
+    expect(player.playVideo).not.toHaveBeenCalled()
+  })
+
+  it('destroy() 後はカウントダウンタイマーが進行しない', () => {
+    vi.useFakeTimers()
+    try {
+      const player = makePlayerMock()
+      ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(
+        YouTubePlayerState.PAUSED,
+      )
+      const { gm, store } = makeGameManager(makeQuizData({ answerTimeLimit: 10 }), player)
+
+      // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING（カウントダウン開始）
+      simulatePlayback(gm, 11, 0)
+      gm.handleButtonPress()
+      vi.advanceTimersByTime(100)
+      expect(store.currentState).toBe(GameState.ANSWERING)
+      expect(store.answerTimeRemaining).toBe(10)
+
+      // destroy() でカウントダウンを停止
+      gm.destroy()
+
+      // 5秒経過してもカウントダウンは進行しない
+      vi.advanceTimersByTime(5000)
+      expect(store.answerTimeRemaining).toBe(10)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

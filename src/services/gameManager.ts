@@ -52,6 +52,11 @@ export class GameManager {
   // 解答カウントダウンタイマー（ANSWERING中の制限時間管理）
   private answerCountdownInterval: number | null = null
 
+  // 登録済みイベントリスナーの参照（destroy() で解除するために保持）
+  private visibilityChangeHandler: (() => void) | null = null
+  private pageHideHandler: (() => void) | null = null
+  private pageShowHandler: (() => void) | null = null
+
   constructor(
     playerManager: YouTubePlayerManager,
     quizData: QuizData,
@@ -361,7 +366,7 @@ export class GameManager {
    * 可視性変化（visibility）イベントハンドラーを設定
    */
   setupVisibilityHandlers(): void {
-    document.addEventListener('visibilitychange', () => {
+    this.visibilityChangeHandler = () => {
       if (document.hidden) {
         // タブが非表示になった時：動画が再生中またはANSWERING中にpause
         const playerState = this.playerManager.getPlayerState()
@@ -377,9 +382,10 @@ export class GameManager {
           this.resumeExternal()
         }
       }
-    })
+    }
+    document.addEventListener('visibilitychange', this.visibilityChangeHandler)
 
-    window.addEventListener('pagehide', () => {
+    this.pageHideHandler = () => {
       const playerState = this.playerManager.getPlayerState()
       const isAnswering = this.gameStore.currentState === GameState.ANSWERING
       logger.log('[GameManager] Page hide', {
@@ -390,9 +396,10 @@ export class GameManager {
       if (playerState === YouTubePlayerState.PLAYING || isAnswering) {
         this.pauseExternal('visibility')
       }
-    })
+    }
+    window.addEventListener('pagehide', this.pageHideHandler)
 
-    window.addEventListener('pageshow', () => {
+    this.pageShowHandler = () => {
       logger.log('[GameManager] Page show', {
         externalPausedReason: this.externalPausedReason,
         willResume: this.externalPausedReason === 'visibility',
@@ -400,7 +407,8 @@ export class GameManager {
       if (this.externalPausedReason === 'visibility') {
         this.resumeExternal()
       }
-    })
+    }
+    window.addEventListener('pageshow', this.pageShowHandler)
   }
 
   /**
@@ -841,6 +849,37 @@ export class GameManager {
 
       logger.log('[GameManager] Jumped to reveal period:', question.revealTime)
     }
+  }
+
+  /**
+   * GameManager の破棄処理（リソースリーク防止）
+   * - 解答カウントダウンタイマーを停止
+   * - setupVisibilityHandlers で登録した document/window リスナーを解除
+   *
+   * 注意: setupPlayerStateHandlers が登録する onStateChange コールバックは
+   * YouTubePlayerManager 側に解除 API がないため、ここでは解除しない。
+   * App.vue の onUnmounted で destroy() の直後に playerManager.destroy() を呼び、
+   * プレイヤー本体ごと破棄することでコールバックも到達しなくなる。
+   */
+  destroy(): void {
+    // 解答カウントダウンタイマーを停止
+    this.stopAnswerCountdown()
+
+    // 可視性関連リスナーを解除
+    if (this.visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler)
+      this.visibilityChangeHandler = null
+    }
+    if (this.pageHideHandler) {
+      window.removeEventListener('pagehide', this.pageHideHandler)
+      this.pageHideHandler = null
+    }
+    if (this.pageShowHandler) {
+      window.removeEventListener('pageshow', this.pageShowHandler)
+      this.pageShowHandler = null
+    }
+
+    logger.log('[GameManager] Destroyed')
   }
 }
 
