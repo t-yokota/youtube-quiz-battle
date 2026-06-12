@@ -176,4 +176,6 @@ tasks.md は 450 行のうち 350 行が完了済みタスク。`docs/tasks-arch
 - [ ] D-12 design-sync-handoff.md の転記と削除
 - [ ] D-13 README / package.json name
 - [ ] D-14 button.webp の削除（処遇は確認済み: 不使用）
-- [ ] D-15 / D-17 任意項目（D-16 は完了: External Pause の注記を確定化済み）
+- [ ] D-15 Analytics プライバシー記述整合（Task 25 実装時）
+- [x] D-16 External Pause の注記を確定化
+- [x] D-17 tasks.md の Phase 1〜2 を tasks-archive.md へ移動（04 案による置き換えと同時に実施）
