@@ -19,4 +19,22 @@ export default defineConfigWithVueTs(
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
   skipFormatting,
+
+  // no-console: src配下のプロダクションコードでconsole直接使用を禁止
+  {
+    name: 'app/no-console',
+    files: ['src/**/*.{ts,mts,tsx,vue}'],
+    rules: {
+      'no-console': 'error',
+    },
+  },
+
+  // logger.ts自身はconsoleを使用するため許可
+  {
+    name: 'app/logger-allow-console',
+    files: ['src/utils/logger.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 )

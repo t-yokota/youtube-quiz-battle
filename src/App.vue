@@ -19,6 +19,7 @@ import { GameState } from './types'
 import type { QuizData, YouTubePlayerManager } from './types'
 import { TIME_UPDATE_INTERVAL_MS, STARTUP_GRACE_MS } from './constants/timing'
 import { shouldHandleSpaceKey } from './utils/keyboardHandler'
+import { logger } from './utils/logger'
 
 const gameStore = useGameStore()
 
@@ -50,13 +51,13 @@ const volumeLevel = ref(3)
 async function initQuizData() {
   try {
     const videoId = extractVideoIdFromUrl() || 'sample'
-    console.log(`[App] Loading quiz data for videoId: ${videoId}`)
+    logger.log(`[App] Loading quiz data for videoId: ${videoId}`)
     quizData.value = await loadQuizData(videoId)
     gameStore.setQuizData(quizData.value)
-    console.log(`[App] Quiz data loaded: ${quizData.value.questions.length} questions`)
+    logger.log(`[App] Quiz data loaded: ${quizData.value.questions.length} questions`)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[App] Failed to load quiz data:', error)
+    logger.error('[App] Failed to load quiz data:', error)
     initError.value = message
   }
 }
@@ -71,7 +72,7 @@ function handlePlayerReady(playerManager: YouTubePlayerManager) {
   // GameManager を作成して初期化
   gameManager.value = createGameManager(playerManager, quizData.value, gameStore)
   gameManager.value.initializeExternalPauseHandling()
-  console.log('[App] GameManager initialized')
+  logger.log('[App] GameManager initialized')
 
   // Time Update Loop を開始
   const startedAt = performance.now()
@@ -95,7 +96,7 @@ function handlePlayerReady(playerManager: YouTubePlayerManager) {
   }
 
   timeUpdateIntervalId = window.setInterval(timeUpdateTick, TIME_UPDATE_INTERVAL_MS)
-  console.log(`[App] Time Update Loop started (interval: ${TIME_UPDATE_INTERVAL_MS}ms)`)
+  logger.log(`[App] Time Update Loop started (interval: ${TIME_UPDATE_INTERVAL_MS}ms)`)
 
   // READY 状態へ遷移
   gameStore.transitionToState(GameState.READY)
@@ -163,7 +164,7 @@ onUnmounted(() => {
   if (timeUpdateIntervalId !== null) {
     window.clearInterval(timeUpdateIntervalId)
     timeUpdateIntervalId = null
-    console.log('[App] Time Update Loop stopped')
+    logger.log('[App] Time Update Loop stopped')
   }
 })
 </script>
@@ -211,7 +212,10 @@ onUnmounted(() => {
       <!-- Result UI (FINISHED状態) -->
       <div v-else class="result-ui">
         <div class="result-content">
-          <FinalScore :correct-count="gameStore.correctCount" :total-questions="gameStore.totalQuestions" />
+          <FinalScore
+            :correct-count="gameStore.correctCount"
+            :total-questions="gameStore.totalQuestions"
+          />
           <ResultTable :results="gameStore.results" :show-user-answers="true" />
         </div>
         <ResultActions @replay="handleReplay" />
@@ -226,7 +230,10 @@ onUnmounted(() => {
       @update-volume="handleUpdateVolume"
     />
 
-    <LoadingDialog :is-open="gameStore.currentState === GameState.LOADING" message="読み込み中..." />
+    <LoadingDialog
+      :is-open="gameStore.currentState === GameState.LOADING"
+      message="読み込み中..."
+    />
 
     <OrientationDialog :is-open="isOrientationOpen" />
 

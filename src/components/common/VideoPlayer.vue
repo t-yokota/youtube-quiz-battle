@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { loadYouTubeIframeAPI, createYouTubePlayerManager } from '@/services/youtubePlayer'
 import type { YouTubePlayerManager, QuizSettings } from '@/types'
+import { logger } from '@/utils/logger'
 
 // Props定義
 interface Props {
@@ -34,7 +35,7 @@ onMounted(async () => {
     emit('ready', playerManager)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[VideoPlayer] Failed to initialize:', error)
+    logger.error('[VideoPlayer] Failed to initialize:', error)
     errorMessage.value = message
     isLoading.value = false
     emit('error', message)

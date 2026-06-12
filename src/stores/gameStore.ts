@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { GameState, ButtonState } from '@/types'
 import type { QuizData, QuestionResult } from '@/types'
 import { validate } from '@/services/answerValidator'
+import { logger } from '@/utils/logger'
 
 export const useGameStore = defineStore('game', () => {
   // ============================================================================
@@ -107,7 +108,7 @@ export const useGameStore = defineStore('game', () => {
    * ゲーム状態を遷移する
    */
   function transitionToState(newState: GameState) {
-    console.log(`[GameStore] State transition: ${currentState.value} -> ${newState}`)
+    logger.log(`[GameStore] State transition: ${currentState.value} -> ${newState}`)
     currentState.value = newState
 
     // 状態に応じたボタン状態の更新
@@ -121,14 +122,20 @@ export const useGameStore = defineStore('game', () => {
     switch (state) {
       case GameState.READY:
       case GameState.QUESTIONING:
-        if (buttonState.value === ButtonState.DISABLED || buttonState.value === ButtonState.RELEASED) {
+        if (
+          buttonState.value === ButtonState.DISABLED ||
+          buttonState.value === ButtonState.RELEASED
+        ) {
           buttonState.value = ButtonState.STANDBY
         }
         break
       case GameState.WAITING:
       case GameState.REVEALING:
       case GameState.TALKING:
-        if (buttonState.value === ButtonState.STANDBY || buttonState.value === ButtonState.RELEASED) {
+        if (
+          buttonState.value === ButtonState.STANDBY ||
+          buttonState.value === ButtonState.RELEASED
+        ) {
           buttonState.value = ButtonState.DISABLED
         }
         break
@@ -155,7 +162,7 @@ export const useGameStore = defineStore('game', () => {
     skipped: boolean,
   ): void {
     // 既に記録済みの場合はスキップ
-    if (results.value.some(r => r.questionNumber === questionNumber)) return
+    if (results.value.some((r) => r.questionNumber === questionNumber)) return
 
     if (isCorrect) {
       correctCount.value++
@@ -178,7 +185,7 @@ export const useGameStore = defineStore('game', () => {
    * skipped結果はスコアに影響しないため、スコア巻き戻しは不要
    */
   function removeResult(questionNumber: number): void {
-    const index = results.value.findIndex(r => r.questionNumber === questionNumber)
+    const index = results.value.findIndex((r) => r.questionNumber === questionNumber)
     if (index !== -1) {
       results.value.splice(index, 1)
     }
@@ -194,7 +201,7 @@ export const useGameStore = defineStore('game', () => {
     const question = currentQuestionData.value
     if (!question) return null
 
-    console.log(`[GameStore] Answer submitted: ${answer}`)
+    logger.log(`[GameStore] Answer submitted: ${answer}`)
 
     const isCorrect = validate(answer, question.answers)
 
@@ -207,9 +214,15 @@ export const useGameStore = defineStore('game', () => {
       answerInput.value = ''
 
       // 結果を記録
-      recordResult(question.index + 1, true, question.answers[0], [...pendingUserAnswers.value], false)
+      recordResult(
+        question.index + 1,
+        true,
+        question.answers[0],
+        [...pendingUserAnswers.value],
+        false,
+      )
 
-      console.log(`[GameStore] Correct! Score: ${correctCount.value}`)
+      logger.log(`[GameStore] Correct! Score: ${correctCount.value}`)
 
       // WAITING状態へ遷移
       transitionToState(GameState.WAITING)
@@ -225,9 +238,15 @@ export const useGameStore = defineStore('game', () => {
       answerInput.value = ''
 
       // 結果を記録
-      recordResult(question.index + 1, false, question.answers[0], [...pendingUserAnswers.value], false)
+      recordResult(
+        question.index + 1,
+        false,
+        question.answers[0],
+        [...pendingUserAnswers.value],
+        false,
+      )
 
-      console.log(`[GameStore] Incorrect (no attempts left). Score: ${incorrectCount.value}`)
+      logger.log(`[GameStore] Incorrect (no attempts left). Score: ${incorrectCount.value}`)
 
       // WAITING状態へ遷移
       transitionToState(GameState.WAITING)
@@ -237,7 +256,7 @@ export const useGameStore = defineStore('game', () => {
     // 残り回数あり → QUESTIONING に戻す（動画再開して再早押し可能に）
     answerInput.value = ''
     answerResult.value = null // QUESTIONING では結果表示を非表示にする
-    console.log(`[GameStore] Incorrect. Remaining attempts: ${remainingAttempts.value}`)
+    logger.log(`[GameStore] Incorrect. Remaining attempts: ${remainingAttempts.value}`)
     transitionToState(GameState.QUESTIONING)
     return { isCorrect: false, isFinal: false }
   }
@@ -266,7 +285,7 @@ export const useGameStore = defineStore('game', () => {
    */
   function setQuizData(data: QuizData) {
     quizData.value = data
-    console.log(`[GameStore] Quiz data loaded: ${data.questions.length} questions`)
+    logger.log(`[GameStore] Quiz data loaded: ${data.questions.length} questions`)
 
     // 設定値を適用
     remainingAttempts.value = data.settings.maxAttempts

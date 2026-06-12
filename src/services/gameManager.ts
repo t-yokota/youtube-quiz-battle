@@ -13,6 +13,7 @@ import {
   YOUTUBE_REWIND_THRESHOLD_SEC,
 } from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
+import { logger } from '@/utils/logger'
 
 /**
  * Single-Shot Guard: 問題単位のstart/reveal/end消費フラグ
@@ -82,7 +83,7 @@ export class GameManager {
     // 時間管理システムの時間変数をリセット（currentVideoTime, previousVideoTimeを0に）
     this.timeManager.resetTimeValues()
 
-    console.log('[GameManager] Game reset')
+    logger.log('[GameManager] Game reset')
   }
 
   /**
@@ -92,7 +93,7 @@ export class GameManager {
   handleReplay(): void {
     if (this.gameStore.currentState !== GameState.FINISHED) return
 
-    console.log('[GameManager] Replay requested')
+    logger.log('[GameManager] Replay requested')
 
     // External Pause状態もクリア
     this.externalPaused = false
@@ -138,7 +139,7 @@ export class GameManager {
       }
     }, ANSWER_COUNTDOWN_INTERVAL_MS)
 
-    console.log('[GameManager] Answer countdown started:', this.gameStore.answerTimeRemaining)
+    logger.log('[GameManager] Answer countdown started:', this.gameStore.answerTimeRemaining)
   }
 
   /**
@@ -157,7 +158,7 @@ export class GameManager {
    */
   private handleAnswerTimeout(): void {
     this.stopAnswerCountdown()
-    console.log('[GameManager] Answer timeout')
+    logger.log('[GameManager] Answer timeout')
 
     // 空文字で送信（不正解扱い）
     const result = this.gameStore.handleAnswerSubmit('')
@@ -211,7 +212,7 @@ export class GameManager {
   handleButtonPress(): void {
     if (!this.gameStore.isButtonEnabled) return
 
-    console.log(`[GameManager] Button pressed in state: ${this.gameStore.currentState}`)
+    logger.log(`[GameManager] Button pressed in state: ${this.gameStore.currentState}`)
 
     const stateAtPress = this.gameStore.currentState
 
@@ -264,7 +265,7 @@ export class GameManager {
     const currentVideoTime = this.playerManager.getCurrentTime()
     const previousVideoTime = this.timeManager.getPreviousVideoTime()
 
-    console.log('[GameManager] External pause started:', reason, {
+    logger.log('[GameManager] External pause started:', reason, {
       current: currentVideoTime,
       previous: previousVideoTime,
     })
@@ -310,7 +311,7 @@ export class GameManager {
       // - 通過している　：シークバーで閾値以降から冒頭に戻ってきて動画を再開中
       if (!this.hasPassedRewindThreshold) {
         // 冒頭からの再生開始直後の場合：問題を最初からやり直せるようにconsumedフラグをリセット
-        console.log('[GameManager] System rewind detected immediately after starting playback')
+        logger.log('[GameManager] System rewind detected immediately after starting playback')
         for (const question of this.quizData.questions) {
           const c = this.consumed[question.index]
           if (c) {
@@ -324,7 +325,7 @@ export class GameManager {
                 this.gameStore.removeResult(question.index + 1)
               }
               this.consumed[question.index] = { start: false, reveal: false, end: false }
-              console.log('[GameManager] Reset consumed flags for question:', question.index)
+              logger.log('[GameManager] Reset consumed flags for question:', question.index)
             }
           }
         }
@@ -332,7 +333,7 @@ export class GameManager {
 
       // シーク検知の回避のためにpreviousVideoTimeを更新
       this.timeManager.updatePreviousVideoTime(currentVideoTime)
-      console.log(
+      logger.log(
         '[GameManager] Updated previousVideoTime to avoid seek detection caused by system rewind:',
         {
           previous: this.timeManager.getPreviousVideoTime(),
@@ -340,7 +341,7 @@ export class GameManager {
       )
     }
 
-    console.log('[GameManager] External pause ended:', prevReason, {
+    logger.log('[GameManager] External pause ended:', prevReason, {
       current: currentVideoTime,
       previous: this.timeManager.getPreviousVideoTime(),
     })
@@ -381,7 +382,7 @@ export class GameManager {
     window.addEventListener('pagehide', () => {
       const playerState = this.playerManager.getPlayerState()
       const isAnswering = this.gameStore.currentState === GameState.ANSWERING
-      console.log('[GameManager] Page hide', {
+      logger.log('[GameManager] Page hide', {
         playerState,
         isAnswering,
         willPause: playerState === YouTubePlayerState.PLAYING || isAnswering,
@@ -392,7 +393,7 @@ export class GameManager {
     })
 
     window.addEventListener('pageshow', () => {
-      console.log('[GameManager] Page show', {
+      logger.log('[GameManager] Page show', {
         externalPausedReason: this.externalPausedReason,
         willResume: this.externalPausedReason === 'visibility',
       })
@@ -508,12 +509,12 @@ export class GameManager {
     // YouTube Player巻き戻り閾値の通過チェック
     if (!this.hasPassedRewindThreshold && current >= YOUTUBE_REWIND_THRESHOLD_SEC) {
       this.hasPassedRewindThreshold = true
-      console.log('[GameManager] Passed YouTube rewind threshold:', YOUTUBE_REWIND_THRESHOLD_SEC)
+      logger.log('[GameManager] Passed YouTube rewind threshold:', YOUTUBE_REWIND_THRESHOLD_SEC)
     }
 
     // シーク検出
     if (this.timeManager.isSeekDetected(current)) {
-      console.log('[GameManager] Seek detected:', prev, '->', current)
+      logger.log('[GameManager] Seek detected:', prev, '->', current)
 
       if (
         this.gameStore.currentState === GameState.ANSWERING ||
@@ -525,7 +526,7 @@ export class GameManager {
         this.internalAction = false
         // currentVideoTimeも元に戻す（submitAnswer内のrevealTime比較に影響するため）
         this.timeManager.updateCurrentVideoTime(prev)
-        console.log('[GameManager] Forced reset to:', prev)
+        logger.log('[GameManager] Forced reset to:', prev)
         // previousVideoTimeは維持（更新しない）
       } else {
         // disableSeekbar=false: シークで飛ばした問題を消費（不参加）扱いに
@@ -562,7 +563,7 @@ export class GameManager {
           c.reveal = true
           c.end = true
           this.recordSkippedQuestion(question.index, true)
-          console.log('[GameManager] Consumed question by forward seek:', question.index)
+          logger.log('[GameManager] Consumed question by forward seek:', question.index)
         }
       }
     } else {
@@ -577,7 +578,7 @@ export class GameManager {
           c.reveal = true
           c.end = true
           this.recordSkippedQuestion(question.index, true)
-          console.log('[GameManager] Consumed question by backward seek:', question.index)
+          logger.log('[GameManager] Consumed question by backward seek:', question.index)
         }
       }
     }
@@ -642,7 +643,7 @@ export class GameManager {
         this.recordSkippedQuestion(question.index, true)
         // 副作用なしで WAITING 状態へ遷移（スキップ済み問題）
         this.gameStore.transitionToState(GameState.WAITING)
-        console.log('[GameManager] Skipped question (already consumed):', question.index)
+        logger.log('[GameManager] Skipped question (already consumed):', question.index)
       }
     }
 
@@ -656,7 +657,7 @@ export class GameManager {
         ) {
           // WAITING 状態へ遷移（動画内プレイヤーの解答中）
           this.gameStore.transitionToState(GameState.WAITING)
-          console.log(
+          logger.log(
             '[GameManager] Entered OthersAnsweringPeriod:',
             period.startTime,
             '-',
@@ -668,7 +669,7 @@ export class GameManager {
         if (prev + TIME_EPSILON_SEC < period.endTime && curr + TIME_EPSILON_SEC >= period.endTime) {
           // QUESTIONING 状態へ復帰
           this.gameStore.transitionToState(GameState.QUESTIONING)
-          console.log(
+          logger.log(
             '[GameManager] Exited OthersAnsweringPeriod:',
             period.startTime,
             '-',
@@ -689,7 +690,7 @@ export class GameManager {
       } else {
         // 副作用なしで REVEALING 状態へ遷移（既に消費済み）
         this.gameStore.transitionToState(GameState.REVEALING)
-        console.log('[GameManager] Already revealed (consumed):', question.index)
+        logger.log('[GameManager] Already revealed (consumed):', question.index)
       }
     }
 
@@ -700,7 +701,7 @@ export class GameManager {
         this.onEnd(question) // 副作用あり：スコア集計、TALKING/FINISHED状態へ
       } else {
         // 消費済み：既に終了済み
-        console.log('[GameManager] Already ended (consumed):', question.index)
+        logger.log('[GameManager] Already ended (consumed):', question.index)
 
         // すべての問題が消費済みかチェック
         const allConsumed = this.quizData.questions.every(
@@ -715,7 +716,7 @@ export class GameManager {
         if (allConsumed && question.index === lastQuestion.index) {
           // 副作用なしで FINISHED 状態へ遷移
           this.gameStore.transitionToState(GameState.FINISHED)
-          console.log(
+          logger.log(
             '[GameManager] All questions consumed and last question ended, transitioning to FINISHED',
           )
         } else {
@@ -748,7 +749,7 @@ export class GameManager {
       isSkip && !hasAttempted,
     )
 
-    console.log(
+    logger.log(
       '[GameManager] Recording',
       isSkip ? 'skipped' : hasAttempted ? 'incomplete answer' : 'unanswered',
       'question:',
@@ -761,7 +762,7 @@ export class GameManager {
    * @param question 問題データ
    */
   private onStart(question: QuizQuestion): void {
-    console.log('[GameManager] onStart:', question.index)
+    logger.log('[GameManager] onStart:', question.index)
 
     // ゲームストアの currentQuestionIndex を更新
     this.gameStore.currentQuestionIndex = question.index
@@ -778,7 +779,7 @@ export class GameManager {
    * @param question 問題データ
    */
   private onReveal(question: QuizQuestion): void {
-    console.log('[GameManager] onReveal:', question.index)
+    logger.log('[GameManager] onReveal:', question.index)
 
     // REVEALING 状態へ遷移
     this.gameStore.transitionToState(GameState.REVEALING)
@@ -789,7 +790,7 @@ export class GameManager {
    * @param question 問題データ
    */
   private onEnd(question: QuizQuestion): void {
-    console.log('[GameManager] onEnd:', question.index)
+    logger.log('[GameManager] onEnd:', question.index)
 
     // この問題の結果が未記録（スキップ・未解答）の場合、未解答として記録
     this.recordSkippedQuestion(question.index, false)
@@ -811,7 +812,7 @@ export class GameManager {
    * @param isCorrect 正解かどうか
    */
   submitAnswer(questionIndex: number, isCorrect: boolean): void {
-    console.log('[GameManager] submitAnswer:', questionIndex, 'isCorrect:', isCorrect)
+    logger.log('[GameManager] submitAnswer:', questionIndex, 'isCorrect:', isCorrect)
 
     if (!this.quizData.settings.jumpToRevealPeriod) {
       // jumpToRevealPeriod=false の場合、何もしない
@@ -838,7 +839,7 @@ export class GameManager {
       // REVEALING 状態への遷移
       this.gameStore.transitionToState(GameState.REVEALING)
 
-      console.log('[GameManager] Jumped to reveal period:', question.revealTime)
+      logger.log('[GameManager] Jumped to reveal period:', question.revealTime)
     }
   }
 }
