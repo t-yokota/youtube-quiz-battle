@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Quiz Battle — ワイヤーフレーム v2 / ケース2（構造変更案）</title>
+<style>
+/* ============================================================
+   デザイントークン（ケース1と共通）
+   ============================================================ */
+:root {
+  --c-stage-900: #0b1020;
+  --c-stage-800: #131a30;
+  --c-stage-700: #1d2742;
+  --c-line: #2a3654;
+  --c-text: #eef2fa;
+  --c-text-dim: #8fa0c2;
+  --c-red-500: #e6402e;
+  --c-red-600: #c5301f;
+  --c-red-700: #9c2317;
+  --c-amber-400: #ffc53d;
+  --c-green-400: #3ddc84;
+  --c-blue-400: #4f8cff;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --dur-fast: 120ms;
+  --dur-base: 240ms;
+  --dur-sheet: 320ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --timer-progress: 1;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Segoe UI', Roboto, sans-serif;
+  background: #ffffff;
+  color: var(--c-text);
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* ============================================================
+   スマホ画面
+   構造: video → HUD → stage(ボタンが最下部=サムゾーン)
+         + bottom-sheet(ANSWERING時のみ) + result banner + finished overlay
+   ============================================================ */
+.phone-screen {
+  width: 315px;
+  height: 700px;
+  background:
+    radial-gradient(150% 50% at 50% 100%, rgba(255, 197, 61, 0.10) 0%, transparent 55%),
+    linear-gradient(180deg, var(--c-stage-900) 0%, #0d1226 60%, #0a0e1d 100%);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.55);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ------------------------------------------------ ヘッダー（最小化: ワードマーク + 設定のみ） */
+.header {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.wordmark { font-weight: 800; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-text-dim); }
+.wordmark .accent { color: var(--c-amber-400); }
+.settings-button { background: none; border: none; color: var(--c-text-dim); font-size: 17px; cursor: pointer; }
+.settings-button:hover { color: var(--c-text); }
+
+/* ------------------------------------------------ 動画 */
+.video-container {
+  background: #000;
+  height: 177px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--c-text-dim);
+  font-size: 13px;
+}
+.video-container.hidden { display: none; }
+
+/* ------------------------------------------------ HUD（進行ドット + ○×チップ + 状態ラベル） */
+.hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--c-stage-800);
+  border-top: 1px solid var(--c-line);
+  border-bottom: 1px solid var(--c-line);
+}
+.hud-left { display: flex; align-items: center; gap: 8px; }
+.hud-q {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800; font-size: 14px;
+}
+.hud-q .q-label { font-size: 11px; color: var(--c-amber-400); letter-spacing: 0.2em; margin-right: 3px; }
+.hud-q .total { color: var(--c-text-dim); font-size: 11px; font-weight: 600; }
+.score-chips { display: flex; align-items: center; gap: 4px; }
+.chip {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  display: block;
+  color: var(--c-text-dim);
+  --chip-bg: var(--c-stage-700);
+  --chip-line: var(--c-line);
+}
+.chip.correct { color: var(--c-green-400); --chip-bg: rgba(61,220,132,0.16); --chip-line: var(--c-green-400); }
+.chip.incorrect { color: var(--c-red-500); --chip-bg: rgba(230,64,46,0.14); --chip-line: var(--c-red-500); }
+.chip.skipped { color: var(--c-text-dim); }
+.chip.noanswer { color: var(--c-text-dim); }
+.chip.current { --chip-line: var(--c-amber-400); box-shadow: 0 0 5px rgba(255,197,61,0.5); }
+/* チップ列ページャ（表示ウィンドウ N〜N+4 を前後に動かす三角ボタン） */
+.chips-nav {
+  width: 13px; height: 14px;
+  display: grid; place-items: center;
+  background: none; border: none; padding: 0;
+  color: var(--c-text-dim);
+  cursor: pointer;
+}
+.chips-nav:hover:not(:disabled) { color: var(--c-text); }
+.chips-nav:disabled { opacity: 0.25; cursor: default; }
+.chips-nav svg { width: 6px; height: 8px; display: block; }
+.chips-nav.prev svg { transform: scaleX(-1); }
+.state-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--c-text-dim);
+  padding: 3px 8px;
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  background: var(--c-stage-900);
+}
+.state-label.hot { color: var(--c-amber-400); border-color: var(--c-amber-400); }
+
+/* ------------------------------------------------ ステージ（ボタンが主役） */
+.stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 30px;
+}
+/* スポットライト */
+.stage::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(70% 50% at 50% 78%, rgba(255, 197, 61, 0.16) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 400ms;
+  pointer-events: none;
+}
+.stage.lit::before { opacity: 1; }
+
+.stage-message {
+  position: absolute;
+  top: 26%;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--c-text-dim);
+  padding: 0 24px;
+}
+.stage-message .big { display: block; font-size: 17px; font-weight: 800; color: var(--c-text); margin-bottom: 2px; }
+
+/* 物理ボタン + 台座（サムゾーン配置） */
+.button-rig { position: relative; display: grid; place-items: center; }
+/* 台座（真上から見た同心円のベースプレート） */
+.button-rig::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 208px; height: 208px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, #0e1428 58%, var(--c-stage-700) 78%, #0b1020 100%);
+  border: 1px solid var(--c-line);
+  z-index: 0;
+}
+.pulse-ring {
+  position: absolute;
+  width: 170px; height: 170px;
+  border-radius: 50%;
+  border: 2px solid var(--c-amber-400);
+  opacity: 0; z-index: 1; pointer-events: none;
+}
+.pulse-ring.active { animation: pulse-out 1.4s ease-out infinite; }
+@keyframes pulse-out {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+/* 真上から見たドーム型キャップ。沈み込みは縮小＋内側影＋減光で表現 */
+.quiz-button {
+  position: relative; z-index: 2;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  border: none; cursor: pointer;
+  font-size: 20px; font-weight: 800; letter-spacing: 0.12em;
+  color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255,255,255,0.30) 0%, transparent 50%),
+    radial-gradient(circle, var(--c-red-500) 55%, var(--c-red-600) 80%, var(--c-red-700) 100%);
+  box-shadow:
+    0 0 0 5px rgba(0, 0, 0, 0.35),
+    0 8px 24px rgba(0, 0, 0, 0.55);
+  transition: transform var(--dur-fast), box-shadow var(--dur-fast), filter var(--dur-base);
+}
+.quiz-button:focus-visible { outline: 3px solid rgba(79,140,255,0.7); outline-offset: 4px; }
+.quiz-button.standby:hover { filter: brightness(1.08); }
+.quiz-button.standby:active,
+.quiz-button.pushed {
+  transform: scale(0.93);
+  filter: brightness(0.88);
+  box-shadow:
+    0 0 0 5px rgba(0, 0, 0, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    inset 0 0 24px rgba(0, 0, 0, 0.45);
+}
+.quiz-button.released {
+  transform: scale(0.96);
+  box-shadow:
+    0 0 0 5px rgba(0, 0, 0, 0.35),
+    0 3px 10px rgba(0, 0, 0, 0.45),
+    inset 0 0 14px rgba(0, 0, 0, 0.3),
+    0 0 0 10px rgba(61,220,132,0.85),
+    0 0 30px 10px rgba(61,220,132,0.45);
+}
+.quiz-button.disabled,
+.quiz-button:disabled {
+  cursor: not-allowed;
+  transform: scale(0.93);
+  filter: grayscale(0.85) brightness(0.5);
+  box-shadow:
+    0 0 0 5px rgba(0, 0, 0, 0.35),
+    inset 0 0 24px rgba(0, 0, 0, 0.5);
+}
+
+/* ------------------------------------------------ ボトムシート（ANSWERING時のみ） */
+.answer-sheet {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  background: var(--c-stage-800);
+  border-top: 1px solid var(--c-line);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 0 14px 16px;
+  transform: translateY(105%);
+  transition: transform var(--dur-sheet) var(--ease-out);
+  z-index: 100;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+}
+.answer-sheet.open { transform: translateY(0); }
+/* タイマーバー: シート上端 = 視線が入力欄にあるとき周辺視野に入る位置 */
+.sheet-timer-bar {
+  height: 4px;
+  margin: 0 -14px 12px;
+  border-radius: 4px 4px 0 0;
+  background: var(--c-stage-700);
+  overflow: hidden;
+}
+.sheet-timer-bar .fill {
+  height: 100%;
+  width: calc(var(--timer-progress) * 100%);
+  background: var(--c-amber-400);
+  transition: width 100ms linear;
+}
+.sheet-timer-bar.urgent .fill { background: var(--c-red-500); }
+.sheet-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+  font-size: 12px; font-variant-numeric: tabular-nums;
+}
+.sheet-attempts { color: var(--c-blue-400); font-weight: 700; }
+.sheet-attempts .dim { color: var(--c-text-dim); font-weight: 500; }
+.sheet-sec { font-weight: 800; min-width: 3ch; text-align: right; }
+.sheet-sec.urgent { color: var(--c-red-500); animation: throb 0.5s ease-in-out infinite; }
+@keyframes throb { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+.sheet-input-row { display: flex; gap: 8px; }
+.answer-input {
+  flex: 1; min-width: 0; height: 46px;
+  padding: 0 14px; font-size: 16px;
+  color: var(--c-text);
+  background: var(--c-stage-900);
+  border: 2px solid var(--c-line);
+  border-radius: var(--radius-md);
+  outline: none;
+}
+.answer-input::placeholder { color: #5a6a8e; }
+.answer-input:focus-visible { border-color: var(--c-blue-400); box-shadow: 0 0 0 3px rgba(79,140,255,0.25); }
+.submit-button {
+  height: 46px; padding: 0 18px;
+  font-size: 15px; font-weight: 800;
+  color: var(--c-stage-900);
+  background: var(--c-amber-400);
+  border: none; border-radius: var(--radius-md);
+  cursor: pointer; flex-shrink: 0;
+}
+.submit-button:hover:not(:disabled) { background: #ffd566; }
+.submit-button:disabled { background: var(--c-stage-700); color: var(--c-text-dim); cursor: not-allowed; }
+/* 実装メモ: visualViewport API でキーボード高さぶん bottom を持ち上げる */
+
+/* ------------------------------------------------ リザルトバナー（正解/不正解オーバーレイ） */
+.result-banner {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  z-index: 300;
+  padding: 14px 36px;
+  border-radius: var(--radius-lg);
+  font-size: 24px; font-weight: 800; letter-spacing: 0.1em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-base), transform var(--dur-base) var(--ease-out);
+}
+.result-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.result-banner.correct {
+  background: rgba(61, 220, 132, 0.12);
+  border: 2px solid var(--c-green-400);
+  color: var(--c-green-400);
+  box-shadow: 0 0 40px rgba(61, 220, 132, 0.3);
+}
+.result-banner.incorrect {
+  background: rgba(230, 64, 46, 0.12);
+  border: 2px solid var(--c-red-500);
+  color: var(--c-red-500);
+  box-shadow: 0 0 40px rgba(230, 64, 46, 0.3);
+}
+
+/* ------------------------------------------------ FINISHED: フルスクリーンのリザルトステージ */
+.finished-overlay {
+  position: absolute; inset: 0;
+  z-index: 500;
+  background:
+    radial-gradient(120% 50% at 50% 0%, rgba(255, 197, 61, 0.12) 0%, transparent 60%),
+    linear-gradient(180deg, #0d1226 0%, var(--c-stage-900) 100%);
+  display: none;
+  flex-direction: column;
+  padding: 28px 18px 18px;
+  border-radius: 14px;
+}
+.finished-overlay.show { display: flex; }
+.final-title { text-align: center; font-size: 13px; letter-spacing: 0.3em; color: var(--c-amber-400); font-weight: 800; }
+.final-score {
+  text-align: center;
+  margin: 14px 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+.final-score .num { font-size: 56px; font-weight: 800; line-height: 1; }
+.final-score .den { font-size: 20px; color: var(--c-text-dim); font-weight: 700; }
+.final-rate { text-align: center; color: var(--c-text-dim); font-size: 13px; margin-bottom: 18px; }
+.final-rate .pct { color: var(--c-amber-400); font-weight: 800; }
+/* 問題別タイムライン（スクロールバーは矢印なしの細バー・バーとリストの間隔を確保） */
+.result-list {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 6px;
+  padding-left: 10px;
+  padding-right: 6px; /* バー(4px) + 6px = 左の 10px と釣り合い、行が中央を保つ */
+  scrollbar-gutter: stable;
+}
+.result-list::-webkit-scrollbar { width: 4px; }
+.result-list::-webkit-scrollbar-thumb { background: var(--c-stage-700); border-radius: 4px; }
+.result-list::-webkit-scrollbar-track { background: transparent; }
+.result-list::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+/* WebKit 疑似要素が効かない環境（Firefox）向け */
+@supports not selector(::-webkit-scrollbar) {
+  .result-list { scrollbar-width: thin; scrollbar-color: var(--c-stage-700) transparent; }
+}
+.result-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--c-stage-800);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.result-row .mark { width: 24px; height: 24px; border-radius: 50%; display: block; flex-shrink: 0; }
+.result-row .mark.o { color: var(--c-green-400); --chip-bg: rgba(61,220,132,0.15); --chip-line: var(--c-green-400); }
+.result-row .mark.x { color: var(--c-red-500); --chip-bg: rgba(230,64,46,0.13); --chip-line: var(--c-red-500); }
+.result-row .mark.s { color: var(--c-text-dim); --chip-bg: var(--c-stage-700); --chip-line: var(--c-line); }
+.result-row .mark.n { color: var(--c-text-dim); --chip-bg: var(--c-stage-700); --chip-line: var(--c-line); }
+.result-row .body { min-width: 0; }
+.result-row .ans { font-weight: 700; }
+.result-row .yours { color: var(--c-text-dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.result-row .qno { margin-left: auto; color: var(--c-text-dim); font-size: 10px; flex-shrink: 0; }
+.replay-button {
+  margin-top: 14px;
+  height: 48px;
+  border: none; border-radius: var(--radius-md);
+  background: var(--c-red-500);
+  color: #fff; font-size: 16px; font-weight: 800; letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.replay-button:hover { background: #f0523f; }
+.replay-button:active { filter: brightness(0.9); }
+
+/* ------------------------------------------------ ダイアログ（ケース1と共通様式） */
+.dialog-overlay {
+  position: absolute; inset: 0;
+  background: rgba(5, 8, 18, 0.72);
+  display: none; align-items: center; justify-content: center;
+  z-index: 2000; border-radius: 14px;
+}
+.dialog-overlay.show { display: flex; }
+.dialog {
+  background: var(--c-stage-800);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-lg);
+  padding: 26px 22px; margin: 20px;
+  text-align: center; max-width: 270px;
+}
+.dialog h3 { font-size: 16px; margin-bottom: 10px; }
+.dialog p { color: var(--c-text-dim); font-size: 13px; line-height: 1.6; margin-bottom: 18px; }
+.dialog-button {
+  padding: 10px 22px; background: var(--c-amber-400); color: var(--c-stage-900);
+  border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 800; font-size: 14px;
+}
+.loading-spinner {
+  width: 44px; height: 44px;
+  border: 4px solid var(--c-stage-700); border-top-color: var(--c-amber-400);
+  border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ============================================================
+   デモコントロール
+   ============================================================ */
+.demo-controls {
+  background: #20262f; color: white;
+  padding: 16px; border-radius: 8px;
+  width: 200px; max-height: 90vh; overflow-y: auto; font-size: 12px;
+}
+.demo-controls h4 { margin-bottom: 12px; font-size: 13px; text-align: center; }
+.demo-section { margin-bottom: 14px; }
+.demo-section-title { font-size: 11px; color: #9aa4b2; margin-bottom: 6px; font-weight: bold; }
+.demo-button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.demo-button-full { display: grid; gap: 6px; }
+.demo-button {
+  padding: 8px 6px; background: #353d49; color: white;
+  border: none; border-radius: 4px; font-size: 10px; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.demo-button:hover { background: #475160; }
+.demo-button.active { background: #d99a14; color: #14181f; font-weight: 700; }
+.demo-info { background: #353d49; padding: 8px; border-radius: 4px; font-size: 10px; color: #c9d2dd; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ○×− チップアイコン定義（外周円＋マークを一体の SVG で描画・フォント非依存） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="chip-o" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="7.25" fill="var(--chip-bg, transparent)" stroke="var(--chip-line, currentColor)"/>
+      <circle cx="8" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+    </symbol>
+    <symbol id="chip-x" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="7.25" fill="var(--chip-bg, transparent)" stroke="var(--chip-line, currentColor)"/>
+      <path d="M5.3 5.3 L10.7 10.7 M10.7 5.3 L5.3 10.7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="chip-s" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="7.25" fill="var(--chip-bg, transparent)" stroke="var(--chip-line, currentColor)"/>
+      <path d="M5.4 8 H10.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="chip-n" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="7.25" fill="var(--chip-bg, transparent)" stroke="var(--chip-line, currentColor)"/>
+      <circle cx="8" cy="8" r="1.7" fill="currentColor"/>
+    </symbol>
+    <symbol id="chip-empty" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="7.25" fill="var(--chip-bg, transparent)" stroke="var(--chip-line, currentColor)"/>
+    </symbol>
+    <symbol id="tri" viewBox="0 0 10 12">
+      <path d="M2.5 1.5 L8.5 6 L2.5 10.5 Z" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="phone-screen">
+  <!-- ローディングダイアログ -->
+  <div class="dialog-overlay" id="loadingDialog">
+    <div class="dialog">
+      <div class="loading-spinner"></div>
+      <h3>読み込み中...</h3>
+      <p>クイズデータを準備しています</p>
+    </div>
+  </div>
+  <!-- 横画面警告 -->
+  <div class="dialog-overlay" id="orientationDialog">
+    <div class="dialog">
+      <h3>📱 画面を縦向きにしてください</h3>
+      <p>このゲームは縦画面専用です。</p>
+      <button class="dialog-button" onclick="hideDialog('orientation')">OK</button>
+    </div>
+  </div>
+
+  <!-- ヘッダー（最小化） -->
+  <div class="header">
+    <span class="wordmark">YouTube <span class="accent">Quiz Battle</span></span>
+    <button class="settings-button" aria-label="設定">⚙</button>
+  </div>
+
+  <!-- 動画 -->
+  <div class="video-container" id="videoContainer">
+    YouTube Video Player
+    <small>(16:9 aspect ratio)</small>
+  </div>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-left">
+      <span class="hud-q"><span class="q-label">Q</span><span id="progressNum">03</span><span class="total" id="progressTotal">/05</span></span>
+      <!-- ○×と進行を点灯チップで表現（直近5問ウィンドウ・JSが描画） -->
+      <span class="score-chips" id="scoreChips"></span>
+    </div>
+    <span class="state-label" id="stateLabel">READY</span>
+  </div>
+
+  <!-- ステージ（ボタンがサムゾーン最下部） -->
+  <div class="stage" id="stage">
+    <div class="stage-message" id="stageMessage">
+      <span class="big">ボタンを押してスタート</span>
+      ボタンチェックで動画が再生されます
+    </div>
+    <div class="button-rig">
+      <div class="pulse-ring" id="pulseRing"></div>
+      <button class="quiz-button standby" id="quizButton">PUSH</button>
+    </div>
+  </div>
+
+  <!-- ボトムシート（ANSWERING時のみスライドイン） -->
+  <div class="answer-sheet" id="answerSheet">
+    <div class="sheet-timer-bar" id="timerBar"><div class="fill"></div></div>
+    <div class="sheet-meta">
+      <span class="sheet-attempts">残り <span id="attemptsNum">2</span>回<span class="dim"> / 3</span></span>
+      <span class="sheet-sec" id="sheetSec">10s</span>
+    </div>
+    <div class="sheet-input-row">
+      <input type="text" class="answer-input" id="answerInput" placeholder="解答を入力" maxlength="100">
+      <button class="submit-button" id="submitButton">送信</button>
+    </div>
+  </div>
+
+  <!-- リザルトバナー（正解/不正解） 実装時: aria-live="assertive" -->
+  <div class="result-banner" id="resultBanner">正解！</div>
+
+  <!-- FINISHED: フルスクリーンリザルト -->
+  <div class="finished-overlay" id="finishedOverlay">
+    <div class="final-title">RESULT</div>
+    <div class="final-score"><span class="num" id="finalScoreNum">3</span><span class="den" id="finalScoreDen"> / 5</span></div>
+    <div class="final-rate">正解率 <span class="pct" id="finalRatePct">60%</span></div>
+    <div class="result-list" id="resultList"></div>
+    <button class="replay-button" onclick="setState('ready')">もう一度プレイ</button>
+  </div>
+</div>
+
+<!-- デモコントロール -->
+<div class="demo-controls">
+  <h4>🎮 デモコントロール</h4>
+  <div class="demo-section">
+    <div class="demo-section-title">ゲーム状態:</div>
+    <div class="demo-button-grid">
+      <button class="demo-button" onclick="setState('loading', this)">LOADING</button>
+      <button class="demo-button active" onclick="setState('ready', this)">READY</button>
+      <button class="demo-button" onclick="setState('talking', this)">TALKING</button>
+      <button class="demo-button" onclick="setState('questioning', this)">QUESTIONING</button>
+      <button class="demo-button" onclick="setState('answering', this)">ANSWERING</button>
+      <button class="demo-button" onclick="setState('waiting', this)">WAITING</button>
+      <button class="demo-button" onclick="setState('revealing', this)">REVEALING</button>
+      <button class="demo-button" onclick="setState('finished', this)">FINISHED</button>
+    </div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-section-title">問題数:</div>
+    <div class="demo-button-grid">
+      <button class="demo-button keep active" onclick="setQuestionCount(5, this)">5問</button>
+      <button class="demo-button keep" onclick="setQuestionCount(10, this)">10問</button>
+    </div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-section-title">アクション:</div>
+    <div class="demo-button-full">
+      <button class="demo-button" onclick="showResult(true)">正解バナー</button>
+      <button class="demo-button" onclick="showResult(false)">不正解バナー</button>
+      <button class="demo-button" onclick="startCountdown()">カウントダウン</button>
+      <button class="demo-button" onclick="showDialog('loading')">ローディング</button>
+      <button class="demo-button" onclick="showDialog('orientation')">横画面警告</button>
+      <button class="demo-button" onclick="setState('ready')">フロー初期化</button>
+    </div>
+  </div>
+  <div class="demo-info">
+    <strong>現在の状態:</strong><br>
+    <span id="currentStateInfo">READY</span><br><br>
+    <strong>構造変更のポイント:</strong><br>
+    ・ボタンを画面最下部（サムゾーン）に固定<br>
+    ・解答入力は ANSWERING 時のみボトムシート<br>
+    ・進行/スコアはスリム HUD に集約<br>
+    ・FINISHED はフルスクリーンのリザルト
+  </div>
+</div>
+
+<script>
+let currentState = 'ready';
+let countdownTimer = null;
+const COUNTDOWN_TOTAL = 10;
+let countdownValue = COUNTDOWN_TOTAL;
+let bannerTimer = null;
+let questionCount = 5;
+
+const el = (id) => document.getElementById(id);
+const pad2 = (n) => String(n).padStart(2, '0');
+
+/* チップ列は「直近5問のスライディングウィンドウ」で表示する。
+   位置情報は Q カウンタが担い、チップ列は直近の戦績（モメンタム）を担う。
+   ウィンドウ外に問題がある側には省略ドットを出す。 */
+const CHIP_WINDOW = 5;
+const DEMOS = {
+  5: {
+    current: 3,
+    finalResults: [
+      { mark: 'o', ans: 'あまおう', yours: 'あなた: あまおう' },
+      { mark: 'x', ans: '小豆', yours: 'あなた: 大豆' },
+      { mark: 'o', ans: 'ペタロイド', yours: 'あなた: ぺたろいど' },
+      { mark: 's', ans: '300', yours: 'スキップ' },
+      { mark: 'o', ans: '風の又三郎', yours: 'あなた: 風の又三郎' },
+    ],
+  },
+  10: {
+    current: 7,
+    finalResults: [
+      { mark: 'o', ans: 'あまおう', yours: 'あなた: あまおう' },
+      { mark: 'x', ans: '小豆', yours: 'あなた: 大豆' },
+      { mark: 'o', ans: 'ペタロイド', yours: 'あなた: ぺたろいど' },
+      { mark: 's', ans: '300', yours: 'スキップ' },
+      { mark: 'o', ans: '風の又三郎', yours: 'あなた: 風の又三郎' },
+      { mark: 'x', ans: 'カピバラ', yours: 'あなた: ヌートリア' },
+      { mark: 'o', ans: '太平洋', yours: 'あなた: たいへいよう' },
+      { mark: 'o', ans: 'シリウス', yours: 'あなた: シリウス' },
+      { mark: 'n', ans: '1192', yours: 'あなた: ' },
+      { mark: 'x', ans: 'モルダウ', yours: 'あなた: ドナウ' },
+    ],
+  },
+};
+
+let chipStart = null; // null = 現在の問題に自動追従
+
+function chipSvg(cls, ref) {
+  return `<svg class="chip${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="${ref}"/></svg>`;
+}
+
+function navBtn(dir, disabled) {
+  const label = dir === 'prev' ? '前の結果' : '次の結果';
+  return `<button class="chips-nav ${dir}" onclick="moveChips(${dir === 'prev' ? -1 : 1})"${disabled ? ' disabled' : ''} aria-label="${label}"><svg aria-hidden="true"><use href="#tri"/></svg></button>`;
+}
+
+/* 右端は「現在の問題が右端に来る位置」まで。それより先（未来の問題）へは送れない */
+function maxChipStart() {
+  return Math.max(1, DEMOS[questionCount].current - CHIP_WINDOW + 1);
+}
+
+function autoChipStart() {
+  return maxChipStart();
+}
+
+function moveChips(delta) {
+  chipStart = Math.min(maxChipStart(), Math.max(1, (chipStart ?? autoChipStart()) + delta));
+  renderChips();
+}
+
+function renderChips() {
+  const { current, finalResults } = DEMOS[questionCount];
+  const total = finalResults.length;
+  const start = chipStart ?? autoChipStart();
+  const end = Math.min(total, start + CHIP_WINDOW - 1);
+  let html = total > CHIP_WINDOW ? navBtn('prev', start === 1) : '';
+  for (let q = start; q <= end; q++) {
+    if (q === current) {
+      html += chipSvg('current', '#chip-empty');
+    } else if (q < current) {
+      const m = finalResults[q - 1].mark;
+      const cls = { o: 'correct', x: 'incorrect', s: 'skipped', n: 'noanswer' }[m];
+      html += chipSvg(cls, `#chip-${m}`);
+    } else {
+      html += chipSvg('', '#chip-empty');
+    }
+  }
+  if (total > CHIP_WINDOW) html += navBtn('next', start === maxChipStart());
+  el('scoreChips').innerHTML = html;
+  el('progressNum').textContent = pad2(current);
+  el('progressTotal').textContent = '/' + pad2(total);
+}
+
+function renderFinished() {
+  const { finalResults } = DEMOS[questionCount];
+  const total = finalResults.length;
+  const score = finalResults.filter((r) => r.mark === 'o').length;
+  el('finalScoreNum').textContent = score;
+  el('finalScoreDen').textContent = ' / ' + total;
+  el('finalRatePct').textContent = Math.round((score / total) * 100) + '%';
+  el('resultList').innerHTML = finalResults.map((r, i) => `
+    <div class="result-row">
+      <svg class="mark ${r.mark}" aria-hidden="true"><use href="#chip-${r.mark}"/></svg>
+      <span class="body"><span class="ans">${r.ans}</span><br><span class="yours">${r.yours}</span></span>
+      <span class="qno">Q${i + 1}</span>
+    </div>`).join('');
+}
+
+function markKeepActive(btn) {
+  btn.parentElement.querySelectorAll('.demo-button').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function setQuestionCount(n, btn) {
+  questionCount = n;
+  chipStart = null;
+  renderChips();
+  renderFinished();
+  markKeepActive(btn);
+}
+
+const STATE_LABELS = {
+  loading: '読み込み中', ready: 'READY', talking: 'トーク中',
+  questioning: '早押し受付中！', answering: '解答中', waiting: '他プレイヤー解答中',
+  revealing: '正解発表', finished: '終了',
+};
+
+function setStage(message, sub, buttonState, lit, pulse) {
+  el('stageMessage').innerHTML = message ? `<span class="big">${message}</span>${sub ?? ''}` : '';
+  setButtonState(buttonState.state, buttonState.label);
+  el('stage').classList.toggle('lit', !!lit);
+  el('pulseRing').classList.toggle('active', !!pulse);
+}
+
+function setState(state, targetButton = null) {
+  currentState = state;
+  stopCountdown();
+  el('answerSheet').classList.remove('open');
+  el('resultBanner').classList.remove('show');
+  el('finishedOverlay').classList.remove('show');
+  el('loadingDialog').classList.remove('show');
+  if (state !== 'loading') el('videoContainer').classList.remove('hidden');
+
+  const label = el('stateLabel');
+  label.textContent = STATE_LABELS[state];
+  label.classList.toggle('hot', state === 'questioning');
+
+  switch (state) {
+    case 'loading':
+      el('loadingDialog').classList.add('show');
+      setStage('', '', { state: 'disabled', label: '...' }, false, false);
+      break;
+    case 'ready':
+      setStage('ボタンを押してスタート', 'ボタンチェックで動画が再生されます', { state: 'standby', label: 'PUSH' }, true, false);
+      break;
+    case 'talking':
+      setStage('次の問題まで待機', '出題されたらボタンが点灯します', { state: 'disabled', label: 'WAIT' }, false, false);
+      break;
+    case 'questioning':
+      setStage('早押し受付中！', '分かったら今すぐプッシュ', { state: 'standby', label: 'PUSH' }, true, true);
+      break;
+    case 'answering':
+      setStage('', '', { state: 'released', label: 'ON!' }, true, false);
+      el('answerSheet').classList.add('open');
+      el('answerInput').value = '';
+      el('answerInput').focus();
+      startCountdown();
+      break;
+    case 'waiting':
+      setStage('他プレイヤーが解答中', '', { state: 'disabled', label: 'WAIT' }, false, false);
+      break;
+    case 'revealing':
+      setStage('正解発表中', '', { state: 'disabled', label: 'ANSWER' }, false, false);
+      break;
+    case 'finished':
+      el('finishedOverlay').classList.add('show');
+      break;
+  }
+
+  document.querySelectorAll('.demo-button:not(.keep)').forEach((b) => b.classList.remove('active'));
+  if (targetButton) targetButton.classList.add('active');
+  el('currentStateInfo').textContent = state.toUpperCase();
+}
+
+function setButtonState(state, label) {
+  const btn = el('quizButton');
+  btn.className = `quiz-button ${state}`;
+  btn.disabled = state === 'disabled';
+  if (label) btn.textContent = label;
+}
+
+function showResult(isCorrect) {
+  const banner = el('resultBanner');
+  banner.className = `result-banner ${isCorrect ? 'correct' : 'incorrect'}`;
+  banner.textContent = isCorrect ? '正解！' : '不正解';
+  requestAnimationFrame(() => banner.classList.add('show'));
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => banner.classList.remove('show'), 1200);
+}
+
+function startCountdown() {
+  if (currentState !== 'answering') return;
+  stopCountdown();
+  countdownValue = COUNTDOWN_TOTAL;
+  updateTimer();
+  countdownTimer = setInterval(() => {
+    countdownValue -= 0.1;
+    updateTimer();
+    if (countdownValue <= 0) stopCountdown();
+  }, 100);
+}
+
+function updateTimer() {
+  const sec = Math.max(0, Math.ceil(countdownValue));
+  el('sheetSec').textContent = sec + 's';
+  document.documentElement.style.setProperty('--timer-progress', Math.max(0, countdownValue / COUNTDOWN_TOTAL));
+  const urgent = sec <= 3;
+  el('sheetSec').classList.toggle('urgent', urgent);
+  el('timerBar').classList.toggle('urgent', urgent);
+}
+
+function stopCountdown() {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+}
+
+function showDialog(type) { el(type === 'loading' ? 'loadingDialog' : 'orientationDialog').classList.add('show'); }
+function hideDialog(type) { el(type === 'loading' ? 'loadingDialog' : 'orientationDialog').classList.remove('show'); }
+
+el('quizButton').addEventListener('click', function () {
+  if (currentState === 'ready') {
+    setState('talking');
+  } else if (currentState === 'questioning' && !this.disabled) {
+    setState('answering');
+  }
+});
+el('submitButton').addEventListener('click', function () {
+  if (currentState === 'answering') {
+    setState('waiting');
+    showResult(true);
+  }
+});
+el('answerInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') el('submitButton').click();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && (currentState === 'ready' || currentState === 'questioning')) {
+    e.preventDefault();
+    el('quizButton').click();
+  }
+});
+
+renderChips();
+renderFinished();
+setState('ready');
+</script>
+</body>
+</html>
