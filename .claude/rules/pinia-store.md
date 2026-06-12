@@ -31,5 +31,5 @@ paths:
 
 ## テスト
 
-- ストアに対するテストは `src/services/__tests__/gameStore.test.ts` の既存パターンに合わせる
+- ストアに対するテストは `src/stores/__tests__/gameStore.test.ts` の既存パターンに合わせる
 - `setActivePinia(createPinia())` を `beforeEach` で呼ぶ

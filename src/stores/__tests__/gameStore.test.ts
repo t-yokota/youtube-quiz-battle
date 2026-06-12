@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useGameStore } from '../../stores/gameStore'
+import { useGameStore } from '../gameStore'
 import { GameState } from '@/types'
 import type { QuizData } from '@/types'
 

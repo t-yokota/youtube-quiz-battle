@@ -54,3 +54,5 @@ describe('Foo', () => {
 - `src/services/__tests__/answerValidator.test.ts` — シンプルな入力→出力テスト
 - `src/services/__tests__/gameManager.test.ts` — Pinia ストアと連携するテスト
 - `src/services/__tests__/timeManager.test.ts` — タイマー / 時間計算のテスト
+- `src/services/__tests__/quizDataLoader.test.ts` — `fetch` を `vi.stubGlobal` でモックするテスト
+- `src/stores/__tests__/gameStore.test.ts` — Pinia ストア単体の状態遷移テスト
