@@ -119,7 +119,7 @@ export class GameManager {
     this.stopAnswerCountdown()
 
     // answerTimeRemainingをリセット（再入場時のため）
-    this.gameStore.answerTimeRemaining = this.gameStore.quizData?.settings.answerTimeLimit ?? 10
+    this.gameStore.resetAnswerTime()
 
     this.resumeAnswerCountdown()
   }
@@ -132,9 +132,9 @@ export class GameManager {
     this.stopAnswerCountdown()
 
     this.answerCountdownInterval = window.setInterval(() => {
-      this.gameStore.answerTimeRemaining--
+      const remaining = this.gameStore.decrementAnswerTime()
 
-      if (this.gameStore.answerTimeRemaining <= 0) {
+      if (remaining <= 0) {
         this.handleAnswerTimeout()
       }
     }, ANSWER_COUNTDOWN_INTERVAL_MS)
@@ -217,14 +217,14 @@ export class GameManager {
     const stateAtPress = this.gameStore.currentState
 
     // ボタン状態遷移: STANDBY -> PUSHED -> RELEASED
-    this.gameStore.buttonState = ButtonState.PUSHED
+    this.gameStore.setButtonState(ButtonState.PUSHED)
     setTimeout(() => {
-      this.gameStore.buttonState = ButtonState.RELEASED
+      this.gameStore.setButtonState(ButtonState.RELEASED)
 
       if (stateAtPress === GameState.READY) {
         // ボタンチェック: BUTTON_CHECK_RELEASE_MS後にTALKING状態へ遷移し、動画再生開始
         setTimeout(() => {
-          this.gameStore.buttonState = ButtonState.STANDBY
+          this.gameStore.setButtonState(ButtonState.STANDBY)
           this.gameStore.transitionToState(GameState.TALKING)
           // 動画再生開始
           this.internalAction = true
@@ -633,7 +633,7 @@ export class GameManager {
       curr + TIME_EPSILON_SEC >= question.startTime
     ) {
       // currentQuestionIndexを更新（動画再生位置ベースの表示用）
-      this.gameStore.currentQuestionIndex = question.index
+      this.gameStore.setCurrentQuestionIndex(question.index)
 
       if (!c.start) {
         c.start = true
@@ -765,7 +765,7 @@ export class GameManager {
     logger.log('[GameManager] onStart:', question.index)
 
     // ゲームストアの currentQuestionIndex を更新
-    this.gameStore.currentQuestionIndex = question.index
+    this.gameStore.setCurrentQuestionIndex(question.index)
 
     // 問題単位の状態初期化（remainingAttempts / answerResult / answerInput をリセット）
     this.gameStore.initializeForQuestion()

@@ -274,6 +274,38 @@ export const useGameStore = defineStore('game', () => {
   }
 
   /**
+   * ボタン状態を設定する
+   */
+  function setButtonState(state: ButtonState): void {
+    logger.log(`[GameStore] Button state: ${buttonState.value} -> ${state}`)
+    buttonState.value = state
+  }
+
+  /**
+   * answerTimeRemaining を制限時間初期値にリセットする
+   */
+  function resetAnswerTime(): void {
+    answerTimeRemaining.value = quizData.value?.settings.answerTimeLimit ?? 10
+    logger.log(`[GameStore] Answer time reset to: ${answerTimeRemaining.value}`)
+  }
+
+  /**
+   * answerTimeRemaining を 1 減らし、減算後の値を返す
+   */
+  function decrementAnswerTime(): number {
+    answerTimeRemaining.value--
+    return answerTimeRemaining.value
+  }
+
+  /**
+   * currentQuestionIndex を設定する
+   */
+  function setCurrentQuestionIndex(index: number): void {
+    logger.log(`[GameStore] currentQuestionIndex: ${currentQuestionIndex.value} -> ${index}`)
+    currentQuestionIndex.value = index
+  }
+
+  /**
    * 解答入力更新処理
    */
   function updateAnswerInput(value: string) {
@@ -337,6 +369,10 @@ export const useGameStore = defineStore('game', () => {
     handleAnswerSubmit,
     updateAnswerInput,
     initializeForQuestion,
+    setButtonState,
+    resetAnswerTime,
+    decrementAnswerTime,
+    setCurrentQuestionIndex,
     setQuizData,
     resetGame,
   }
