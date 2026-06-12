@@ -135,6 +135,12 @@ describe('状態遷移（時間経過起点）', () => {
     expect(store.currentState).toBe(GameState.QUESTIONING)
   })
 
+  it('startTime ちょうどで QUESTIONING に遷移する（境界値）', () => {
+    const { gm, store } = makeGameManager()
+    simulatePlayback(gm, 10.0)
+    expect(store.currentState).toBe(GameState.QUESTIONING)
+  })
+
   it('startTime 到達前は状態変化しない', () => {
     const { gm, store } = makeGameManager()
     simulatePlayback(gm, 9.9)
@@ -147,9 +153,21 @@ describe('状態遷移（時間経過起点）', () => {
     expect(store.currentState).toBe(GameState.REVEALING)
   })
 
+  it('revealTime ちょうどで REVEALING に遷移する（境界値）', () => {
+    const { gm, store } = makeGameManager()
+    simulatePlayback(gm, 20.0)
+    expect(store.currentState).toBe(GameState.REVEALING)
+  })
+
   it('Q1 endTime 到達で TALKING に遷移する（次の問題あり）', () => {
     const { gm, store } = makeGameManager()
     simulatePlayback(gm, 25.1)
+    expect(store.currentState).toBe(GameState.TALKING)
+  })
+
+  it('Q1 endTime ちょうどで TALKING に遷移する（境界値）', () => {
+    const { gm, store } = makeGameManager()
+    simulatePlayback(gm, 25.0)
     expect(store.currentState).toBe(GameState.TALKING)
   })
 
@@ -172,9 +190,21 @@ describe('OthersAnsweringPeriods', () => {
     expect(store.currentState).toBe(GameState.WAITING)
   })
 
+  it('othersAnsweringPeriod の startTime ちょうどで WAITING に遷移する（境界値）', () => {
+    const { gm, store } = makeGameManager()
+    simulatePlayback(gm, 32.0)
+    expect(store.currentState).toBe(GameState.WAITING)
+  })
+
   it('期間終了で QUESTIONING に復帰する', () => {
     const { gm, store } = makeGameManager()
     simulatePlayback(gm, 35.1)
+    expect(store.currentState).toBe(GameState.QUESTIONING)
+  })
+
+  it('othersAnsweringPeriod の endTime ちょうどで QUESTIONING に復帰する（境界値）', () => {
+    const { gm, store } = makeGameManager()
+    simulatePlayback(gm, 35.0)
     expect(store.currentState).toBe(GameState.QUESTIONING)
   })
 })
@@ -188,8 +218,8 @@ describe('(prev, curr] 窓での複数閾値走査', () => {
     // Q1: start=10.0, reveal=10.4, end=10.8
     // prev=9.9 → curr=10.5 (差0.6 ≤ 1.0, シーク未検出): start(10.0) と reveal(10.4) を同時に跨ぐ
     const { gm, store } = makeGameManager(makeMultiThresholdQuizData())
-    simulatePlayback(gm, 9.9)    // prev=9.9, seek 未検出
-    gm.updateVideoTime(10.5)     // (9.9, 10.5]: start(10.0) と reveal(10.4) を含む
+    simulatePlayback(gm, 9.9) // prev=9.9, seek 未検出
+    gm.updateVideoTime(10.5) // (9.9, 10.5]: start(10.0) と reveal(10.4) を含む
     expect(store.currentState).toBe(GameState.REVEALING)
   })
 
@@ -197,7 +227,7 @@ describe('(prev, curr] 窓での複数閾値走査', () => {
     // prev=9.9 → curr=10.9 (差1.0, NOT > 1.0, シーク未検出): 3閾値すべてを跨ぐ
     const { gm, store } = makeGameManager(makeMultiThresholdQuizData())
     simulatePlayback(gm, 9.9)
-    gm.updateVideoTime(10.9)     // (9.9, 10.9]: start(10.0), reveal(10.4), end(10.8) を含む
+    gm.updateVideoTime(10.9) // (9.9, 10.9]: start(10.0), reveal(10.4), end(10.8) を含む
     expect(store.currentState).toBe(GameState.TALKING)
   })
 })
@@ -254,7 +284,7 @@ describe('Single-Shot Guard', () => {
     gm.updateVideoTime(27.0) // |27.0 - 5.0| = 22.0 > 1.0 → シーク検出
 
     // Q1がスキップとして結果に記録されている
-    const q1Result = store.results.find(r => r.questionNumber === 1)
+    const q1Result = store.results.find((r) => r.questionNumber === 1)
     expect(q1Result).toBeDefined()
     expect(q1Result!.skipped).toBe(true)
     expect(q1Result!.isCorrect).toBe(false)
@@ -341,13 +371,13 @@ describe('Single-Shot Guard', () => {
     gm.updateVideoTime(46.0)
 
     // Q1: currentQuestionなので解答履歴が紐付く
-    const q1 = store.results.find(r => r.questionNumber === 1)
+    const q1 = store.results.find((r) => r.questionNumber === 1)
     expect(q1).toBeDefined()
     expect(q1!.userAnswers).toEqual(['間違い'])
     expect(q1!.skipped).toBe(false)
 
     // Q2: 別の問題なので解答履歴なし、スキップ扱い
-    const q2 = store.results.find(r => r.questionNumber === 2)
+    const q2 = store.results.find((r) => r.questionNumber === 2)
     expect(q2).toBeDefined()
     expect(q2!.userAnswers).toEqual([])
     expect(q2!.skipped).toBe(true)
@@ -847,7 +877,7 @@ describe('recordSkippedQuestion', () => {
     // Q1: start=10 → endTime=25 を通過（ボタン押さず）
     simulatePlayback(gm, 26, 0)
 
-    const result = store.results.find(r => r.questionNumber === 1)
+    const result = store.results.find((r) => r.questionNumber === 1)
     expect(result).toBeDefined()
     expect(result!.skipped).toBe(false)
     expect(result!.isCorrect).toBe(false)
@@ -875,7 +905,7 @@ describe('recordSkippedQuestion', () => {
 
     // consumed start由来のスキップも含めて確認
     // 最初のonEnd由来の結果があるので2件目は記録されない（alreadyRecordedガード）
-    const q1Results = store.results.filter(r => r.questionNumber === 1)
+    const q1Results = store.results.filter((r) => r.questionNumber === 1)
     expect(q1Results).toHaveLength(1)
   })
 
@@ -906,7 +936,7 @@ describe('recordSkippedQuestion', () => {
     simulatePlayback(gm, 26, 11)
 
     // 結果は1つだけ（正解のもの）
-    const q1Results = store.results.filter(r => r.questionNumber === 1)
+    const q1Results = store.results.filter((r) => r.questionNumber === 1)
     expect(q1Results).toHaveLength(1)
     expect(q1Results[0].isCorrect).toBe(true)
     expect(q1Results[0].skipped).toBe(false)
@@ -927,7 +957,7 @@ describe('recordSkippedQuestion', () => {
     // リトライせずにendTime(25)を通過
     simulatePlayback(gm, 26, 11)
 
-    const result = store.results.find(r => r.questionNumber === 1)
+    const result = store.results.find((r) => r.questionNumber === 1)
     expect(result).toBeDefined()
     expect(result!.skipped).toBe(false) // 解答しているのでスキップではない
     expect(result!.isCorrect).toBe(false)
@@ -954,7 +984,7 @@ describe('recordSkippedQuestion', () => {
     // リトライせずにendTime通過
     simulatePlayback(gm, 26, 11)
 
-    const result = store.results.find(r => r.questionNumber === 1)
+    const result = store.results.find((r) => r.questionNumber === 1)
     expect(result).toBeDefined()
     expect(result!.skipped).toBe(false)
     expect(result!.userAnswers).toEqual(['間違い1', '間違い2'])
@@ -1046,7 +1076,7 @@ describe('userAnswers蓄積（GameManager経由）', () => {
     // 正解を送信
     gm.handleAnswerSubmit('東京')
 
-    const result = store.results.find(r => r.questionNumber === 1)
+    const result = store.results.find((r) => r.questionNumber === 1)
     expect(result).toBeDefined()
     expect(result!.userAnswers).toEqual(['東京'])
     expect(result!.skipped).toBe(false)
@@ -1074,7 +1104,7 @@ describe('userAnswers蓄積（GameManager経由）', () => {
     gm.handleAnswerSubmit('東京')
     expect(store.currentState).toBe(GameState.WAITING)
 
-    const recorded = store.results.find(r => r.questionNumber === 1)
+    const recorded = store.results.find((r) => r.questionNumber === 1)
     expect(recorded).toBeDefined()
     expect(recorded!.userAnswers).toEqual(['間違い', '東京'])
     expect(recorded!.isCorrect).toBe(true)
@@ -1101,7 +1131,7 @@ describe('userAnswers蓄積（GameManager経由）', () => {
     gm.handleAnswerSubmit('大阪')
 
     // Q2の結果にQ1の解答が混入していないことを確認
-    const q2Result = store.results.find(r => r.questionNumber === 2)
+    const q2Result = store.results.find((r) => r.questionNumber === 2)
     expect(q2Result).toBeDefined()
     expect(q2Result!.userAnswers).toEqual(['大阪'])
   })
@@ -1125,7 +1155,9 @@ describe('consumed リセット（skipped考慮）', () => {
 
     // Q1を未解答のまま通過（ボタン押さず）
     simulatePlayback(gm, 26, 0)
-    expect(store.results.some(r => r.questionNumber === 1 && !r.skipped && r.userAnswers.length === 0)).toBe(true)
+    expect(
+      store.results.some((r) => r.questionNumber === 1 && !r.skipped && r.userAnswers.length === 0),
+    ).toBe(true)
 
     // 全問通過してFINISHED
     simulatePlayback(gm, 46, 26)
@@ -1187,7 +1219,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
     // 前方シーク: 1s→5s（Q1 startTime=4を跨ぐ）
     // → consumeQuestionsBySeek で Q1 が skipped として記録される
     gm.updateVideoTime(5)
-    expect(store.results.some(r => r.questionNumber === 1 && r.skipped)).toBe(true)
+    expect(store.results.some((r) => r.questionNumber === 1 && r.skipped)).toBe(true)
 
     // タブ非表示 → External Pause
     Object.defineProperty(document, 'hidden', { value: true, configurable: true })
@@ -1201,7 +1233,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
     document.dispatchEvent(new Event('visibilitychange'))
 
     // skipped結果が削除されていることを確認
-    expect(store.results.some(r => r.questionNumber === 1)).toBe(false)
+    expect(store.results.some((r) => r.questionNumber === 1)).toBe(false)
 
     // 0sから再度通常再生でQ1 startTime(4)を通過 → QUESTIONING に入れること
     simulatePlayback(gm, 5, 0)
@@ -1214,7 +1246,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
 
     // GameManager経由で正解を送信 → 結果が記録される
     gm.handleAnswerSubmit('東京')
-    expect(store.results.some(r => r.questionNumber === 1 && r.isCorrect)).toBe(true)
+    expect(store.results.some((r) => r.questionNumber === 1 && r.isCorrect)).toBe(true)
   })
 
   it('巻き戻り補正で正答済み結果は削除されない', () => {
@@ -1229,7 +1261,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
 
     // 前方シーク: 1s→5s（Q1 startTime=4を跨ぐ）→ Q1 が skipped として記録
     gm.updateVideoTime(5)
-    expect(store.results.some(r => r.questionNumber === 1 && r.skipped)).toBe(true)
+    expect(store.results.some((r) => r.questionNumber === 1 && r.skipped)).toBe(true)
 
     // タブ非表示 → External Pause
     Object.defineProperty(document, 'hidden', { value: true, configurable: true })
@@ -1241,7 +1273,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
     // タブ表示 → resumeExternal → 巻き戻り補正で skipped 結果を削除 + consumed リセット
     Object.defineProperty(document, 'hidden', { value: false, configurable: true })
     document.dispatchEvent(new Event('visibilitychange'))
-    expect(store.results.some(r => r.questionNumber === 1)).toBe(false)
+    expect(store.results.some((r) => r.questionNumber === 1)).toBe(false)
 
     // 再度通常再生で Q1 を通過し、正解する
     simulatePlayback(gm, 5, 0)
@@ -1249,7 +1281,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
     gm.handleButtonPress()
     vi.advanceTimersByTime(100)
     gm.handleAnswerSubmit('東京')
-    expect(store.results.some(r => r.questionNumber === 1 && r.isCorrect)).toBe(true)
+    expect(store.results.some((r) => r.questionNumber === 1 && r.isCorrect)).toBe(true)
     expect(store.correctCount).toBe(1)
 
     // 再度 External Pause + 巻き戻り → 正答済みの Q1 は削除されない
@@ -1260,7 +1292,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
     document.dispatchEvent(new Event('visibilitychange'))
 
     // 正答済み結果が維持されていることを確認
-    expect(store.results.find(r => r.questionNumber === 1)?.isCorrect).toBe(true)
+    expect(store.results.find((r) => r.questionNumber === 1)?.isCorrect).toBe(true)
     expect(store.correctCount).toBe(1)
   })
 })

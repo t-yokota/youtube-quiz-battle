@@ -75,7 +75,7 @@ describe('TimeManager', () => {
 
     it('差がちょうど 1.0秒の場合はシーク未検出（境界値：以下）', () => {
       expect(tm.isSeekDetected(11.0)).toBe(false) // |11.0 - 10.0| = 1.0, not > 1.0
-      expect(tm.isSeekDetected(9.0)).toBe(false)  // |9.0 - 10.0| = 1.0, not > 1.0
+      expect(tm.isSeekDetected(9.0)).toBe(false) // |9.0 - 10.0| = 1.0, not > 1.0
     })
 
     it('差が 1.0秒を超えるとシーク検出（前方）', () => {
@@ -86,54 +86,6 @@ describe('TimeManager', () => {
     it('差が 1.0秒を超えるとシーク検出（後方）', () => {
       expect(tm.isSeekDetected(8.999)).toBe(true)
       expect(tm.isSeekDetected(0.0)).toBe(true)
-    })
-  })
-
-  // ============================================================================
-  // isInQuestionPeriod（startTime <= time < revealTime）
-  // ============================================================================
-
-  describe('isInQuestionPeriod', () => {
-    const q = makeQuestions()[0] // start=10, reveal=20
-
-    it('startTime ちょうどは true', () => {
-      expect(tm.isInQuestionPeriod(10, q)).toBe(true)
-    })
-
-    it('revealTime 直前は true', () => {
-      expect(tm.isInQuestionPeriod(19.999, q)).toBe(true)
-    })
-
-    it('revealTime ちょうどは false', () => {
-      expect(tm.isInQuestionPeriod(20, q)).toBe(false)
-    })
-
-    it('startTime より前は false', () => {
-      expect(tm.isInQuestionPeriod(9.999, q)).toBe(false)
-    })
-  })
-
-  // ============================================================================
-  // isInRevealPeriod（revealTime <= time < endTime）
-  // ============================================================================
-
-  describe('isInRevealPeriod', () => {
-    const q = makeQuestions()[0] // reveal=20, end=25
-
-    it('revealTime ちょうどは true', () => {
-      expect(tm.isInRevealPeriod(20, q)).toBe(true)
-    })
-
-    it('endTime 直前は true', () => {
-      expect(tm.isInRevealPeriod(24.999, q)).toBe(true)
-    })
-
-    it('endTime ちょうどは false', () => {
-      expect(tm.isInRevealPeriod(25, q)).toBe(false)
-    })
-
-    it('revealTime より前は false', () => {
-      expect(tm.isInRevealPeriod(19.999, q)).toBe(false)
     })
   })
 
