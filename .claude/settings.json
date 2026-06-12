@@ -1,9 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Edit(/**)",
-      "Write(/**)",
-      "mcp__playwright__*"
+      "Edit(./**)",
+      "Write(./**)",
+      "mcp__playwright__*",
+      "Bash(npm run *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)"
     ]
   },
   "hooks": {
@@ -13,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/format-on-edit.mjs",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/format-on-edit.mjs\"",
             "timeout": 10000,
             "async": true,
             "statusMessage": "format-on-edit"
@@ -27,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/typecheck-on-stop.mjs",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/typecheck-on-stop.mjs\"",
             "timeout": 60000,
             "async": false,
             "statusMessage": "vue-tsc"
