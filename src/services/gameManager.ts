@@ -1,8 +1,17 @@
 // ゲーム管理サービス
 import type { QuizData, QuizQuestion, YouTubePlayerManager } from '@/types'
 import { GameState, ButtonState } from '@/types'
+import { YouTubePlayerState } from '@/types/youtubePlayer'
 import { createTimeManager, TimeManager } from './timeManager'
-import { STALL_WALL_MS, STALL_VIDEO_DELTA_SEC, TIME_EPSILON_SEC } from '@/constants/timing'
+import {
+  STALL_WALL_MS,
+  STALL_VIDEO_DELTA_SEC,
+  TIME_EPSILON_SEC,
+  BUTTON_PUSHED_DURATION_MS,
+  BUTTON_CHECK_RELEASE_MS,
+  ANSWER_COUNTDOWN_INTERVAL_MS,
+  YOUTUBE_REWIND_THRESHOLD_SEC,
+} from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
 
 /**
@@ -37,7 +46,6 @@ export class GameManager {
   private consumed: Record<number, ConsumedFlags> = {}
 
   // YouTube Playerによる巻き戻し関連
-  private readonly YOUTUBE_REWIND_THRESHOLD_SEC = 5.5 // 巻き戻り発生の閾値（秒）
   private hasPassedRewindThreshold: boolean = false // 閾値通過フラグ
 
   // 解答カウントダウンタイマー（ANSWERING中の制限時間管理）
@@ -128,7 +136,7 @@ export class GameManager {
       if (this.gameStore.answerTimeRemaining <= 0) {
         this.handleAnswerTimeout()
       }
-    }, 1000)
+    }, ANSWER_COUNTDOWN_INTERVAL_MS)
 
     console.log('[GameManager] Answer countdown started:', this.gameStore.answerTimeRemaining)
   }
@@ -213,7 +221,7 @@ export class GameManager {
       this.gameStore.buttonState = ButtonState.RELEASED
 
       if (stateAtPress === GameState.READY) {
-        // ボタンチェック: 1500ms後にTALKING状態へ遷移し、動画再生開始
+        // ボタンチェック: BUTTON_CHECK_RELEASE_MS後にTALKING状態へ遷移し、動画再生開始
         setTimeout(() => {
           this.gameStore.buttonState = ButtonState.STANDBY
           this.gameStore.transitionToState(GameState.TALKING)
@@ -221,7 +229,7 @@ export class GameManager {
           this.internalAction = true
           this.playerManager.playVideo()
           this.internalAction = false
-        }, 1500)
+        }, BUTTON_CHECK_RELEASE_MS)
       } else if (stateAtPress === GameState.QUESTIONING) {
         // 早押し: ANSWERING状態へ遷移し、動画一時停止
         this.gameStore.transitionToState(GameState.ANSWERING)
@@ -232,7 +240,7 @@ export class GameManager {
         // カウントダウンタイマー開始
         this.startAnswerCountdown()
       }
-    }, 100)
+    }, BUTTON_PUSHED_DURATION_MS)
   }
 
   /**
@@ -291,8 +299,8 @@ export class GameManager {
     // - 冒頭0秒からの再生開始時/5秒未満の位置にシークバーで移動したあとの再生開始時に、上記現象の発生条件を満たす
     // - タブに戻って動画の再開をする前にシークバーを操作すると、タブ移動前の再生開始位置ではなくシークバー操作後の位置から動画が再生される
     if (
-      previousVideoTime < this.YOUTUBE_REWIND_THRESHOLD_SEC &&
-      currentVideoTime < this.YOUTUBE_REWIND_THRESHOLD_SEC &&
+      previousVideoTime < YOUTUBE_REWIND_THRESHOLD_SEC &&
+      currentVideoTime < YOUTUBE_REWIND_THRESHOLD_SEC &&
       currentVideoTime < previousVideoTime
     ) {
       // 冒頭5秒以内の範囲でシステムによる動画の巻き戻りが発生した場合
@@ -324,9 +332,12 @@ export class GameManager {
 
       // シーク検知の回避のためにpreviousVideoTimeを更新
       this.timeManager.updatePreviousVideoTime(currentVideoTime)
-      console.log('[GameManager] Updated previousVideoTime to avoid seek detection caused by system rewind:', {
-        previous: this.timeManager.getPreviousVideoTime(),
-      })
+      console.log(
+        '[GameManager] Updated previousVideoTime to avoid seek detection caused by system rewind:',
+        {
+          previous: this.timeManager.getPreviousVideoTime(),
+        },
+      )
     }
 
     console.log('[GameManager] External pause ended:', prevReason, {
@@ -353,7 +364,10 @@ export class GameManager {
       if (document.hidden) {
         // タブが非表示になった時：動画が再生中またはANSWERING中にpause
         const playerState = this.playerManager.getPlayerState()
-        if (playerState === 1 || this.gameStore.currentState === GameState.ANSWERING) {
+        if (
+          playerState === YouTubePlayerState.PLAYING ||
+          this.gameStore.currentState === GameState.ANSWERING
+        ) {
           this.pauseExternal('visibility')
         }
       } else {
@@ -370,9 +384,9 @@ export class GameManager {
       console.log('[GameManager] Page hide', {
         playerState,
         isAnswering,
-        willPause: playerState === 1 || isAnswering,
+        willPause: playerState === YouTubePlayerState.PLAYING || isAnswering,
       })
-      if (playerState === 1 || isAnswering) {
+      if (playerState === YouTubePlayerState.PLAYING || isAnswering) {
         this.pauseExternal('visibility')
       }
     })
@@ -398,7 +412,7 @@ export class GameManager {
 
       // ユーザ操作による状態変化（user）をハンドリング
       // PAUSED状態になった場合
-      if (state === 2) { // YouTubePlayerState.PAUSED
+      if (state === YouTubePlayerState.PAUSED) {
         // ANSWERING中の一時停止は内部操作（handleButtonPress由来）の
         // 非同期到達なので無視する
         if (this.gameStore.currentState === GameState.ANSWERING) return
@@ -406,7 +420,7 @@ export class GameManager {
       }
 
       // PLAYING状態になった場合
-      if (state === 1) { // YouTubePlayerState.PLAYING
+      if (state === YouTubePlayerState.PLAYING) {
         // ANSWERING中にユーザーが再生ボタンを押した場合、即座に停止
         if (this.gameStore.currentState === GameState.ANSWERING) {
           this.internalAction = true
@@ -434,7 +448,8 @@ export class GameManager {
 
     // プレイヤー状態を確認
     const playerState = this.playerManager.getPlayerState()
-    const playbackIntended = playerState === 1 || playerState === 3 // PLAYING or BUFFERING
+    const playbackIntended =
+      playerState === YouTubePlayerState.PLAYING || playerState === YouTubePlayerState.BUFFERING
 
     // 再生停滞検出
     if (
@@ -491,16 +506,19 @@ export class GameManager {
     this.timeManager.updateCurrentVideoTime(current)
 
     // YouTube Player巻き戻り閾値の通過チェック
-    if (!this.hasPassedRewindThreshold && current >= this.YOUTUBE_REWIND_THRESHOLD_SEC) {
+    if (!this.hasPassedRewindThreshold && current >= YOUTUBE_REWIND_THRESHOLD_SEC) {
       this.hasPassedRewindThreshold = true
-      console.log('[GameManager] Passed YouTube rewind threshold:', this.YOUTUBE_REWIND_THRESHOLD_SEC)
+      console.log('[GameManager] Passed YouTube rewind threshold:', YOUTUBE_REWIND_THRESHOLD_SEC)
     }
 
     // シーク検出
     if (this.timeManager.isSeekDetected(current)) {
       console.log('[GameManager] Seek detected:', prev, '->', current)
 
-      if (this.gameStore.currentState === GameState.ANSWERING || this.quizData.settings.disableSeekbar) {
+      if (
+        this.gameStore.currentState === GameState.ANSWERING ||
+        this.quizData.settings.disableSeekbar
+      ) {
         // ANSWERING中 or disableSeekbar=true: 動画時間を強制リセット
         this.internalAction = true
         this.playerManager.seekTo(prev)
@@ -537,7 +555,9 @@ export class GameManager {
       for (const question of this.quizData.questions) {
         // 重なり判定: q.startTime < curr && q.endTime > prev
         if (question.startTime < curr && question.endTime > prev) {
-          const c = this.consumed[question.index] ?? (this.consumed[question.index] = { start: false, reveal: false, end: false })
+          const c =
+            this.consumed[question.index] ??
+            (this.consumed[question.index] = { start: false, reveal: false, end: false })
           c.start = true
           c.reveal = true
           c.end = true
@@ -550,7 +570,9 @@ export class GameManager {
       for (const question of this.quizData.questions) {
         // prev が [startTime, endTime) 区間内か判定
         if (prev >= question.startTime && prev < question.endTime) {
-          const c = this.consumed[question.index] ?? (this.consumed[question.index] = { start: false, reveal: false, end: false })
+          const c =
+            this.consumed[question.index] ??
+            (this.consumed[question.index] = { start: false, reveal: false, end: false })
           c.start = true
           c.reveal = true
           c.end = true
@@ -575,7 +597,9 @@ export class GameManager {
         const isConsumed = c && c.start && c.reveal && c.end
         return !isConsumed && curr >= q.startTime && curr < q.endTime
       })
-      this.gameStore.transitionToState(inUnconsumedQuestionRange ? GameState.WAITING : GameState.TALKING)
+      this.gameStore.transitionToState(
+        inUnconsumedQuestionRange ? GameState.WAITING : GameState.TALKING,
+      )
     }
   }
 
@@ -598,10 +622,15 @@ export class GameManager {
    * @param question 対象の問題
    */
   private applyThresholds(prev: number, curr: number, question: QuizQuestion): void {
-    const c = this.consumed[question.index] ?? (this.consumed[question.index] = { start: false, reveal: false, end: false })
+    const c =
+      this.consumed[question.index] ??
+      (this.consumed[question.index] = { start: false, reveal: false, end: false })
 
     // start 閾値
-    if (prev + TIME_EPSILON_SEC < question.startTime && curr + TIME_EPSILON_SEC >= question.startTime) {
+    if (
+      prev + TIME_EPSILON_SEC < question.startTime &&
+      curr + TIME_EPSILON_SEC >= question.startTime
+    ) {
       // currentQuestionIndexを更新（動画再生位置ベースの表示用）
       this.gameStore.currentQuestionIndex = question.index
 
@@ -621,23 +650,39 @@ export class GameManager {
     if (question.othersAnsweringPeriods) {
       for (const period of question.othersAnsweringPeriods) {
         // 期間開始閾値
-        if (prev + TIME_EPSILON_SEC < period.startTime && curr + TIME_EPSILON_SEC >= period.startTime) {
+        if (
+          prev + TIME_EPSILON_SEC < period.startTime &&
+          curr + TIME_EPSILON_SEC >= period.startTime
+        ) {
           // WAITING 状態へ遷移（動画内プレイヤーの解答中）
           this.gameStore.transitionToState(GameState.WAITING)
-          console.log('[GameManager] Entered OthersAnsweringPeriod:', period.startTime, '-', period.endTime)
+          console.log(
+            '[GameManager] Entered OthersAnsweringPeriod:',
+            period.startTime,
+            '-',
+            period.endTime,
+          )
         }
 
         // 期間終了閾値
         if (prev + TIME_EPSILON_SEC < period.endTime && curr + TIME_EPSILON_SEC >= period.endTime) {
           // QUESTIONING 状態へ復帰
           this.gameStore.transitionToState(GameState.QUESTIONING)
-          console.log('[GameManager] Exited OthersAnsweringPeriod:', period.startTime, '-', period.endTime)
+          console.log(
+            '[GameManager] Exited OthersAnsweringPeriod:',
+            period.startTime,
+            '-',
+            period.endTime,
+          )
         }
       }
     }
 
     // reveal 閾値
-    if (prev + TIME_EPSILON_SEC < question.revealTime && curr + TIME_EPSILON_SEC >= question.revealTime) {
+    if (
+      prev + TIME_EPSILON_SEC < question.revealTime &&
+      curr + TIME_EPSILON_SEC >= question.revealTime
+    ) {
       if (!c.reveal) {
         c.reveal = true
         this.onReveal(question) // 副作用あり：正解表示、REVEALING状態へ
@@ -658,8 +703,11 @@ export class GameManager {
         console.log('[GameManager] Already ended (consumed):', question.index)
 
         // すべての問題が消費済みかチェック
-        const allConsumed = this.quizData.questions.every((q) =>
-          this.consumed[q.index]?.start && this.consumed[q.index]?.reveal && this.consumed[q.index]?.end
+        const allConsumed = this.quizData.questions.every(
+          (q) =>
+            this.consumed[q.index]?.start &&
+            this.consumed[q.index]?.reveal &&
+            this.consumed[q.index]?.end,
         )
 
         // 最後の問題のendTimeを通過したかチェック
@@ -667,7 +715,9 @@ export class GameManager {
         if (allConsumed && question.index === lastQuestion.index) {
           // 副作用なしで FINISHED 状態へ遷移
           this.gameStore.transitionToState(GameState.FINISHED)
-          console.log('[GameManager] All questions consumed and last question ended, transitioning to FINISHED')
+          console.log(
+            '[GameManager] All questions consumed and last question ended, transitioning to FINISHED',
+          )
         } else {
           // 副作用なしで TALKING 状態へ遷移
           this.gameStore.transitionToState(GameState.TALKING)
@@ -698,7 +748,12 @@ export class GameManager {
       isSkip && !hasAttempted,
     )
 
-    console.log('[GameManager] Recording', isSkip ? 'skipped' : hasAttempted ? 'incomplete answer' : 'unanswered', 'question:', questionIndex)
+    console.log(
+      '[GameManager] Recording',
+      isSkip ? 'skipped' : hasAttempted ? 'incomplete answer' : 'unanswered',
+      'question:',
+      questionIndex,
+    )
   }
 
   /**
@@ -769,7 +824,9 @@ export class GameManager {
     // currentVideoTime < revealTime の場合のみシーク
     if (currentVideoTime < question.revealTime) {
       // consumed[questionIndex].reveal を先に設定して二重発火を防ぐ
-      const c = this.consumed[questionIndex] ?? (this.consumed[questionIndex] = { start: false, reveal: false, end: false })
+      const c =
+        this.consumed[questionIndex] ??
+        (this.consumed[questionIndex] = { start: false, reveal: false, end: false })
       c.reveal = true
 
       // revealTime にシーク

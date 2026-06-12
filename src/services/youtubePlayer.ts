@@ -3,7 +3,12 @@
 // YouTube Player統合サービス
 import { YouTubePlayerState } from '@/types'
 import type { YouTubePlayerManager, YouTubePlayerVars, QuizSettings } from '@/types'
-import { TIME_UPDATE_INTERVAL_MS } from '@/constants/timing'
+import {
+  TIME_UPDATE_INTERVAL_MS,
+  YT_API_LOAD_TIMEOUT_MS,
+  YT_API_POLL_INTERVAL_MS,
+  LOAD_VIDEO_SETTLE_MS,
+} from '@/constants/timing'
 
 /**
  * YouTube IFrame APIを動的に読み込み
@@ -24,7 +29,7 @@ export function loadYouTubeIframeAPI(): Promise<void> {
           clearInterval(checkInterval)
           resolve()
         }
-      }, 100)
+      }, YT_API_POLL_INTERVAL_MS)
       return
     }
 
@@ -42,7 +47,7 @@ export function loadYouTubeIframeAPI(): Promise<void> {
     // タイムアウト処理
     setTimeout(() => {
       reject(new Error('YouTube IFrame API failed to load'))
-    }, 10000)
+    }, YT_API_LOAD_TIMEOUT_MS)
   })
 }
 
@@ -55,7 +60,6 @@ function buildStrictPlayerVars(settings: QuizSettings): YouTubePlayerVars {
     controls: settings.disableSeekbar ? 0 : 1, // プレイヤーコントロールの表示（0=非表示, 1=表示）
     disablekb: 1, // キーボード操作を無効化（スペースキーでの一時停止など）
     fs: 0, // フルスクリーンボタンを非表示
-    modestbranding: 1, // YouTubeロゴを最小化
     rel: 0, // 再生終了時に関連動画を表示しない
     autoplay: 0, // 自動再生を無効化
     cc_load_policy: 0, // 字幕をデフォルトで表示しない
@@ -70,7 +74,7 @@ function buildStrictPlayerVars(settings: QuizSettings): YouTubePlayerVars {
 export function createYouTubePlayerManager(
   elementId: string,
   videoId: string,
-  settings: QuizSettings
+  settings: QuizSettings,
 ): Promise<YouTubePlayerManager> {
   return new Promise((resolve, reject) => {
     let player: YT.Player | null = null
@@ -89,7 +93,7 @@ export function createYouTubePlayerManager(
           return new Promise((loadResolve) => {
             player!.loadVideoById(newVideoId)
             // 読み込み完了を待つ（簡易実装）
-            setTimeout(loadResolve, 1000)
+            setTimeout(loadResolve, LOAD_VIDEO_SETTLE_MS)
           })
         },
 

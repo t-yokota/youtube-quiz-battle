@@ -40,3 +40,43 @@ export const STALL_VIDEO_DELTA_SEC = 0.05
  * この期間中はシーク検出や再生停滞検出を行わない
  */
 export const STARTUP_GRACE_MS = 1000
+
+/**
+ * ボタン押下演出時間: PUSHED → RELEASED の遷移までの時間（ミリ秒）
+ */
+export const BUTTON_PUSHED_DURATION_MS = 100
+
+/**
+ * ボタンチェック時の待機時間: RELEASED → STANDBY／TALKING遷移までの時間（ミリ秒）
+ */
+export const BUTTON_CHECK_RELEASE_MS = 1500
+
+/**
+ * 解答カウントダウンのインターバル（ミリ秒）
+ * 1秒ごとに残り時間をデクリメントする
+ */
+export const ANSWER_COUNTDOWN_INTERVAL_MS = 1000
+
+/**
+ * YouTube Playerの巻き戻り発生の閾値（秒）
+ * 5秒未満の位置で再生開始後にタブを切り替えると動画が巻き戻る仕様への対応値
+ * gameManager.ts のクラス内定数から移動
+ */
+export const YOUTUBE_REWIND_THRESHOLD_SEC = 5.5
+
+/**
+ * YouTube IFrame API 読み込みタイムアウト（ミリ秒）
+ */
+export const YT_API_LOAD_TIMEOUT_MS = 10000
+
+/**
+ * YouTube IFrame API 読み込み待ちポーリング間隔（ミリ秒）
+ */
+export const YT_API_POLL_INTERVAL_MS = 100
+
+/**
+ * loadVideo の擬似待機時間（ミリ秒）
+ * loadVideoById() 後に動画が安定して読み込まれるまでの簡易待機
+ * TODO: onStateChange (CUED) ベースに置き換える際に削除する（R-5 対応予定）
+ */
+export const LOAD_VIDEO_SETTLE_MS = 1000
