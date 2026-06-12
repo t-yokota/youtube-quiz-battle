@@ -162,18 +162,18 @@ tasks.md は 450 行のうち 350 行が完了済みタスク。`docs/tasks-arch
 
 ## 完了チェックリスト
 
-- [ ] D-1 100ms→150ms/定数名表記（4 箇所以上）
-- [ ] D-2 Timeline の旧閾値 0.1 → 1.0
-- [ ] D-3 React 代替案の削除
-- [ ] D-4 hideVideoPlayerDuringAnswer 未実装注記 + タスク化
-- [ ] D-5 GameManager interface の実装同期
-- [ ] D-6 エラー表示の現状注記
-- [ ] D-7 音声素材タスクの追加
-- [ ] D-8 modestbranding 記述整理
+- [x] D-1 100ms→150ms/定数名表記（5 箇所。ボタン演出の「100ms後」は BUTTON_PUSHED_DURATION_MS=100 として正しいため対象外）
+- [x] D-2 Timeline の旧閾値 0.1 → 1.0
+- [x] D-3 React 代替案の削除
+- [x] D-4 hideVideoPlayerDuringAnswer 未実装注記 + タスク化
+- [x] D-5 GameManager interface の実装同期
+- [x] D-6 エラー表示の現状注記
+- [x] D-7 音声素材タスクの追加
+- [x] D-8 modestbranding 記述整理
 - [ ] D-9 requirements 3.3 の表現更新
-- [ ] D-10 コンポーネントテスト方針の明記
+- [x] D-10 コンポーネントテスト方針の明記
 - [ ] D-11 design.md 分割（参照更新・grep 検証込み）
 - [ ] D-12 design-sync-handoff.md の転記と削除
 - [ ] D-13 README / package.json name
 - [ ] D-14 button.webp の削除（処遇は確認済み: 不使用）
-- [ ] D-15〜D-17 任意項目
+- [ ] D-15 / D-17 任意項目（D-16 は完了: External Pause の注記を確定化済み）
