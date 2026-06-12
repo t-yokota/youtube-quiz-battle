@@ -170,7 +170,7 @@ tasks.md は 450 行のうち 350 行が完了済みタスク。`docs/tasks-arch
 - [x] D-6 エラー表示の現状注記
 - [x] D-7 音声素材タスクの追加
 - [x] D-8 modestbranding 記述整理
-- [ ] D-9 requirements 3.3 の表現更新
+- [x] D-9 requirements 3.3 の表現更新
 - [x] D-10 コンポーネントテスト方針の明記
 - [ ] D-11 design.md 分割（参照更新・grep 検証込み）
 - [ ] D-12 design-sync-handoff.md の転記と削除
