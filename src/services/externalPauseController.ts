@@ -223,6 +223,8 @@ export class ExternalPauseController {
         // ANSWERING中の一時停止は内部操作（handleButtonPress由来）の
         // 非同期到達なので無視する
         if (this.gameStore.currentState === GameState.ANSWERING) return
+        // READY中は動画停止が正常状態（リプレイ時のpauseVideo()が非同期到達するため）
+        if (this.gameStore.currentState === GameState.READY) return
         this.pauseExternal('user')
       }
 

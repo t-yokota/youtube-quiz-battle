@@ -918,6 +918,29 @@ describe('解答カウントダウンタイマー', () => {
     vi.advanceTimersByTime(2000)
     expect(store.answerTimeRemaining).toBe(8)
   })
+
+  it('READY中にonStateChange(PAUSED)が非同期到達してもExternal Pauseにならない', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+
+    // onStateChangeコールバックを補足
+    let stateChangeCallback: ((state: number) => void) | null = null
+    player.onStateChange = vi.fn((cb: (state: number) => void) => {
+      stateChangeCallback = cb
+    })
+    gm.initializeExternalPauseHandling()
+
+    // FINISHEDまで進めてリプレイ → READYで動画停止（pauseVideo）
+    simulatePlayback(gm, 46, 0)
+    expect(store.currentState).toBe(GameState.FINISHED)
+    gm.handleReplay()
+    expect(store.currentState).toBe(GameState.READY)
+
+    // リプレイ時のpauseVideo()由来のPAUSEDイベントが非同期で到達
+    stateChangeCallback!(2) // PAUSED
+
+    expect(gm.isExternalPaused()).toBe(false)
+  })
 })
 
 // ============================================================================
