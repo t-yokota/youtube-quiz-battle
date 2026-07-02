@@ -261,7 +261,6 @@ watch(
 .answer-input:focus-visible {
   border-color: var(--color-info-400);
   box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.25);
-  outline: none;
 }
 
 .answer-input:disabled {

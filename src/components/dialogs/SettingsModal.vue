@@ -44,7 +44,7 @@ const handleOverlayClick = (event: MouseEvent) => {
           <!-- Modal Header -->
           <div class="modal-header">
             <h2 class="modal-title">Settings</h2>
-            <button class="close-button" @click="handleClose">
+            <button class="close-button" aria-label="設定を閉じる" @click="handleClose">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -66,7 +66,9 @@ const handleOverlayClick = (event: MouseEvent) => {
 
               <!-- Volume Slider -->
               <div class="volume-control">
-                <span class="volume-description">早押しボタンと正誤判定音の音量を調整できます。</span>
+                <span class="volume-description"
+                  >早押しボタンと正誤判定音の音量を調整できます。</span
+                >
                 <div class="volume-slider">
                   <!-- Volume Icon SVG -->
                   <svg
@@ -137,7 +139,7 @@ const handleOverlayClick = (event: MouseEvent) => {
                     max="4"
                     :value="volumeLevel"
                     :style="{
-                      background: `linear-gradient(to right, var(--color-info-400) 0%, var(--color-info-400) ${(volumeLevel / 4) * 100}%, var(--color-stage-700) ${(volumeLevel / 4) * 100}%, var(--color-stage-700) 100%)`
+                      background: `linear-gradient(to right, var(--color-info-400) 0%, var(--color-info-400) ${(volumeLevel / 4) * 100}%, var(--color-stage-700) ${(volumeLevel / 4) * 100}%, var(--color-stage-700) 100%)`,
                     }"
                     class="slider"
                     @input="handleVolumeChange(($event.target as HTMLInputElement).valueAsNumber)"
@@ -150,7 +152,9 @@ const handleOverlayClick = (event: MouseEvent) => {
             <section class="settings-section">
               <h3 class="section-title">データ収集について</h3>
               <div class="privacy-text">
-                <p>ゲーム改善のため匿名の利用データを収集しています。入力した解答内容も統計処理の対象ですが、個人を直接識別できる形では保存しません。</p>
+                <p>
+                  ゲーム改善のため匿名の利用データを収集しています。入力した解答内容も統計処理の対象ですが、個人を直接識別できる形では保存しません。
+                </p>
                 <ul class="privacy-list">
                   <li>プレイ統計</li>
                   <li>エラー情報</li>
@@ -296,8 +300,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .volume-icon .mute-x {
-    stroke: var(--color-signal-500);
-
+  stroke: var(--color-signal-500);
 }
 
 /* Range Slider */
@@ -374,14 +377,14 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .privacy-list {
   margin: 0;
-  padding-left: 1.0rem;
+  padding-left: 1rem;
   list-style: none;
 }
 
 .privacy-list li {
   margin-bottom: 0.25rem;
   position: relative;
-  padding-left: 1.0rem;
+  padding-left: 1rem;
 }
 
 .privacy-list li::before {
