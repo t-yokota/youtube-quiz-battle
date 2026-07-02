@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // GamePanel コンポーネント
-// GameInfo + Answer領域（GuideText/AnswerContent）を一つのパネルにまとめる
+// 解答エリア（GuideText/AnswerContent）のパネル
 // 表示値は gameStore を直接参照する（props バケツリレーを廃止）
+// スコアボード（GameInfo）は video 直下に密着させるため App.vue 側で配置する
 
-import GameInfo from './GameInfo.vue'
 import GuideText from './GuideText.vue'
 import AnswerContent from './AnswerContent.vue'
 import { useGameStore } from '@/stores/gameStore'
@@ -21,35 +21,23 @@ const handleSubmit = (answer: string) => {
 </script>
 
 <template>
-  <section class="game-panel">
-    <!-- Game Info -->
-    <GameInfo />
+  <!-- Answer Area（正解/不正解時は縁取りフラッシュ） -->
+  <section
+    class="answer-area"
+    :class="{
+      'flash-correct': gameStore.answerResult === 'correct',
+      'flash-incorrect': gameStore.answerResult === 'incorrect',
+    }"
+  >
+    <!-- Guide Text Mode (LOADING/READY/TALKING状態) -->
+    <GuideText v-if="gameStore.gamePanelMode === 'guide'" />
 
-    <!-- Answer Area（正解/不正解時は縁取りフラッシュ） -->
-    <div
-      class="answer-area"
-      :class="{
-        'flash-correct': gameStore.answerResult === 'correct',
-        'flash-incorrect': gameStore.answerResult === 'incorrect',
-      }"
-    >
-      <!-- Guide Text Mode (LOADING/READY/TALKING状態) -->
-      <GuideText v-if="gameStore.gamePanelMode === 'guide'" />
-
-      <!-- Answer Content Mode (QUESTIONING/ANSWERING/WAITING/REVEALING状態) -->
-      <AnswerContent v-else @submit="handleSubmit" />
-    </div>
+    <!-- Answer Content Mode (QUESTIONING/ANSWERING/WAITING/REVEALING状態) -->
+    <AnswerContent v-else @submit="handleSubmit" />
   </section>
 </template>
 
 <style scoped>
-/* Game Panel */
-.game-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
 /* Answer Area（ステージ調カード） */
 .answer-area {
   flex-shrink: 0;

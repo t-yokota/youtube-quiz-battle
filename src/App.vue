@@ -3,6 +3,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import VideoPlayer from './components/common/VideoPlayer.vue'
+import GameInfo from './components/game/GameInfo.vue'
 import GamePanel from './components/game/GamePanel.vue'
 import QuizButton from './components/game/QuizButton.vue'
 import FinalScore from './components/result/FinalScore.vue'
@@ -161,14 +162,19 @@ onUnmounted(() => {
       />
 
       <!-- Game UI (FINISHED以外) -->
-      <div v-if="gameStore.currentState !== GameState.FINISHED" class="game-ui">
-        <GamePanel @submit="handleAnswerSubmit" />
-        <QuizButton
-          v-if="gameStore.isButtonVisible"
-          :button-state="gameStore.buttonState"
-          @press="handleButtonPress"
-        />
-      </div>
+      <template v-if="gameStore.currentState !== GameState.FINISHED">
+        <!-- スコアボード（video 直下にフルブリードで密着） -->
+        <GameInfo />
+
+        <div class="game-ui">
+          <GamePanel @submit="handleAnswerSubmit" />
+          <QuizButton
+            v-if="gameStore.isButtonVisible"
+            :button-state="gameStore.buttonState"
+            @press="handleButtonPress"
+          />
+        </div>
+      </template>
 
       <!-- Result UI (FINISHED状態) -->
       <div v-else class="result-ui">
@@ -223,25 +229,23 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* Main Content */
+/* Main Content（wireframe: 各セクションはフルブリードで密着・余白は game-ui のみ） */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 1rem;
-  gap: 1rem;
   min-height: 0;
 }
 
-/* Game UI */
+/* Game UI（wireframe の .game-area 相当） */
 .game-ui {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.5rem;
+  gap: 14px;
+  padding: 14px 12px;
   min-height: 0;
 }
 
@@ -255,7 +259,6 @@ onUnmounted(() => {
   background:
     radial-gradient(120% 50% at 50% 0%, rgba(255, 197, 61, 0.12) 0%, transparent 60%),
     linear-gradient(180deg, #0d1226 0%, var(--color-stage-900) 100%);
-  border-radius: 14px;
 }
 
 /* Result Content（タイムライン部分が内部で縦スクロールする） */
@@ -267,29 +270,11 @@ onUnmounted(() => {
   min-height: 0;
 }
 
-/* モバイル対応 */
-@media (max-width: 640px) {
-  .main-content {
-    padding: 0.5rem;
-    gap: 0.5rem;
-  }
-
+/* 縦に短い画面のみ余白を詰める（上部セクションは wireframe の固定値を維持） */
+@media (max-height: 640px) {
   .game-ui {
-    gap: 1rem;
-    padding: 0.75rem;
-  }
-}
-
-/* 小さい画面での追加調整 */
-@media (max-height: 700px) {
-  .main-content {
-    padding: 0.5rem;
-    gap: 0.5rem;
-  }
-
-  .game-ui {
-    gap: 1rem;
-    padding: 0.75rem;
+    gap: 10px;
+    padding: 10px 12px;
   }
 }
 </style>

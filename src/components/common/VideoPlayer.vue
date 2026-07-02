@@ -68,10 +68,11 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Video Player Container */
+/* Video Player Container（フルブリード・下辺 line で区切る） */
 .video-player-container {
   width: 100%;
   flex-shrink: 0;
+  border-bottom: 1px solid var(--color-line);
 }
 
 /* Video Player Wrapper - 16:9アスペクト比維持 */
@@ -80,7 +81,6 @@ onMounted(async () => {
   aspect-ratio: 16 / 9;
   position: relative;
   overflow: hidden;
-  border-radius: 0.5rem;
   background-color: #000;
 }
 
@@ -97,7 +97,6 @@ onMounted(async () => {
 #youtube-player-element :deep(iframe) {
   width: 100% !important;
   height: 100% !important;
-  border-radius: 0.5rem;
 }
 
 /* Placeholder */
@@ -139,10 +138,6 @@ onMounted(async () => {
 
 /* モバイル対応 */
 @media (max-width: 640px) {
-  .video-player-wrapper {
-    border-radius: 0.375rem;
-  }
-
   .play-icon {
     width: 3rem;
     height: 3rem;
