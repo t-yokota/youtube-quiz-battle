@@ -55,7 +55,8 @@ withDefaults(defineProps<Props>(), {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(5, 8, 18, 0.72);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,25 +64,26 @@ withDefaults(defineProps<Props>(), {
   padding: 1rem;
 }
 
-/* Dialog Container */
+/* Dialog Container（ステージ調） */
 .dialog-container {
-  background-color: white;
-  border-radius: 0.75rem;
-  padding: 2rem;
+  background-color: var(--color-stage-800);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: 26px 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
   max-width: 400px;
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
 }
 
 /* Rotation Icon */
 .rotation-icon {
   width: 4rem;
   height: 4rem;
-  color: var(--color-legacy-blue);
+  color: var(--color-gold-400);
   animation: rotate 2s ease-in-out infinite;
 }
 
@@ -91,7 +93,8 @@ withDefaults(defineProps<Props>(), {
 }
 
 @keyframes rotate {
-  0%, 100% {
+  0%,
+  100% {
     transform: rotate(0deg);
   }
   50% {
@@ -104,14 +107,14 @@ withDefaults(defineProps<Props>(), {
   margin: 0;
   font-size: 1.25rem;
   font-weight: bold;
-  color: var(--color-legacy-gray-900);
+  color: var(--color-text-main);
 }
 
 /* Dialog Message */
 .dialog-message {
   margin: 0;
-  font-size: 1rem;
-  color: var(--color-legacy-gray-600);
+  font-size: 13px;
+  color: var(--color-text-dim);
   line-height: 1.6;
 }
 

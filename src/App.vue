@@ -245,25 +245,26 @@ onUnmounted(() => {
   min-height: 0;
 }
 
-/* Result UI */
+/* Result UI（リザルトステージ: 上部に放射スポットライト） */
 .result-ui {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem;
+  padding: 28px 18px 18px;
   min-height: 0;
+  background:
+    radial-gradient(120% 50% at 50% 0%, rgba(255, 197, 61, 0.12) 0%, transparent 60%),
+    linear-gradient(180deg, #0d1226 0%, var(--color-stage-900) 100%);
+  border-radius: 14px;
 }
 
-/* Result Content (スクロール可能領域) */
+/* Result Content（タイムライン部分が内部で縦スクロールする） */
 .result-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   min-height: 0;
-  margin-bottom: 1.5rem;
 }
 
 /* モバイル対応 */
@@ -277,15 +278,6 @@ onUnmounted(() => {
     gap: 1rem;
     padding: 0.75rem;
   }
-
-  .result-ui {
-    padding: 0.75rem;
-  }
-
-  .result-content {
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
 }
 
 /* 小さい画面での追加調整 */
@@ -298,15 +290,6 @@ onUnmounted(() => {
   .game-ui {
     gap: 1rem;
     padding: 0.75rem;
-  }
-
-  .result-ui {
-    padding: 0.75rem;
-  }
-
-  .result-content {
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
   }
 }
 </style>

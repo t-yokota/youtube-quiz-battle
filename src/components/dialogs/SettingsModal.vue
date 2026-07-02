@@ -137,7 +137,7 @@ const handleOverlayClick = (event: MouseEvent) => {
                     max="4"
                     :value="volumeLevel"
                     :style="{
-                      background: `linear-gradient(to right, var(--color-legacy-blue) 0%, var(--color-legacy-blue) ${(volumeLevel / 4) * 100}%, var(--color-legacy-gray-200) ${(volumeLevel / 4) * 100}%, var(--color-legacy-gray-200) 100%)`
+                      background: `linear-gradient(to right, var(--color-info-400) 0%, var(--color-info-400) ${(volumeLevel / 4) * 100}%, var(--color-stage-700) ${(volumeLevel / 4) * 100}%, var(--color-stage-700) 100%)`
                     }"
                     class="slider"
                     @input="handleVolumeChange(($event.target as HTMLInputElement).valueAsNumber)"
@@ -177,7 +177,8 @@ const handleOverlayClick = (event: MouseEvent) => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(5, 8, 18, 0.72);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -187,15 +188,16 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 /* Modal Container */
 .modal-container {
-  background-color: white;
-  border-radius: 0.75rem;
+  background-color: var(--color-stage-800);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
 }
 
 /* Modal Header */
@@ -204,27 +206,33 @@ const handleOverlayClick = (event: MouseEvent) => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--color-legacy-gray-200);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .modal-title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: bold;
-  color: var(--color-legacy-gray-900);
+  color: var(--color-text-main);
 }
 
 .close-button {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.25rem;
-  color: var(--color-legacy-text-dim);
+  /* タッチターゲット確保（>=44px） */
+  width: 44px;
+  height: 44px;
+  margin: -0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-dim);
   transition: color 0.2s;
 }
 
 .close-button:hover {
-  color: var(--color-legacy-gray-900);
+  color: var(--color-text-main);
 }
 
 .close-icon {
@@ -252,7 +260,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--color-legacy-gray-900);
+  color: var(--color-text-main);
 }
 
 /* Volume Control */
@@ -264,7 +272,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .volume-description {
   font-size: 0.875rem;
-  color: var(--color-legacy-gray-600);
+  color: var(--color-text-dim);
   font-weight: 500;
 }
 
@@ -279,17 +287,16 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 1.5rem;
   height: 1.5rem;
   flex-shrink: 0;
-  color: var(--color-legacy-blue);
+  color: var(--color-info-400);
   transition: color 0.2s;
 }
 
 .volume-icon.muted {
-  color: var(--color-legacy-gray-400);
+  color: var(--color-text-dim);
 }
 
 .volume-icon .mute-x {
-  /* stroke: var(--color-legacy-red); */
-  stroke: var(--color-legacy-red-dark);
+    stroke: var(--color-signal-500);
 
 }
 
@@ -323,7 +330,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-legacy-blue);
+  background: var(--color-info-400);
   cursor: pointer;
   transition: transform 0.2s;
 }
@@ -332,7 +339,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-legacy-blue);
+  background: var(--color-info-400);
   border: none;
   cursor: pointer;
   transition: transform 0.2s;
@@ -357,7 +364,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 /* Privacy Text */
 .privacy-text {
   font-size: 0.875rem;
-  color: var(--color-legacy-gray-600);
+  color: var(--color-text-dim);
   line-height: 1.6;
 }
 
@@ -386,7 +393,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 /* Primary Button */
 .primary-button {
   padding: 0.75rem 1.5rem;
-  background-color: var(--color-legacy-blue);
+  background-color: var(--color-info-400);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -399,7 +406,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .primary-button:hover {
-  background-color: var(--color-legacy-blue-dark);
+  background-color: #ffd566;
 }
 
 /* Modal Transition */

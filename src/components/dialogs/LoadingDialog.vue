@@ -38,34 +38,36 @@ withDefaults(defineProps<Props>(), {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(5, 8, 18, 0.72);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
 }
 
-/* Dialog Container */
+/* Dialog Container（ステージ調） */
 .dialog-container {
-  background-color: white;
-  border-radius: 0.75rem;
-  padding: 3rem;
+  background-color: var(--color-stage-800);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: 26px 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
   min-width: 280px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
 }
 
 /* Loading Spinner */
 .spinner {
-  width: 4rem;
-  height: 4rem;
-  border: 4px solid var(--color-legacy-gray-200);
-  border-top-color: var(--color-legacy-blue);
+  width: 44px;
+  height: 44px;
+  border: 4px solid var(--color-stage-700);
+  border-top-color: var(--color-gold-400);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -77,9 +79,9 @@ withDefaults(defineProps<Props>(), {
 /* Loading Message */
 .loading-message {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 500;
-  color: var(--color-legacy-gray-900);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-main);
 }
 
 /* Dialog Transition */

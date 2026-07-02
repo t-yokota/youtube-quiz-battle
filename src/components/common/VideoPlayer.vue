@@ -81,7 +81,7 @@ onMounted(async () => {
   position: relative;
   overflow: hidden;
   border-radius: 0.5rem;
-  background-color: var(--color-legacy-black);
+  background-color: #000;
 }
 
 /* YouTube Player Element - iframeをコンテナに合わせる */
@@ -107,7 +107,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-legacy-video-bg-start) 0%, var(--color-legacy-video-bg-end) 100%);
+  background: #000;
 }
 
 .placeholder-content {
@@ -115,7 +115,7 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  color: var(--color-legacy-gray-400);
+  color: var(--color-text-dim);
 }
 
 .play-icon {
@@ -128,13 +128,13 @@ onMounted(async () => {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--color-legacy-gray-300);
+  color: var(--color-text-dim);
 }
 
 .placeholder-subtext {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--color-legacy-gray-400);
+  color: var(--color-text-dim);
 }
 
 /* モバイル対応 */

@@ -87,7 +87,8 @@ const handleClose = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(5, 8, 18, 0.72);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -95,11 +96,12 @@ const handleClose = () => {
   padding: 1rem;
 }
 
-/* Dialog Container */
+/* Dialog Container（ステージ調） */
 .dialog-container {
-  background-color: white;
-  border-radius: 0.75rem;
-  padding: 2rem;
+  background-color: var(--color-stage-800);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: 26px 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -107,14 +109,14 @@ const handleClose = () => {
   max-width: 400px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
 }
 
 /* Error Icon */
 .error-icon {
   width: 4rem;
   height: 4rem;
-  color: var(--color-legacy-red-dark);
+  color: var(--color-signal-500);
 }
 
 .icon {
@@ -127,14 +129,14 @@ const handleClose = () => {
   margin: 0;
   font-size: 1.25rem;
   font-weight: bold;
-  color: var(--color-legacy-gray-900);
+  color: var(--color-text-main);
 }
 
 /* Dialog Message */
 .dialog-message {
   margin: 0;
-  font-size: 1rem;
-  color: var(--color-legacy-gray-600);
+  font-size: 13px;
+  color: var(--color-text-dim);
   line-height: 1.6;
 }
 
@@ -149,36 +151,38 @@ const handleClose = () => {
 
 /* Action Button */
 .action-button {
-  padding: 0.75rem 1.5rem;
-  background-color: var(--color-legacy-blue);
-  color: white;
+  padding: 10px 22px;
+  min-height: 44px;
+  background-color: var(--color-gold-400);
+  color: var(--color-stage-900);
   border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: bold;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background var(--duration-fast);
 }
 
 .action-button:hover {
-  background-color: var(--color-legacy-blue-dark);
+  background-color: #ffd566;
 }
 
 /* Close Button */
 .close-button {
-  padding: 0.75rem 1.5rem;
-  background-color: var(--color-legacy-gray-200);
-  color: var(--color-legacy-gray-900);
+  padding: 10px 22px;
+  min-height: 44px;
+  background-color: var(--color-stage-700);
+  color: var(--color-text-main);
   border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: bold;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: filter var(--duration-fast);
 }
 
 .close-button:hover {
-  background-color: var(--color-legacy-gray-300);
+  filter: brightness(1.2);
 }
 
 /* Dialog Transition */

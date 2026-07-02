@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // FinalScore コンポーネント
-// ゲーム終了時の最終スコア表示
+// ゲーム終了時の最終スコア表示（リザルトステージ: 大型スコア + 正解率）
 
 import { computed } from 'vue'
 
@@ -23,64 +23,56 @@ const percentage = computed(() => {
 </script>
 
 <template>
-  <div class="final-score">
-    <p class="score-title">ゲーム終了！</p>
-    <p class="score-text">正解数: {{ correctCount }}/{{ totalQuestions }}問 ({{ percentage }}%)</p>
+  <div>
+    <p class="final-title">RESULT</p>
+    <p class="final-score">
+      <span class="num">{{ correctCount }}</span
+      ><span class="den"> / {{ totalQuestions }}</span>
+    </p>
+    <p class="final-rate">
+      正解率 <span class="pct">{{ percentage }}%</span>
+    </p>
   </div>
 </template>
 
 <style scoped>
-/* Final Score */
+.final-title {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: var(--color-gold-400);
+  font-weight: 800;
+}
+
 .final-score {
   text-align: center;
-  padding: 1.5rem;
-  background-color: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 14px 0 4px;
+  font-variant-numeric: tabular-nums;
 }
 
-.score-title {
-  margin: 0 0 0.75rem 0;
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--color-legacy-gray-900);
+.final-score .num {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-text-main);
 }
 
-.score-text {
-  margin: 0;
-  font-size: 1.125rem;
-  color: var(--color-legacy-gray-600);
+.final-score .den {
+  font-size: 20px;
+  color: var(--color-text-dim);
+  font-weight: 700;
 }
 
-/* モバイル対応 */
-@media (max-width: 640px) {
-  .final-score {
-    padding: 1rem;
-  }
-
-  .score-title {
-    font-size: 1.25rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .score-text {
-    font-size: 1rem;
-  }
+.final-rate {
+  text-align: center;
+  color: var(--color-text-dim);
+  font-size: 13px;
+  margin: 0 0 18px;
 }
 
-/* 小さい画面での追加調整 */
-@media (max-height: 700px) {
-  .final-score {
-    padding: 0.875rem;
-  }
-
-  .score-title {
-    font-size: 1.125rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .score-text {
-    font-size: 0.9375rem;
-  }
+.final-rate .pct {
+  color: var(--color-gold-400);
+  font-weight: 800;
 }
 </style>

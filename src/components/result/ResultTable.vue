@@ -1,145 +1,132 @@
 <script setup lang="ts">
 // ResultTable コンポーネント
-// 個別問題の結果テーブル表示
+// 問題別タイムライン表示（○×/スキップ/無解答マーク + 正答 + あなたの解答）
 
 import type { QuestionResult } from '@/types/result'
+import ResultChip, { type ChipVariant } from '@/components/game/ResultChip.vue'
 
 // Props定義
 interface Props {
   results?: QuestionResult[]
-  showUserAnswers?: boolean // 横幅に応じて「あなたの解答」列を表示するか
+  showUserAnswers?: boolean // 「あなたの解答」行を表示するか
 }
 
 withDefaults(defineProps<Props>(), {
   results: () => [],
   showUserAnswers: true,
 })
+
+// 戦績 → チップ種別の判定（GameInfo のチップ列と同一基準）
+function markOf(result: QuestionResult): ChipVariant {
+  if (result.isCorrect) return 'correct'
+  if (result.skipped) return 'skipped'
+  if (result.userAnswers.length === 0) return 'noanswer'
+  return 'incorrect'
+}
+
+// 「あなたの解答」表示テキスト
+function yoursText(result: QuestionResult): string {
+  if (result.skipped) return 'スキップ'
+  const lastAnswer = result.userAnswers.findLast((a: string) => a !== '') ?? ''
+  return `あなた: ${lastAnswer}`
+}
 </script>
 
 <template>
-  <div class="result-table-container">
-    <table class="result-table">
-      <thead>
-        <tr>
-          <th>問題</th>
-          <th>結果</th>
-          <th>正答</th>
-          <th v-if="showUserAnswers">あなたの解答</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="result in results" :key="result.questionNumber">
-          <td>第{{ result.questionNumber }}問</td>
-          <td>
-            <span v-if="result.skipped">―</span>
-            <span v-else-if="result.userAnswers.length > 0" :class="['result-badge', result.isCorrect ? 'correct' : 'incorrect']">
-              {{ result.isCorrect ? '○' : '×' }}
-            </span>
-          </td>
-          <td>{{ result.correctAnswer }}</td>
-          <td v-if="showUserAnswers">{{ result.userAnswers.findLast((a: string) => a !== '') ?? '' }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="result-list">
+    <div v-for="result in results" :key="result.questionNumber" class="result-row">
+      <ResultChip class="mark" :variant="markOf(result)" />
+      <span class="body">
+        <span class="ans">{{ result.correctAnswer }}</span>
+        <br v-if="showUserAnswers" />
+        <span v-if="showUserAnswers" class="yours">{{ yoursText(result) }}</span>
+      </span>
+      <span class="qno">Q{{ result.questionNumber }}</span>
+    </div>
   </div>
 </template>
 
 <style scoped>
-/* Result Table Container */
-.result-table-container {
-  background-color: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow-x: auto;
-  padding: 1rem;
+/* 問題別タイムライン（スクロールバーは矢印なしの細バー・バーとリストの間隔を確保） */
+.result-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 10px;
+  padding-right: 6px; /* バー(4px) + 6px = 左の 10px と釣り合い、行が中央を保つ */
+  scrollbar-gutter: stable;
 }
 
-/* Result Table */
-.result-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9375rem;
+.result-list::-webkit-scrollbar {
+  width: 4px;
 }
 
-.result-table thead {
-  background-color: var(--color-legacy-gray-100);
+.result-list::-webkit-scrollbar-thumb {
+  background: var(--color-stage-700);
+  border-radius: 4px;
 }
 
-.result-table th {
-  padding: 0.75rem 0.5rem;
-  text-align: center;
-  font-weight: 600;
-  color: var(--color-legacy-gray-900);
-  border-bottom: 2px solid var(--color-legacy-gray-200);
+.result-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.result-table td {
-  padding: 0.75rem 0.5rem;
-  text-align: center;
-  border-bottom: 1px solid var(--color-legacy-gray-200);
-  color: var(--color-legacy-gray-600);
+.result-list::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
-.result-table tbody tr:last-child td {
-  border-bottom: none;
+/* WebKit 疑似要素が効かない環境（Firefox）向け */
+@supports not selector(::-webkit-scrollbar) {
+  .result-list {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-stage-700) transparent;
+  }
 }
 
-.result-badge {
-  display: inline-block;
-  font-size: 1.125rem;
-  font-weight: bold;
-  width: 1.75rem;
-  height: 1.75rem;
-  line-height: 1.75rem;
+.result-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-stage-800);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  font-size: 12px;
+  color: var(--color-text-main);
+}
+
+.result-row .mark {
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
+  display: block;
+  flex-shrink: 0;
 }
 
-.result-badge.correct {
-  background-color: var(--color-legacy-green-bg);
-  color: var(--color-legacy-green-text);
+.result-row .body {
+  min-width: 0;
 }
 
-.result-badge.incorrect {
-  background-color: var(--color-legacy-red-bg);
-  color: var(--color-legacy-red-dark);
+.result-row .ans {
+  font-weight: 700;
 }
 
-/* モバイル対応 */
-@media (max-width: 640px) {
-  .result-table-container {
-    padding: 0.75rem;
-  }
-
-  .result-table {
-    font-size: 0.875rem;
-  }
-
-  .result-table th,
-  .result-table td {
-    padding: 0.5rem 0.375rem;
-  }
-
-  .result-badge {
-    font-size: 1rem;
-    width: 1.5rem;
-    height: 1.5rem;
-    line-height: 1.5rem;
-  }
+.result-row .yours {
+  color: var(--color-text-dim);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* 小さい画面での追加調整 */
-@media (max-height: 700px) {
-  .result-table-container {
-    padding: 0.625rem;
-  }
-
-  .result-table {
-    font-size: 0.8125rem;
-  }
-
-  .result-table th,
-  .result-table td {
-    padding: 0.5rem 0.25rem;
-  }
+.result-row .qno {
+  margin-left: auto;
+  color: var(--color-text-dim);
+  font-size: 10px;
+  flex-shrink: 0;
 }
 </style>
