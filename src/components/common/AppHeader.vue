@@ -85,7 +85,8 @@ const handleSettingsClick = () => {
   /* タッチターゲット確保（≥2.75rem）。視覚アイコンは 1.5rem */
   width: max(44px, 2.75rem);
   height: max(44px, 2.75rem);
-  margin: -0.625rem 0;
+  /* 当たり判定拡張ぶんを右に逃がし、アイコンの視覚位置をヘッダー右端に揃える */
+  margin: -0.625rem calc((max(44px, 2.75rem) - 1.5rem) / -2) -0.625rem 0;
   display: flex;
   align-items: center;
   justify-content: center;

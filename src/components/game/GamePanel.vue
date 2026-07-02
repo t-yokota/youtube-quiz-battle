@@ -21,12 +21,13 @@ const handleSubmit = (answer: string) => {
 </script>
 
 <template>
-  <!-- Answer Area（正解/不正解時は縁取りフラッシュ） -->
+  <!-- Answer Area（正解/不正解時は縁取りフラッシュ。REVEALING 終了＝guide モード復帰で消灯） -->
   <section
     class="answer-area"
     :class="{
-      'flash-correct': gameStore.answerResult === 'correct',
-      'flash-incorrect': gameStore.answerResult === 'incorrect',
+      'flash-correct': gameStore.gamePanelMode === 'answer' && gameStore.answerResult === 'correct',
+      'flash-incorrect':
+        gameStore.gamePanelMode === 'answer' && gameStore.answerResult === 'incorrect',
     }"
   >
     <!-- Guide Text Mode (LOADING/READY/TALKING状態) -->
