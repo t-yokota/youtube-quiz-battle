@@ -147,14 +147,18 @@ onUnmounted(() => {
 
 <template>
   <div class="app-container">
-    <!-- Header -->
-    <AppHeader @open-settings="handleOpenSettings" />
+    <!-- Header（FINISHED 中はリザルトステージに専有させるため非表示） -->
+    <AppHeader
+      v-show="gameStore.currentState !== GameState.FINISHED"
+      @open-settings="handleOpenSettings"
+    />
 
     <!-- Main Content Area -->
     <main class="main-content">
-      <!-- Video Player -->
+      <!-- Video Player（FINISHED 中は非表示。v-show で iframe を破棄せずプレイヤー状態を保持） -->
       <VideoPlayer
         v-if="quizData"
+        v-show="gameStore.currentState !== GameState.FINISHED"
         :video-id="quizData.videoId"
         :settings="quizData.settings"
         @ready="handlePlayerReady"

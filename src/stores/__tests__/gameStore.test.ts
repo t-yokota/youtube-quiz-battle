@@ -213,6 +213,19 @@ describe('handleAnswerSubmit: 不正解・残り回数管理', () => {
     store.handleAnswerSubmit('東京')
     expect(store.answerResult).toBe('correct')
   })
+
+  it('clearAnswerResult で正誤表示がクリアされる（Task 21-3）', () => {
+    const store = useGameStore()
+    store.setQuizData(makeQuizData(2))
+    store.currentQuestionIndex = 0
+    store.transitionToState(GameState.ANSWERING)
+
+    store.handleAnswerSubmit('不正解')
+    expect(store.answerResult).toBe('incorrect')
+
+    store.clearAnswerResult()
+    expect(store.answerResult).toBeNull()
+  })
 })
 
 // ============================================================================

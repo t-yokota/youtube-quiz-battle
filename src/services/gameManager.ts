@@ -130,6 +130,8 @@ export class GameManager {
         }, BUTTON_CHECK_RELEASE_MS)
       } else if (stateAtPress === GameState.QUESTIONING) {
         // 早押し: ANSWERING状態へ遷移し、動画一時停止
+        // リトライ時は前回の不正解表示をクリアしてから解答アクションに入る（Task 21-3）
+        this.gameStore.clearAnswerResult()
         this.gameStore.transitionToState(GameState.ANSWERING)
         // 動画一時停止
         this.playerControl.pauseVideo()

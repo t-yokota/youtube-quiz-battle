@@ -432,6 +432,24 @@ describe('Single-Shot Guard', () => {
     expect(player.seekTo).toHaveBeenCalledWith(20)
   })
 
+  it('リトライのボタン押下で前回の不正解表示がクリアされる（Task 21-3）', () => {
+    const { gm, store } = makeGameManager(makeQuizData({ maxAttempts: 3 }))
+
+    // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING → 不正解
+    simulatePlayback(gm, 11, 0)
+    gm.handleButtonPress()
+    vi.advanceTimersByTime(100)
+    gm.handleAnswerSubmit('不正解')
+    expect(store.currentState).toBe(GameState.QUESTIONING)
+    expect(store.answerResult).toBe('incorrect') // リトライ中は表示維持
+
+    // 再度ボタン押下（解答アクション開始）→ 表示クリア
+    gm.handleButtonPress()
+    vi.advanceTimersByTime(100)
+    expect(store.currentState).toBe(GameState.ANSWERING)
+    expect(store.answerResult).toBeNull()
+  })
+
   it('正解時は WAITING を経由せず直接 REVEALING へ遷移する（jumpToRevealPeriod=true・ちらつき解消）', () => {
     const { gm, store } = makeGameManager(makeQuizData({ jumpToRevealPeriod: true }))
 

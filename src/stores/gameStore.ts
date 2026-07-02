@@ -279,6 +279,13 @@ export const useGameStore = defineStore('game', () => {
   }
 
   /**
+   * 前回の正誤表示をクリアする（リトライの解答アクション開始時に呼ぶ。Task 21-3）
+   */
+  function clearAnswerResult(): void {
+    answerResult.value = null
+  }
+
+  /**
    * answerTimeRemaining を制限時間初期値にリセットする
    */
   function resetAnswerTime(): void {
@@ -367,6 +374,7 @@ export const useGameStore = defineStore('game', () => {
     updateAnswerInput,
     initializeForQuestion,
     setButtonState,
+    clearAnswerResult,
     resetAnswerTime,
     decrementAnswerTime,
     setCurrentQuestionIndex,
