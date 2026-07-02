@@ -1,84 +1,37 @@
 <script setup lang="ts">
 // GamePanel コンポーネント
 // GameInfo + Answer領域（GuideText/AnswerContent）を一つのパネルにまとめる
+// 表示値は gameStore を直接参照する（props バケツリレーを廃止）
 
 import GameInfo from './GameInfo.vue'
 import GuideText from './GuideText.vue'
 import AnswerContent from './AnswerContent.vue'
+import { useGameStore } from '@/stores/gameStore'
 
-// Props定義
-interface Props {
-  // GameInfo props
-  currentQuestionNumber?: number // 0: 問題開始前, 1~: 問題番号（1-indexed）
-  totalQuestions?: number
-  correctCount?: number
-  incorrectCount?: number
-  // Answer mode
-  mode?: 'guide' | 'answer'
-  guideText?: string
-  // AnswerContent props
-  remainingAttempts?: number
-  remainingTime?: number
-  answerResult?: 'correct' | 'incorrect' | null
-  answerInput?: string
-  isInputDisabled?: boolean
-}
+const gameStore = useGameStore()
 
-withDefaults(defineProps<Props>(), {
-  currentQuestionNumber: 0,
-  totalQuestions: 5,
-  correctCount: 0,
-  incorrectCount: 0,
-  mode: 'answer',
-  guideText: 'ボタンを押してゲームを開始',
-  remainingAttempts: 2,
-  remainingTime: 10,
-  answerResult: null,
-  answerInput: '',
-  isInputDisabled: false,
-})
-
-// イベント定義
+// イベント定義（解答送信は GameManager 経由必須のため emit を維持）
 const emit = defineEmits<{
   submit: [answer: string]
-  updateInput: [value: string]
 }>()
 
 const handleSubmit = (answer: string) => {
   emit('submit', answer)
-}
-
-const handleUpdateInput = (value: string) => {
-  emit('updateInput', value)
 }
 </script>
 
 <template>
   <section class="game-panel">
     <!-- Game Info -->
-    <GameInfo
-      :current-question-number="currentQuestionNumber"
-      :total-questions="totalQuestions"
-      :correct-count="correctCount"
-      :incorrect-count="incorrectCount"
-    />
+    <GameInfo />
 
     <!-- Answer Area -->
     <div class="answer-area">
       <!-- Guide Text Mode (LOADING/READY/TALKING状態) -->
-      <GuideText v-if="mode === 'guide'" :guide-text="guideText" />
+      <GuideText v-if="gameStore.gamePanelMode === 'guide'" />
 
       <!-- Answer Content Mode (QUESTIONING/ANSWERING/WAITING/REVEALING状態) -->
-      <AnswerContent
-        v-else
-        :remaining-attempts="remainingAttempts"
-        :remaining-time="remainingTime"
-        :answer-result="answerResult"
-        :answer-input="answerInput"
-        :is-input-disabled="isInputDisabled"
-        @submit="handleSubmit"
-        @update-input="handleUpdateInput"
-      />
+      <AnswerContent v-else @submit="handleSubmit" />
     </div>
   </section>
 </template>

@@ -3,30 +3,18 @@
 // 問題進捗とスコアを表示
 
 import { computed } from 'vue'
+import { useGameStore } from '@/stores/gameStore'
 
-// Props定義（Phase 2で状態管理と連携予定）
-interface Props {
-  currentQuestionNumber?: number // 0: 問題開始前, 1~: 問題番号（1-indexed）
-  totalQuestions?: number
-  correctCount?: number
-  incorrectCount?: number
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  currentQuestionNumber: 0,
-  totalQuestions: 5,
-  correctCount: 0,
-  incorrectCount: 0,
-})
+const gameStore = useGameStore()
 
 // 問題進捗の表示テキスト
 const progressText = computed(() => {
-  if (props.currentQuestionNumber === 0) {
+  if (gameStore.currentQuestionNumber === 0) {
     // 問題開始前：全問題数のみ表示
-    return `問題: 全${props.totalQuestions}問`
+    return `問題: 全${gameStore.totalQuestions}問`
   }
   // 問題進行中：現在の問題番号と総数を表示
-  return `問題: ${props.currentQuestionNumber}/${props.totalQuestions}`
+  return `問題: ${gameStore.currentQuestionNumber}/${gameStore.totalQuestions}`
 })
 </script>
 
@@ -38,7 +26,9 @@ const progressText = computed(() => {
     </div>
 
     <!-- Score Display -->
-    <div class="score-display">○: {{ correctCount }} ×: {{ incorrectCount }}</div>
+    <div class="score-display">
+      ○: {{ gameStore.correctCount }} ×: {{ gameStore.incorrectCount }}
+    </div>
   </section>
 </template>
 

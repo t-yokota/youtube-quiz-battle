@@ -2,19 +2,14 @@
 // GuideText コンポーネント
 // ガイドテキスト表示（LOADING/READY/TALKING状態）
 
-// Props定義
-interface Props {
-  guideText?: string
-}
+import { useGameStore } from '@/stores/gameStore'
 
-withDefaults(defineProps<Props>(), {
-  guideText: 'ボタンを押してゲームを開始',
-})
+const gameStore = useGameStore()
 </script>
 
 <template>
   <div class="guide-text">
-    <p class="guide-message">{{ guideText }}</p>
+    <p class="guide-message">{{ gameStore.guideText }}</p>
   </div>
 </template>
 

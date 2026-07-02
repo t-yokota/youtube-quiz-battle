@@ -109,11 +109,6 @@ function handleAnswerSubmit(answer: string) {
   gameManager.value?.handleAnswerSubmit(answer)
 }
 
-// GamePanel 入力更新
-function handleUpdateInput(value: string) {
-  gameStore.updateAnswerInput(value)
-}
-
 // ResultActions もう一度プレイ → GameManager に委譲
 function handleReplay() {
   gameManager.value?.handleReplay()
@@ -167,21 +162,7 @@ onUnmounted(() => {
 
       <!-- Game UI (FINISHED以外) -->
       <div v-if="gameStore.currentState !== GameState.FINISHED" class="game-ui">
-        <GamePanel
-          :mode="gameStore.gamePanelMode"
-          :guide-text="gameStore.guideText"
-          :current-question-number="gameStore.currentQuestionNumber"
-          :total-questions="gameStore.totalQuestions"
-          :correct-count="gameStore.correctCount"
-          :incorrect-count="gameStore.incorrectCount"
-          :remaining-attempts="gameStore.remainingAttempts"
-          :remaining-time="gameStore.answerTimeRemaining"
-          :answer-result="gameStore.answerResult"
-          :answer-input="gameStore.answerInput"
-          :is-input-disabled="gameStore.isInputDisabled"
-          @submit="handleAnswerSubmit"
-          @update-input="handleUpdateInput"
-        />
+        <GamePanel @submit="handleAnswerSubmit" />
         <QuizButton
           v-if="gameStore.isButtonVisible"
           :button-state="gameStore.buttonState"

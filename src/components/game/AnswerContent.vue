@@ -3,73 +3,66 @@
 // 解答入力エリア（QUESTIONING/ANSWERING/WAITING/REVEALING状態）
 
 import { ref, watch, nextTick } from 'vue'
+import { useGameStore } from '@/stores/gameStore'
 
-// Props定義
-interface Props {
-  remainingAttempts?: number
-  remainingTime?: number
-  answerResult?: 'correct' | 'incorrect' | null
-  answerInput?: string
-  isInputDisabled?: boolean
-}
+const gameStore = useGameStore()
 
-const props = withDefaults(defineProps<Props>(), {
-  remainingAttempts: 2,
-  remainingTime: 10,
-  answerResult: null,
-  answerInput: '',
-  isInputDisabled: false,
-})
-
-// イベント定義
+// イベント定義（解答送信は GameManager 経由必須のため emit を維持）
 const emit = defineEmits<{
   submit: [answer: string]
-  updateInput: [value: string]
 }>()
 
 // 入力欄の参照（オートフォーカス用）
 const inputRef = ref<HTMLInputElement | null>(null)
 
 // 送信ボタンの無効状態（入力欄が無効 or 入力が空）
-const isSubmitDisabled = () => props.isInputDisabled || props.answerInput.trim() === ''
+const isSubmitDisabled = () => gameStore.isInputDisabled || gameStore.answerInput.trim() === ''
 
 const handleSubmit = () => {
   if (isSubmitDisabled()) return
-  emit('submit', props.answerInput)
+  emit('submit', gameStore.answerInput)
 }
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  emit('updateInput', target.value)
+  gameStore.updateAnswerInput(target.value)
 }
 
 // ANSWERING遷移時にオートフォーカス
-watch(() => props.isInputDisabled, (disabled) => {
-  if (!disabled) {
-    nextTick(() => {
-      inputRef.value?.focus()
-    })
-  }
-})
+watch(
+  () => gameStore.isInputDisabled,
+  (disabled) => {
+    if (!disabled) {
+      nextTick(() => {
+        inputRef.value?.focus()
+      })
+    }
+  },
+)
 
 // 誤答リトライ時のフォーカス復帰（ANSWERING維持のまま answerResult が 'incorrect' に変わる場合）
-watch(() => props.answerResult, (result) => {
-  if (result === 'incorrect' && !props.isInputDisabled) {
-    nextTick(() => {
-      inputRef.value?.focus()
-    })
-  }
-})
+watch(
+  () => gameStore.answerResult,
+  (result) => {
+    if (result === 'incorrect' && !gameStore.isInputDisabled) {
+      nextTick(() => {
+        inputRef.value?.focus()
+      })
+    }
+  },
+)
 </script>
 
 <template>
   <div class="answer-content">
     <!-- Answer Meta Information -->
     <div class="answer-meta">
-      <span class="attempts-counter">残り {{ remainingAttempts }}回</span>
-      <span v-if="!isInputDisabled" class="answer-timer">残り {{ remainingTime }}秒</span>
-      <span v-if="answerResult" :class="['answer-result', answerResult]">
-        {{ answerResult === 'correct' ? '正解！' : '不正解！' }}
+      <span class="attempts-counter">残り {{ gameStore.remainingAttempts }}回</span>
+      <span v-if="!gameStore.isInputDisabled" class="answer-timer"
+        >残り {{ gameStore.answerTimeRemaining }}秒</span
+      >
+      <span v-if="gameStore.answerResult" :class="['answer-result', gameStore.answerResult]">
+        {{ gameStore.answerResult === 'correct' ? '正解！' : '不正解！' }}
       </span>
     </div>
 
@@ -81,8 +74,8 @@ watch(() => props.answerResult, (result) => {
         class="answer-input"
         placeholder="解答を入力"
         maxlength="100"
-        :value="answerInput"
-        :disabled="isInputDisabled"
+        :value="gameStore.answerInput"
+        :disabled="gameStore.isInputDisabled"
         @input="handleInput"
       />
       <button class="submit-button" :disabled="isSubmitDisabled()" @click="handleSubmit">
