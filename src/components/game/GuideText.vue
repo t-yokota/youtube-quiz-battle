@@ -1,15 +1,22 @@
 <script setup lang="ts">
 // GuideText コンポーネント
 // ガイドテキスト表示（LOADING/READY/TALKING状態）
+// READY ではボタンへ視線誘導する矢印モーションを表示する
 
+import { computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
+import { GameState } from '@/types'
 
 const gameStore = useGameStore()
+
+// READY時のみボタンへの視線誘導矢印を表示
+const showDownCue = computed(() => gameStore.currentState === GameState.READY)
 </script>
 
 <template>
   <div class="guide-text">
-    <p class="guide-message">{{ gameStore.guideText }}</p>
+    <span class="guide-message">{{ gameStore.guideText }}</span>
+    <span v-if="showDownCue" class="down-cue" aria-hidden="true">▼</span>
   </div>
 </template>
 
@@ -22,26 +29,30 @@ const gameStore = useGameStore()
   align-items: center;
   justify-content: center;
   text-align: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--color-text-dim);
+  line-height: 1.5;
 }
 
 .guide-message {
   margin: 0;
-  color: var(--color-legacy-text-dim);
-  font-size: 1rem;
-  line-height: 1.4;
 }
 
-/* モバイル対応 */
-@media (max-width: 640px) {
-  .guide-message {
-    font-size: 0.9375rem;
+/* READY時: ボタンへの視線誘導 */
+.down-cue {
+  font-size: 14px;
+  color: var(--color-gold-400);
+  animation: bob 1.2s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
   }
-}
-
-/* 小さい画面での追加調整 */
-@media (max-height: 700px) {
-  .guide-message {
-    font-size: 0.875rem;
+  50% {
+    transform: translateY(4px);
   }
 }
 </style>

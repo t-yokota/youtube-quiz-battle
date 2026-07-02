@@ -25,8 +25,14 @@ const handleSubmit = (answer: string) => {
     <!-- Game Info -->
     <GameInfo />
 
-    <!-- Answer Area -->
-    <div class="answer-area">
+    <!-- Answer Area（正解/不正解時は縁取りフラッシュ） -->
+    <div
+      class="answer-area"
+      :class="{
+        'flash-correct': gameStore.answerResult === 'correct',
+        'flash-incorrect': gameStore.answerResult === 'incorrect',
+      }"
+    >
       <!-- Guide Text Mode (LOADING/READY/TALKING状態) -->
       <GuideText v-if="gameStore.gamePanelMode === 'guide'" />
 
@@ -41,42 +47,34 @@ const handleSubmit = (answer: string) => {
 .game-panel {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 14px;
 }
 
-/* Answer Area */
+/* Answer Area（ステージ調カード） */
 .answer-area {
   flex-shrink: 0;
-  background-color: white;
-  padding: 0.875rem;
-  border-radius: 0 0 0.75rem 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--color-stage-800);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
   height: 110px;
   display: flex;
   align-items: stretch;
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color var(--duration-base),
+    box-shadow var(--duration-base);
 }
 
-/* モバイル対応 */
-@media (max-width: 640px) {
-  .game-panel {
-    gap: 0.15rem;
-  }
-
-  .answer-area {
-    padding: 0.75rem;
-    height: 100px;
-  }
+/* 正解/不正解時にエリア全体を縁取りフラッシュ */
+.answer-area.flash-correct {
+  border-color: var(--color-ok-400);
+  box-shadow: 0 0 18px rgba(61, 220, 132, 0.25);
 }
 
-/* 小さい画面での追加調整 */
-@media (max-height: 700px) {
-  .game-panel {
-    gap: 0.2rem;
-  }
-
-  .answer-area {
-    padding: 0.625rem;
-    height: 90px;
-  }
+.answer-area.flash-incorrect {
+  border-color: var(--color-signal-500);
+  box-shadow: 0 0 18px rgba(230, 64, 46, 0.25);
 }
 </style>

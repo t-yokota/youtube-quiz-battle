@@ -1,9 +1,11 @@
 <script setup lang="ts">
 // AnswerContent コンポーネント
 // 解答入力エリア（QUESTIONING/ANSWERING/WAITING/REVEALING状態）
+// タイマーは conic-gradient リング（12時起点・時計回り減少・残り3秒以下で赤 + 脈動）
 
-import { ref, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
+import { TIMER_URGENT_THRESHOLD_SEC } from '@/constants/timing'
 
 const gameStore = useGameStore()
 
@@ -17,6 +19,16 @@ const inputRef = ref<HTMLInputElement | null>(null)
 
 // 送信ボタンの無効状態（入力欄が無効 or 入力が空）
 const isSubmitDisabled = () => gameStore.isInputDisabled || gameStore.answerInput.trim() === ''
+
+// タイマーリング進捗（1 → 0。分母は設定の制限時間）
+const answerTimeLimit = computed(() => gameStore.quizData?.settings.answerTimeLimit ?? 10)
+const timerProgress = computed(() => {
+  if (answerTimeLimit.value <= 0) return 0
+  return Math.max(0, Math.min(1, gameStore.answerTimeRemaining / answerTimeLimit.value))
+})
+
+// 残り3秒以下で赤 + 脈動
+const isUrgent = computed(() => gameStore.answerTimeRemaining <= TIMER_URGENT_THRESHOLD_SEC)
 
 const handleSubmit = () => {
   if (isSubmitDisabled()) return
@@ -57,12 +69,27 @@ watch(
   <div class="answer-content">
     <!-- Answer Meta Information -->
     <div class="answer-meta">
-      <span class="attempts-counter">残り {{ gameStore.remainingAttempts }}回</span>
-      <span v-if="!gameStore.isInputDisabled" class="answer-timer"
-        >残り {{ gameStore.answerTimeRemaining }}秒</span
+      <span class="attempts-counter"
+        >残り {{ gameStore.remainingAttempts }}回<span class="dim">
+          / {{ gameStore.quizData?.settings.maxAttempts ?? gameStore.remainingAttempts }}</span
+        ></span
       >
+      <span
+        v-if="!gameStore.isInputDisabled"
+        class="answer-timer"
+        :class="{ urgent: isUrgent }"
+        :style="{ '--timer-progress': timerProgress }"
+      >
+        <span class="timer-ring"></span>
+        <span class="sec">{{ gameStore.answerTimeRemaining }}</span
+        >s
+      </span>
+    </div>
+
+    <!-- 結果バナー（正解/不正解）。aria-live 領域は常設して変化を通知する -->
+    <div aria-live="polite">
       <span v-if="gameStore.answerResult" :class="['answer-result', gameStore.answerResult]">
-        {{ gameStore.answerResult === 'correct' ? '正解！' : '不正解！' }}
+        {{ gameStore.answerResult === 'correct' ? '正解！' : '不正解' }}
       </span>
     </div>
 
@@ -99,152 +126,175 @@ watch(
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  position: relative;
-  height: 24px;
+  height: 26px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
 
 .attempts-counter {
-  color: var(--color-legacy-blue);
-  font-weight: bold;
-  flex: 1;
+  color: var(--color-info-400);
+  font-weight: 700;
 }
 
+.attempts-counter .dim {
+  color: var(--color-text-dim);
+  font-weight: 500;
+}
+
+/* タイマー: conic-gradient リング + 残秒数（12時から時計回りに減る） */
 .answer-timer {
-  color: var(--color-legacy-red);
-  font-weight: bold;
-  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  color: var(--color-text-main);
+}
+
+/* 秒数を固定幅にしてリング位置が桁数で動かないようにする */
+.answer-timer .sec {
+  display: inline-block;
+  min-width: 2ch;
   text-align: right;
 }
 
+.timer-ring {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--color-stage-700) calc((1 - var(--timer-progress)) * 360deg),
+    var(--color-gold-400) 0deg
+  );
+  display: grid;
+  place-items: center;
+}
+
+.timer-ring::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-stage-800);
+}
+
+.answer-timer.urgent {
+  color: var(--color-signal-500);
+  animation: throb 0.5s ease-in-out infinite;
+}
+
+.answer-timer.urgent .timer-ring {
+  background: conic-gradient(
+    var(--color-stage-700) calc((1 - var(--timer-progress)) * 360deg),
+    var(--color-signal-500) 0deg
+  );
+}
+
+@keyframes throb {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+/* 結果バナー（answer-area 上端中央にポップ表示） */
 .answer-result {
   position: absolute;
   left: 50%;
+  top: 8px;
   transform: translateX(-50%);
-  font-size: 1rem;
-  font-weight: bold;
-  padding: 0.25rem 0.75rem;
-  border-radius: 0.375rem;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 14px;
+  border-radius: 999px;
   white-space: nowrap;
+  animation: pop var(--duration-base) var(--ease-brand);
+}
+
+@keyframes pop {
+  from {
+    transform: translateX(-50%) scale(0.7);
+    opacity: 0;
+  }
 }
 
 .answer-result.correct {
-  background: var(--color-legacy-green-bg);
-  color: var(--color-legacy-green-text);
-  padding-right: 0.4rem;
+  background: rgba(61, 220, 132, 0.15);
+  color: var(--color-ok-400);
+  border: 1px solid var(--color-ok-400);
 }
 
 .answer-result.incorrect {
-  background: var(--color-legacy-red-bg);
-  color: var(--color-legacy-red-dark);
-  padding-right: 0.4rem;
+  background: rgba(230, 64, 46, 0.15);
+  color: var(--color-signal-500);
+  border: 1px solid var(--color-signal-500);
 }
 
 /* Answer Input Container */
 .answer-input-container {
   display: flex;
-  gap: 0.5rem;
-  align-items: stretch;
+  gap: 8px;
 }
 
 .answer-input {
   flex: 1;
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--color-legacy-gray-200);
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  outline: none;
   min-width: 0;
   height: 44px;
-  box-sizing: border-box;
+  padding: 0 14px;
+  font-size: 16px; /* iOSズーム防止 */
+  color: var(--color-text-main);
+  background: var(--color-stage-900);
+  border: 2px solid var(--color-line);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color var(--duration-fast);
 }
 
-.answer-input:focus {
-  border-color: var(--color-legacy-blue);
+.answer-input::placeholder {
+  color: #5a6a8e;
+}
+
+.answer-input:focus-visible {
+  border-color: var(--color-info-400);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.25);
+  outline: none;
 }
 
 .answer-input:disabled {
-  background: var(--color-legacy-gray-50);
-  color: var(--color-legacy-text-dim);
+  opacity: 0.45;
 }
 
 .submit-button {
-  padding: 0.75rem 1rem;
-  background: var(--color-legacy-blue);
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
-  white-space: nowrap;
-  flex-shrink: 0;
   height: 44px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-stage-900);
+  background: var(--color-gold-400);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    transform var(--duration-fast),
+    background var(--duration-fast);
 }
 
 .submit-button:hover:not(:disabled) {
-  background: var(--color-legacy-blue-dark);
+  background: #ffd566;
+}
+
+.submit-button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .submit-button:disabled {
-  background: var(--color-legacy-gray-400);
+  background: var(--color-stage-700);
+  color: var(--color-text-dim);
   cursor: not-allowed;
-}
-
-/* モバイル対応 */
-@media (max-width: 640px) {
-  .answer-meta {
-    font-size: 0.8125rem;
-    margin-bottom: 0.375rem;
-  }
-
-  .answer-input,
-  .submit-button {
-    font-size: 0.9375rem;
-    height: 40px;
-  }
-
-  .answer-input {
-    padding: 0.625rem 0.875rem;
-  }
-
-  .submit-button {
-    padding: 0.625rem 0.875rem;
-  }
-}
-
-/* 小さい画面での追加調整 */
-@media (max-height: 700px) {
-  .answer-meta {
-    font-size: 0.75rem;
-    margin-bottom: 0.25rem;
-    height: 20px;
-  }
-
-  .answer-result {
-    font-size: 0.875rem;
-    padding: 0.125rem 0.5rem;
-  }
-
-  .answer-input,
-  .submit-button {
-    font-size: 0.875rem;
-    height: 38px;
-  }
-
-  .answer-input {
-    padding: 0.5rem 0.75rem;
-  }
-
-  .submit-button {
-    padding: 0.5rem 0.75rem;
-  }
 }
 </style>

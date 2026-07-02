@@ -80,3 +80,9 @@ export const YT_API_POLL_INTERVAL_MS = 100
  * TODO: onStateChange (CUED) ベースに置き換える際に削除する（R-5 対応予定）
  */
 export const LOAD_VIDEO_SETTLE_MS = 1000
+
+/**
+ * 解答タイマーの緊急表示閾値（秒）
+ * 残り時間がこの値以下になるとタイマーを赤色 + 脈動表示に切り替える
+ */
+export const TIMER_URGENT_THRESHOLD_SEC = 3
