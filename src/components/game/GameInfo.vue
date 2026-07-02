@@ -6,10 +6,18 @@
 import { ref, computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { CHIP_WINDOW } from '@/constants/scoreboard'
+import { GameState } from '@/types'
 import type { QuestionResult } from '@/types'
 import ResultChip, { type ChipVariant } from './ResultChip.vue'
 
 const gameStore = useGameStore()
+
+// 問題区間の進行中か（QUESTIONING〜REVEALING）。REVEAL 終了（TALKING 等）で false
+const isQuestionActive = computed(() =>
+  [GameState.QUESTIONING, GameState.ANSWERING, GameState.WAITING, GameState.REVEALING].includes(
+    gameStore.currentState,
+  ),
+)
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
@@ -59,9 +67,10 @@ const chips = computed<ChipItem[]>(() => {
   const items: ChipItem[] = []
   for (let q = start.value; q <= end.value; q++) {
     let variant: ChipVariant
-    if (q === current.value) {
+    if (q === current.value && isQuestionActive.value) {
+      // 進行中の問題は金カーソル。REVEAL 終了後は下の分岐で戦績マークに切り替わる
       variant = 'current'
-    } else if (q < current.value) {
+    } else if (q <= current.value) {
       variant = resultMap.value.get(q) ?? 'empty'
     } else {
       variant = 'empty'
