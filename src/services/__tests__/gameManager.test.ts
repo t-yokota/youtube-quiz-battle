@@ -431,6 +431,26 @@ describe('Single-Shot Guard', () => {
     // revealTime(20)にシークされている
     expect(player.seekTo).toHaveBeenCalledWith(20)
   })
+
+  it('正解時は WAITING を経由せず直接 REVEALING へ遷移する（jumpToRevealPeriod=true・ちらつき解消）', () => {
+    const { gm, store } = makeGameManager(makeQuizData({ jumpToRevealPeriod: true }))
+
+    // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING（currentVideoTime < revealTime=20）
+    simulatePlayback(gm, 11, 0)
+    gm.handleButtonPress()
+    vi.advanceTimersByTime(100)
+    expect(store.currentState).toBe(GameState.ANSWERING)
+
+    const transitionSpy = vi.spyOn(store, 'transitionToState')
+
+    // 正解を送信 → 直接 REVEALING（WAITING を挟まない）
+    gm.handleAnswerSubmit('東京')
+
+    expect(store.currentState).toBe(GameState.REVEALING)
+    const transitionedStates = transitionSpy.mock.calls.map((call) => call[0])
+    expect(transitionedStates).toContain(GameState.REVEALING)
+    expect(transitionedStates).not.toContain(GameState.WAITING)
+  })
 })
 
 // ============================================================================

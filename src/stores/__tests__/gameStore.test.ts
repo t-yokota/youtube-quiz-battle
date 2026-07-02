@@ -70,15 +70,15 @@ describe('handleAnswerSubmit: 基本動作', () => {
     expect(store.incorrectCount).toBe(0)
   })
 
-  it('正解後はWAITING状態へ遷移する', () => {
+  it('正解後は解答確定(isFinal)を返す（遷移は controller が担う）', () => {
     const store = useGameStore()
     store.setQuizData(makeQuizData())
     store.currentQuestionIndex = 0
     store.transitionToState(GameState.ANSWERING)
 
-    store.handleAnswerSubmit('東京')
+    const result = store.handleAnswerSubmit('東京')
 
-    expect(store.currentState).toBe(GameState.WAITING)
+    expect(result).toEqual({ isCorrect: true, isFinal: true })
   })
 
   it('正解後はanswerResultが"correct"になる', () => {
@@ -148,44 +148,44 @@ describe('handleAnswerSubmit: 不正解・残り回数管理', () => {
     expect(store.answerResult).toBeNull() // QUESTIONING復帰時にクリアされる
   })
 
-  it('残り回数がある不正解ではQUESTIONING状態へ遷移する', () => {
+  it('残り回数がある不正解ではリトライ可能(isFinal=false)を返す', () => {
     const store = useGameStore()
     store.setQuizData(makeQuizData(2))
     store.currentQuestionIndex = 0
     store.transitionToState(GameState.ANSWERING)
 
-    store.handleAnswerSubmit('不正解の答え')
+    const result = store.handleAnswerSubmit('不正解の答え')
 
-    expect(store.currentState).toBe(GameState.QUESTIONING)
+    expect(result).toEqual({ isCorrect: false, isFinal: false })
   })
 
-  it('残り回数が0になるとincorrectCountが増加しWAITINGへ遷移する', () => {
+  it('残り回数が0になるとincorrectCountが増加し解答確定(isFinal)を返す', () => {
     const store = useGameStore()
     store.setQuizData(makeQuizData(1))
     store.currentQuestionIndex = 0
     store.transitionToState(GameState.ANSWERING)
 
-    store.handleAnswerSubmit('不正解の答え')
+    const result = store.handleAnswerSubmit('不正解の答え')
 
     expect(store.incorrectCount).toBe(1)
     expect(store.correctCount).toBe(0)
-    expect(store.currentState).toBe(GameState.WAITING)
+    expect(result).toEqual({ isCorrect: false, isFinal: true })
   })
 
-  it('残り2回で2回不正解するとWAITINGへ遷移する', () => {
+  it('残り2回で2回不正解すると2回目で解答確定(isFinal)を返す', () => {
     const store = useGameStore()
     store.setQuizData(makeQuizData(2))
     store.currentQuestionIndex = 0
     store.transitionToState(GameState.ANSWERING)
 
-    store.handleAnswerSubmit('不正解1')
-    expect(store.currentState).toBe(GameState.QUESTIONING)
+    const first = store.handleAnswerSubmit('不正解1')
+    expect(first).toEqual({ isCorrect: false, isFinal: false })
 
     // 再度ANSWERING状態に入って2回目の解答
     store.transitionToState(GameState.ANSWERING)
-    store.handleAnswerSubmit('不正解2')
+    const second = store.handleAnswerSubmit('不正解2')
     expect(store.incorrectCount).toBe(1)
-    expect(store.currentState).toBe(GameState.WAITING)
+    expect(second).toEqual({ isCorrect: false, isFinal: true })
   })
 
   it('残り回数がある不正解ではanswerResultがnullにクリアされる', () => {
@@ -194,9 +194,9 @@ describe('handleAnswerSubmit: 不正解・残り回数管理', () => {
     store.currentQuestionIndex = 0
     store.transitionToState(GameState.ANSWERING)
 
-    store.handleAnswerSubmit('不正解')
+    const result = store.handleAnswerSubmit('不正解')
 
-    expect(store.currentState).toBe(GameState.QUESTIONING)
+    expect(result).toEqual({ isCorrect: false, isFinal: false })
     expect(store.answerResult).toBeNull()
   })
 })
@@ -326,9 +326,9 @@ describe('initializeForQuestion: 問題開始時の状態初期化', () => {
     store.currentQuestionIndex = 0
     store.transitionToState(GameState.ANSWERING)
 
-    // 1問目: 誤答 → WAITING（maxAttempts=1なので1回で確定）
-    store.handleAnswerSubmit('不正解')
-    expect(store.currentState).toBe(GameState.WAITING)
+    // 1問目: 誤答 → 解答確定（maxAttempts=1なので1回で確定）
+    const result = store.handleAnswerSubmit('不正解')
+    expect(result).toEqual({ isCorrect: false, isFinal: true })
     expect(store.remainingAttempts).toBe(0)
 
     // 2問目開始時の初期化

@@ -114,16 +114,24 @@ export class AnswerFlowController {
    */
   private resumeVideoAfterAnswer(result: { isCorrect: boolean; isFinal: boolean }): void {
     if (result.isFinal) {
-      // 正解 or 最終不正解 → 動画再開（jumpToRevealPeriod対応）
+      // 正解 or 最終不正解 → 遷移を一元決定する
       const questionIndex = this.gameStore.currentQuestionIndex
-      this.jumpToRevealIfConfigured(questionIndex, result.isCorrect)
 
-      // jumpToRevealPeriodでない場合は通常の動画再開
-      if (!this.quizData.settings.jumpToRevealPeriod) {
-        this.playerControl.playVideo()
+      // jumpToRevealPeriod=true かつ currentVideoTime < revealTime のとき REVEALING へ直接遷移
+      const jumped = this.jumpToRevealIfConfigured(questionIndex, result.isCorrect)
+
+      if (!jumped) {
+        // REVEALING へジャンプしなかった場合は WAITING へ遷移
+        this.gameStore.transitionToState(GameState.WAITING)
+
+        // jumpToRevealPeriodでない場合は通常の動画再開
+        if (!this.quizData.settings.jumpToRevealPeriod) {
+          this.playerControl.playVideo()
+        }
       }
     } else {
-      // リトライ可能（QUESTIONING に戻った） → 動画再開
+      // リトライ可能 → QUESTIONING へ戻し動画再開
+      this.gameStore.transitionToState(GameState.QUESTIONING)
       this.playerControl.playVideo()
     }
   }
@@ -133,13 +141,14 @@ export class AnswerFlowController {
    * jumpToRevealPeriod=true かつ currentVideoTime < revealTime のときのみシーク
    * @param questionIndex 問題インデックス
    * @param isCorrect 正解かどうか
+   * @returns REVEALING へジャンプ（シーク＋遷移）した場合 true
    */
-  jumpToRevealIfConfigured(questionIndex: number, isCorrect: boolean): void {
+  jumpToRevealIfConfigured(questionIndex: number, isCorrect: boolean): boolean {
     logger.log('[AnswerFlowController] submitAnswer:', questionIndex, 'isCorrect:', isCorrect)
 
     if (!this.quizData.settings.jumpToRevealPeriod) {
       // jumpToRevealPeriod=false の場合、何もしない
-      return
+      return false
     }
 
     const question = this.quizData.questions[questionIndex]
@@ -158,7 +167,10 @@ export class AnswerFlowController {
       this.gameStore.transitionToState(GameState.REVEALING)
 
       logger.log('[AnswerFlowController] Jumped to reveal period:', question.revealTime)
+      return true
     }
+
+    return false
   }
 }
 

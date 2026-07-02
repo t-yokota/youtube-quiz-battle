@@ -224,8 +224,7 @@ export const useGameStore = defineStore('game', () => {
 
       logger.log(`[GameStore] Correct! Score: ${correctCount.value}`)
 
-      // WAITING状態へ遷移
-      transitionToState(GameState.WAITING)
+      // 遷移は answerFlowController.resumeVideoAfterAnswer で一元決定する
       return { isCorrect: true, isFinal: true }
     }
 
@@ -248,16 +247,14 @@ export const useGameStore = defineStore('game', () => {
 
       logger.log(`[GameStore] Incorrect (no attempts left). Score: ${incorrectCount.value}`)
 
-      // WAITING状態へ遷移
-      transitionToState(GameState.WAITING)
+      // 遷移は answerFlowController.resumeVideoAfterAnswer で一元決定する
       return { isCorrect: false, isFinal: true }
     }
 
-    // 残り回数あり → QUESTIONING に戻す（動画再開して再早押し可能に）
+    // 残り回数あり → リトライ可能（QUESTIONING 復帰は controller が担う）
     answerInput.value = ''
     answerResult.value = null // QUESTIONING では結果表示を非表示にする
     logger.log(`[GameStore] Incorrect. Remaining attempts: ${remainingAttempts.value}`)
-    transitionToState(GameState.QUESTIONING)
     return { isCorrect: false, isFinal: false }
   }
 
