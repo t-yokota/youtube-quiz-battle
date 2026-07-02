@@ -62,8 +62,8 @@ withDefaults(defineProps<Props>(), {
 .spinner {
   width: 4rem;
   height: 4rem;
-  border: 4px solid #e5e7eb;
-  border-top-color: #2563eb;
+  border: 4px solid var(--color-legacy-gray-200);
+  border-top-color: var(--color-legacy-blue);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -79,7 +79,7 @@ withDefaults(defineProps<Props>(), {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 500;
-  color: #333;
+  color: var(--color-legacy-gray-900);
 }
 
 /* Dialog Transition */

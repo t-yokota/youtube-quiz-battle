@@ -29,7 +29,7 @@ const handleReplay = () => {
 
 .replay-button {
   padding: 0.875rem 1.5rem;
-  background-color: #2563eb;
+  background-color: var(--color-legacy-blue);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -41,7 +41,7 @@ const handleReplay = () => {
 }
 
 .replay-button:hover {
-  background-color: #1d4ed8;
+  background-color: var(--color-legacy-blue-dark);
 }
 
 .replay-button:active {

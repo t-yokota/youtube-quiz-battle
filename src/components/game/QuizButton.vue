@@ -60,7 +60,7 @@ const handlePress = () => {
   width: min(80cqw, calc(100cqh * 0.75), 300px);
   height: auto;
   aspect-ratio: 3 / 4;
-  background-color: #ef4444;
+  background-color: var(--color-legacy-red);
   color: white;
   font-size: 1.5rem;
   font-weight: bold;
@@ -73,11 +73,11 @@ const handlePress = () => {
 
 /* STANDBY状態 - デフォルト（赤） */
 .quiz-button.standby {
-  background-color: #ef4444;
+  background-color: var(--color-legacy-red);
 }
 
 .quiz-button.standby:hover {
-  background-color: #dc2626;
+  background-color: var(--color-legacy-red-dark);
   transform: translateY(-2px);
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
@@ -89,31 +89,31 @@ const handlePress = () => {
 
 /* PUSHED状態 - 押下中（暗い赤） */
 .quiz-button.pushed {
-  background-color: #b91c1c;
+  background-color: var(--color-legacy-red-darker);
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* RELEASED状態 - 押下後（緑） */
 .quiz-button.released {
-  background-color: #22c55e;
+  background-color: var(--color-legacy-green);
   cursor: default;
 }
 
 .quiz-button.released:hover {
-  background-color: #22c55e;
+  background-color: var(--color-legacy-green);
   transform: none;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* DISABLED状態 - 無効（グレー） */
 .quiz-button.disabled {
-  background-color: #9ca3af;
+  background-color: var(--color-legacy-gray-400);
   cursor: not-allowed;
 }
 
 .quiz-button:disabled {
-  background-color: #9ca3af;
+  background-color: var(--color-legacy-gray-400);
   cursor: not-allowed;
 }
 

@@ -50,7 +50,7 @@ const progressText = computed(() => {
 .score-display {
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--color-legacy-gray-900);
   white-space: nowrap;
 }
 

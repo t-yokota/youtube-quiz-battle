@@ -62,22 +62,22 @@ withDefaults(defineProps<Props>(), {
 }
 
 .result-table thead {
-  background-color: #f3f4f6;
+  background-color: var(--color-legacy-gray-100);
 }
 
 .result-table th {
   padding: 0.75rem 0.5rem;
   text-align: center;
   font-weight: 600;
-  color: #333;
-  border-bottom: 2px solid #e5e7eb;
+  color: var(--color-legacy-gray-900);
+  border-bottom: 2px solid var(--color-legacy-gray-200);
 }
 
 .result-table td {
   padding: 0.75rem 0.5rem;
   text-align: center;
-  border-bottom: 1px solid #e5e7eb;
-  color: #666;
+  border-bottom: 1px solid var(--color-legacy-gray-200);
+  color: var(--color-legacy-gray-600);
 }
 
 .result-table tbody tr:last-child td {
@@ -95,13 +95,13 @@ withDefaults(defineProps<Props>(), {
 }
 
 .result-badge.correct {
-  background-color: #dcfce7;
-  color: #166534;
+  background-color: var(--color-legacy-green-bg);
+  color: var(--color-legacy-green-text);
 }
 
 .result-badge.incorrect {
-  background-color: #fef2f2;
-  color: #dc2626;
+  background-color: var(--color-legacy-red-bg);
+  color: var(--color-legacy-red-dark);
 }
 
 /* モバイル対応 */

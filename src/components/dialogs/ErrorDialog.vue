@@ -114,7 +114,7 @@ const handleClose = () => {
 .error-icon {
   width: 4rem;
   height: 4rem;
-  color: #dc2626;
+  color: var(--color-legacy-red-dark);
 }
 
 .icon {
@@ -127,14 +127,14 @@ const handleClose = () => {
   margin: 0;
   font-size: 1.25rem;
   font-weight: bold;
-  color: #333;
+  color: var(--color-legacy-gray-900);
 }
 
 /* Dialog Message */
 .dialog-message {
   margin: 0;
   font-size: 1rem;
-  color: #666;
+  color: var(--color-legacy-gray-600);
   line-height: 1.6;
 }
 
@@ -150,7 +150,7 @@ const handleClose = () => {
 /* Action Button */
 .action-button {
   padding: 0.75rem 1.5rem;
-  background-color: #2563eb;
+  background-color: var(--color-legacy-blue);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -161,14 +161,14 @@ const handleClose = () => {
 }
 
 .action-button:hover {
-  background-color: #1d4ed8;
+  background-color: var(--color-legacy-blue-dark);
 }
 
 /* Close Button */
 .close-button {
   padding: 0.75rem 1.5rem;
-  background-color: #e5e7eb;
-  color: #333;
+  background-color: var(--color-legacy-gray-200);
+  color: var(--color-legacy-gray-900);
   border: none;
   border-radius: 0.5rem;
   font-size: 1rem;
@@ -178,7 +178,7 @@ const handleClose = () => {
 }
 
 .close-button:hover {
-  background-color: #d1d5db;
+  background-color: var(--color-legacy-gray-300);
 }
 
 /* Dialog Transition */

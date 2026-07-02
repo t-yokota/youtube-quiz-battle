@@ -26,7 +26,7 @@ const gameStore = useGameStore()
 
 .guide-message {
   margin: 0;
-  color: #6b7280;
+  color: var(--color-legacy-text-dim);
   font-size: 1rem;
   line-height: 1.4;
 }

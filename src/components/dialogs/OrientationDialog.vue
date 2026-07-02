@@ -81,7 +81,7 @@ withDefaults(defineProps<Props>(), {
 .rotation-icon {
   width: 4rem;
   height: 4rem;
-  color: #2563eb;
+  color: var(--color-legacy-blue);
   animation: rotate 2s ease-in-out infinite;
 }
 
@@ -104,14 +104,14 @@ withDefaults(defineProps<Props>(), {
   margin: 0;
   font-size: 1.25rem;
   font-weight: bold;
-  color: #333;
+  color: var(--color-legacy-gray-900);
 }
 
 /* Dialog Message */
 .dialog-message {
   margin: 0;
   font-size: 1rem;
-  color: #666;
+  color: var(--color-legacy-gray-600);
   line-height: 1.6;
 }
 

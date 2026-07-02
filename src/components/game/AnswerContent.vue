@@ -107,13 +107,13 @@ watch(
 }
 
 .attempts-counter {
-  color: #2563eb;
+  color: var(--color-legacy-blue);
   font-weight: bold;
   flex: 1;
 }
 
 .answer-timer {
-  color: #ef4444;
+  color: var(--color-legacy-red);
   font-weight: bold;
   flex: 1;
   text-align: right;
@@ -131,14 +131,14 @@ watch(
 }
 
 .answer-result.correct {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-legacy-green-bg);
+  color: var(--color-legacy-green-text);
   padding-right: 0.4rem;
 }
 
 .answer-result.incorrect {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--color-legacy-red-bg);
+  color: var(--color-legacy-red-dark);
   padding-right: 0.4rem;
 }
 
@@ -152,7 +152,7 @@ watch(
 .answer-input {
   flex: 1;
   padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-legacy-gray-200);
   border-radius: 0.5rem;
   font-size: 1rem;
   outline: none;
@@ -162,17 +162,17 @@ watch(
 }
 
 .answer-input:focus {
-  border-color: #2563eb;
+  border-color: var(--color-legacy-blue);
 }
 
 .answer-input:disabled {
-  background: #f9fafb;
-  color: #6b7280;
+  background: var(--color-legacy-gray-50);
+  color: var(--color-legacy-text-dim);
 }
 
 .submit-button {
   padding: 0.75rem 1rem;
-  background: #2563eb;
+  background: var(--color-legacy-blue);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -190,11 +190,11 @@ watch(
 }
 
 .submit-button:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--color-legacy-blue-dark);
 }
 
 .submit-button:disabled {
-  background: #9ca3af;
+  background: var(--color-legacy-gray-400);
   cursor: not-allowed;
 }
 

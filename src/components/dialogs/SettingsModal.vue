@@ -137,7 +137,7 @@ const handleOverlayClick = (event: MouseEvent) => {
                     max="4"
                     :value="volumeLevel"
                     :style="{
-                      background: `linear-gradient(to right, #2563eb 0%, #2563eb ${(volumeLevel / 4) * 100}%, #e5e7eb ${(volumeLevel / 4) * 100}%, #e5e7eb 100%)`
+                      background: `linear-gradient(to right, var(--color-legacy-blue) 0%, var(--color-legacy-blue) ${(volumeLevel / 4) * 100}%, var(--color-legacy-gray-200) ${(volumeLevel / 4) * 100}%, var(--color-legacy-gray-200) 100%)`
                     }"
                     class="slider"
                     @input="handleVolumeChange(($event.target as HTMLInputElement).valueAsNumber)"
@@ -204,14 +204,14 @@ const handleOverlayClick = (event: MouseEvent) => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-legacy-gray-200);
 }
 
 .modal-title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: bold;
-  color: #333;
+  color: var(--color-legacy-gray-900);
 }
 
 .close-button {
@@ -219,12 +219,12 @@ const handleOverlayClick = (event: MouseEvent) => {
   border: none;
   cursor: pointer;
   padding: 0.25rem;
-  color: #6b7280;
+  color: var(--color-legacy-text-dim);
   transition: color 0.2s;
 }
 
 .close-button:hover {
-  color: #333;
+  color: var(--color-legacy-gray-900);
 }
 
 .close-icon {
@@ -252,7 +252,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--color-legacy-gray-900);
 }
 
 /* Volume Control */
@@ -264,7 +264,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .volume-description {
   font-size: 0.875rem;
-  color: #666;
+  color: var(--color-legacy-gray-600);
   font-weight: 500;
 }
 
@@ -279,17 +279,17 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 1.5rem;
   height: 1.5rem;
   flex-shrink: 0;
-  color: #2563eb;
+  color: var(--color-legacy-blue);
   transition: color 0.2s;
 }
 
 .volume-icon.muted {
-  color: #9ca3af;
+  color: var(--color-legacy-gray-400);
 }
 
 .volume-icon .mute-x {
-  /* stroke: #ef4444; */
-  stroke: #dc2626;
+  /* stroke: var(--color-legacy-red); */
+  stroke: var(--color-legacy-red-dark);
 
 }
 
@@ -323,7 +323,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #2563eb;
+  background: var(--color-legacy-blue);
   cursor: pointer;
   transition: transform 0.2s;
 }
@@ -332,7 +332,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #2563eb;
+  background: var(--color-legacy-blue);
   border: none;
   cursor: pointer;
   transition: transform 0.2s;
@@ -357,7 +357,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 /* Privacy Text */
 .privacy-text {
   font-size: 0.875rem;
-  color: #666;
+  color: var(--color-legacy-gray-600);
   line-height: 1.6;
 }
 
@@ -386,7 +386,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 /* Primary Button */
 .primary-button {
   padding: 0.75rem 1.5rem;
-  background-color: #2563eb;
+  background-color: var(--color-legacy-blue);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -399,7 +399,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .primary-button:hover {
-  background-color: #1d4ed8;
+  background-color: var(--color-legacy-blue-dark);
 }
 
 /* Modal Transition */

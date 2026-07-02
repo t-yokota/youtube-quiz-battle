@@ -43,13 +43,13 @@ const percentage = computed(() => {
   margin: 0 0 0.75rem 0;
   font-size: 1.5rem;
   font-weight: bold;
-  color: #333;
+  color: var(--color-legacy-gray-900);
 }
 
 .score-text {
   margin: 0;
   font-size: 1.125rem;
-  color: #666;
+  color: var(--color-legacy-gray-600);
 }
 
 /* モバイル対応 */
