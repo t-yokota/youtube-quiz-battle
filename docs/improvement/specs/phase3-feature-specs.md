@@ -171,7 +171,14 @@ answerValidator.test.ts に追加。最低限のマトリクス: ひらがな⇔
 
 ---
 
+## Task 19-3: 設定画面から disableSeekbar を切り替え（2026-07-03 追加・ユーザー要望）
+
+- SettingsModal にシーク許可トグルを追加。settingsStore に `disableSeekbarOverride: boolean | null`（null=クイズデータの設定に従う）を追加し LocalStorage 永続化
+- 実効値の解決: `override ?? quizData.settings.disableSeekbar`。参照箇所は GameManager.updateVideoTime のシーク分岐 1 箇所（実装時に rg で確認）
+- design.md の QuizSettings 説明に優先順位（ユーザー設定 > データ設定）を追記
+- タイミング: Task 19（settingsStore 新設）完了後の任意時点
+
 ## 実行順とコミット
 
-19-0 →（ユーザー確認 A3）→ 19 → 19-2 → 20 → 20-2 → 20-3 → 20-4 →（ユーザー確認 V3）→ 21 → 21-2。
+19-0 →（ユーザー確認 A3）→ 19 → 19-2 →（任意時点で 19-3）→ 20 → 20-2 → 20-3 → 20-4 →（ユーザー確認 V3）→ 21 → 21-2。
 各タスク完了時に docs/tasks.md のチェックボックス更新を同一コミットに含める。
