@@ -1,16 +1,16 @@
 <script setup lang="ts">
 // QuizButton コンポーネント
 // 早押しボタンの表示と状態管理
+import { computed } from 'vue'
+import { ButtonState } from '@/types'
 
-// Props定義（Phase 2で状態管理と連携予定）
 interface Props {
-  // ボタン状態: 'standby' = 待機, 'pushed' = 押下中, 'released' = 押下後, 'disabled' = 無効
-  buttonState?: 'standby' | 'pushed' | 'released' | 'disabled'
+  buttonState?: ButtonState
   buttonText?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  buttonState: 'standby',
+  buttonState: ButtonState.STANDBY,
   buttonText: '早押しボタン',
 })
 
@@ -19,8 +19,11 @@ const emit = defineEmits<{
   press: []
 }>()
 
+// CSSクラス名用（standby / pushed / released / disabled）
+const buttonStateClass = computed(() => props.buttonState.toLowerCase())
+
 const handlePress = () => {
-  if (props.buttonState !== 'disabled') {
+  if (props.buttonState !== ButtonState.DISABLED) {
     emit('press')
   }
 }
@@ -29,8 +32,8 @@ const handlePress = () => {
 <template>
   <section class="button-area">
     <button
-      :class="['quiz-button', buttonState]"
-      :disabled="buttonState === 'disabled'"
+      :class="['quiz-button', buttonStateClass]"
+      :disabled="buttonState === ButtonState.DISABLED"
       @click="handlePress"
     >
       {{ buttonText }}
@@ -54,11 +57,7 @@ const handlePress = () => {
 .quiz-button {
   /* ボタンサイズの計算: 3:4比率を厳密に維持 */
   /* gridとcontainer queriesを使用して、利用可能なスペースに収める */
-  width: min(
-    80cqw,
-    calc(100cqh * 0.75),
-    300px
-  );
+  width: min(80cqw, calc(100cqh * 0.75), 300px);
   height: auto;
   aspect-ratio: 3 / 4;
   background-color: #ef4444;
@@ -126,11 +125,7 @@ const handlePress = () => {
 
   .quiz-button {
     font-size: 1.25rem;
-    width: min(
-      85cqw,
-      calc(100cqh * 0.75),
-      250px
-    );
+    width: min(85cqw, calc(100cqh * 0.75), 250px);
   }
 }
 

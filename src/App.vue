@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // YouTube Quiz Battle - メインアプリケーション
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import VideoPlayer from './components/common/VideoPlayer.vue'
 import GamePanel from './components/game/GamePanel.vue'
@@ -25,11 +25,6 @@ const gameStore = useGameStore()
 
 // 時間更新ループ（getCurrentTime() ポーリングに一本化）
 const gameLoop = useGameLoop()
-
-// QuizButton の button-state props 用（テンプレート内の union type が vue/no-deprecated-filter に誤検出されるため computed 化）
-const buttonStateProp = computed(() => {
-  return gameStore.buttonState.toLowerCase() as 'standby' | 'pushed' | 'released' | 'disabled'
-})
 
 // GameManager の参照
 const gameManager = ref<GameManager | null>(null)
@@ -189,7 +184,7 @@ onUnmounted(() => {
         />
         <QuizButton
           v-if="gameStore.isButtonVisible"
-          :button-state="buttonStateProp"
+          :button-state="gameStore.buttonState"
           @press="handleButtonPress"
         />
       </div>
