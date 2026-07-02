@@ -88,8 +88,9 @@ export class GameManager {
     // ゲームリセット
     this.resetGame()
 
-    // 動画を0秒にシーク
+    // 動画を0秒にシークして一時停止（再生は READY からのボタンチェックで開始する）
     this.playerControl.seekTo(0)
+    this.playerControl.pauseVideo()
 
     // READY状態へ遷移
     this.gameStore.transitionToState(GameState.READY)

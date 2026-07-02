@@ -1102,6 +1102,17 @@ describe('handleReplay', () => {
     expect(player.seekTo).toHaveBeenCalledWith(0)
   })
 
+  it('リプレイすると動画が一時停止される（READY でボタンチェック開始を待つ）', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+
+    simulatePlayback(gm, 46, 0)
+    gm.handleReplay()
+
+    expect(player.pauseVideo).toHaveBeenCalled()
+    expect(store.currentState).toBe(GameState.READY)
+  })
+
   it('FINISHED以外の状態ではリプレイが無視される', () => {
     const { gm, store } = makeGameManager()
 
