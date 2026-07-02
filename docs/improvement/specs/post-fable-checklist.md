@@ -28,7 +28,7 @@
 | R-6（GameManager 分割） | specs/r6-gamemanager-split.md |
 | R-7a / R-7b | 02-refactoring-plan.md + specs/remaining-tasks-notes.md |
 | R-9 | specs/remaining-tasks-notes.md（R-6 後） |
-| 19-0〜21-2 | specs/phase3-feature-specs.md（**着手前にユーザー確認 2 点あり**: 音声読込失敗の非ブロッキング化 / 小書きかな標準化の不実施） |
+| 19-0〜21-2 | specs/phase3-feature-specs.md（A3/V3 はユーザー裁定済み 2026-07-03、確認不要） |
 | D-1 / D-2 | specs/design-tokens-and-case1.md（D-2 のタイマー 2 案はユーザー選択） |
 | Phase 4（22/23/25/26/27） | spec 未作成。**着手前に Designer 手順（ユーザー相談 or spec 作成 + ドライラン検証）を踏む** |
 
