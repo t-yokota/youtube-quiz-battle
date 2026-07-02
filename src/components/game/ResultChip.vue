@@ -38,8 +38,8 @@ defineProps<{
 
 <style scoped>
 .chip {
-  width: 16px;
-  height: 16px;
+  width: 1rem;
+  height: 1rem;
   display: block;
   color: var(--color-text-dim);
   --chip-bg: var(--color-stage-700);
@@ -61,7 +61,7 @@ defineProps<{
 .chip.current {
   --chip-line: var(--color-gold-400);
   border-radius: 50%;
-  box-shadow: 0 0 6px rgba(255, 197, 61, 0.5);
+  box-shadow: 0 0 0.375rem rgba(255, 197, 61, 0.5);
 }
 
 .ring {

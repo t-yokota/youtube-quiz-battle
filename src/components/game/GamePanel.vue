@@ -44,8 +44,8 @@ const handleSubmit = (answer: string) => {
   background: var(--color-stage-800);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
-  padding: 12px 14px;
-  height: 110px;
+  padding: 0.75rem 0.875rem;
+  height: 6.875rem;
   display: flex;
   align-items: stretch;
   position: relative;
@@ -58,11 +58,11 @@ const handleSubmit = (answer: string) => {
 /* 正解/不正解時にエリア全体を縁取りフラッシュ */
 .answer-area.flash-correct {
   border-color: var(--color-ok-400);
-  box-shadow: 0 0 18px rgba(61, 220, 132, 0.25);
+  box-shadow: 0 0 1.125rem rgba(61, 220, 132, 0.25);
 }
 
 .answer-area.flash-incorrect {
   border-color: var(--color-signal-500);
-  box-shadow: 0 0 18px rgba(230, 64, 46, 0.25);
+  box-shadow: 0 0 1.125rem rgba(230, 64, 46, 0.25);
 }
 </style>

@@ -76,7 +76,7 @@ const handlePress = () => {
 /* ボタンエリア */
 .quiz-button-container {
   flex: 1;
-  min-height: 240px;
+  min-height: 15rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,8 +110,8 @@ const handlePress = () => {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 196px;
-  height: 196px;
+  width: 12.25rem;
+  height: 12.25rem;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(circle, #0e1428 58%, var(--color-stage-700) 78%, #0b1020 100%);
@@ -122,8 +122,8 @@ const handlePress = () => {
 /* QUESTIONING時のパルスリング */
 .pulse-ring {
   position: absolute;
-  width: 160px;
-  height: 160px;
+  width: 10rem;
+  height: 10rem;
   border-radius: 50%;
   border: 2px solid var(--color-gold-400);
   opacity: 0;
@@ -150,12 +150,12 @@ const handlePress = () => {
 .quiz-button {
   position: relative;
   z-index: 2;
-  width: 150px;
-  height: 150px;
+  width: 9.375rem;
+  height: 9.375rem;
   border-radius: 50%;
   border: none;
   cursor: pointer;
-  font-size: 19px;
+  font-size: 1.1875rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   color: #fff;
@@ -169,8 +169,8 @@ const handlePress = () => {
       var(--color-signal-700) 100%
     );
   box-shadow:
-    0 0 0 5px rgba(0, 0, 0, 0.35),
-    /* ソケットの隙間 */ 0 8px 22px rgba(0, 0, 0, 0.55); /* 浮き上がりの柔らかい影 */
+    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
+    /* ソケットの隙間 */ 0 0.5rem 1.375rem rgba(0, 0, 0, 0.55); /* 浮き上がりの柔らかい影 */
   transition:
     transform var(--duration-fast),
     box-shadow var(--duration-fast),
@@ -186,20 +186,20 @@ const handlePress = () => {
   transform: scale(0.93);
   filter: brightness(0.88);
   box-shadow:
-    0 0 0 5px rgba(0, 0, 0, 0.35),
-    0 2px 6px rgba(0, 0, 0, 0.4),
-    inset 0 0 22px rgba(0, 0, 0, 0.45);
+    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
+    0 2px 0.375rem rgba(0, 0, 0, 0.4),
+    inset 0 0 1.375rem rgba(0, 0, 0, 0.45);
 }
 
 /* RELEASED: LEDリング点灯（解答権取得） */
 .quiz-button.released {
   transform: scale(0.96);
   box-shadow:
-    0 0 0 5px rgba(0, 0, 0, 0.35),
-    0 3px 10px rgba(0, 0, 0, 0.45),
-    inset 0 0 14px rgba(0, 0, 0, 0.3),
-    0 0 0 10px rgba(61, 220, 132, 0.85),
-    0 0 28px 10px rgba(61, 220, 132, 0.45);
+    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
+    0 0.1875rem 0.625rem rgba(0, 0, 0, 0.45),
+    inset 0 0 0.875rem rgba(0, 0, 0, 0.3),
+    0 0 0 0.625rem rgba(61, 220, 132, 0.85),
+    0 0 1.75rem 0.625rem rgba(61, 220, 132, 0.45);
   animation: led-breathe 1.2s ease-in-out infinite;
 }
 
@@ -220,7 +220,7 @@ const handlePress = () => {
   transform: scale(0.93);
   filter: grayscale(0.85) brightness(0.55);
   box-shadow:
-    0 0 0 5px rgba(0, 0, 0, 0.35),
-    inset 0 0 22px rgba(0, 0, 0, 0.5);
+    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
+    inset 0 0 1.375rem rgba(0, 0, 0, 0.5);
 }
 </style>

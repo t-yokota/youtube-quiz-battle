@@ -55,9 +55,9 @@ function yoursText(result: QuestionResult): string {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-left: 10px;
-  padding-right: 6px; /* バー(4px) + 6px = 左の 10px と釣り合い、行が中央を保つ */
+  gap: 0.375rem;
+  padding-left: 0.625rem;
+  padding-right: 0.375rem; /* バー(0.25rem) + 0.375rem = 左の 0.625rem と釣り合い、行が中央を保つ */
   scrollbar-gutter: stable;
 }
 
@@ -91,18 +91,18 @@ function yoursText(result: QuestionResult): string {
 .result-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
   background: var(--color-stage-800);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
-  padding: 9px 12px;
-  font-size: 12px;
+  padding: 0.5625rem 0.75rem;
+  font-size: 0.75rem;
   color: var(--color-text-main);
 }
 
 .result-row .mark {
-  width: 24px;
-  height: 24px;
+  width: 1.5rem;
+  height: 1.5rem;
   border-radius: 50%;
   display: block;
   flex-shrink: 0;
@@ -118,7 +118,7 @@ function yoursText(result: QuestionResult): string {
 
 .result-row .yours {
   color: var(--color-text-dim);
-  font-size: 11px;
+  font-size: 0.6875rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -127,7 +127,7 @@ function yoursText(result: QuestionResult): string {
 .result-row .qno {
   margin-left: auto;
   color: var(--color-text-dim);
-  font-size: 10px;
+  font-size: 0.625rem;
   flex-shrink: 0;
 }
 </style>

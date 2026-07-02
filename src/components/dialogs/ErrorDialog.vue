@@ -101,15 +101,15 @@ const handleClose = () => {
   background-color: var(--color-stage-800);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
-  padding: 26px 22px;
+  padding: 1.625rem 1.375rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  max-width: 400px;
+  max-width: 25rem;
   width: 100%;
   text-align: center;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.6);
 }
 
 /* Error Icon */
@@ -135,7 +135,7 @@ const handleClose = () => {
 /* Dialog Message */
 .dialog-message {
   margin: 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--color-text-dim);
   line-height: 1.6;
 }
@@ -151,13 +151,13 @@ const handleClose = () => {
 
 /* Action Button */
 .action-button {
-  padding: 10px 22px;
-  min-height: 44px;
+  padding: 0.625rem 1.375rem;
+  min-height: max(44px, 2.75rem);
   background-color: var(--color-gold-400);
   color: var(--color-stage-900);
   border: none;
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 800;
   cursor: pointer;
   transition: background var(--duration-fast);
@@ -169,13 +169,13 @@ const handleClose = () => {
 
 /* Close Button */
 .close-button {
-  padding: 10px 22px;
-  min-height: 44px;
+  padding: 0.625rem 1.375rem;
+  min-height: max(44px, 2.75rem);
   background-color: var(--color-stage-700);
   color: var(--color-text-main);
   border: none;
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 800;
   cursor: pointer;
   transition: filter var(--duration-fast);

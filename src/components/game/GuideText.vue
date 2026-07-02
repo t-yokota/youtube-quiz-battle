@@ -29,8 +29,8 @@ const showDownCue = computed(() => gameStore.currentState === GameState.READY)
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 6px;
-  font-size: 14px;
+  gap: 0.375rem;
+  font-size: 0.875rem;
   color: var(--color-text-dim);
   line-height: 1.5;
 }
@@ -41,7 +41,7 @@ const showDownCue = computed(() => gameStore.currentState === GameState.READY)
 
 /* READY時: ボタンへの視線誘導 */
 .down-cue {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-gold-400);
   animation: bob 1.2s ease-in-out infinite;
 }
@@ -52,7 +52,7 @@ const showDownCue = computed(() => gameStore.currentState === GameState.READY)
     transform: translateY(0);
   }
   50% {
-    transform: translateY(4px);
+    transform: translateY(0.25rem);
   }
 }
 </style>

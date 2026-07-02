@@ -51,20 +51,20 @@ withDefaults(defineProps<Props>(), {
   background-color: var(--color-stage-800);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
-  padding: 26px 22px;
+  padding: 1.625rem 1.375rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  min-width: 280px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  min-width: 17.5rem;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.6);
 }
 
 /* Loading Spinner */
 .spinner {
-  width: 44px;
-  height: 44px;
-  border: 4px solid var(--color-stage-700);
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0.25rem solid var(--color-stage-700);
   border-top-color: var(--color-gold-400);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -99,7 +99,7 @@ withDefaults(defineProps<Props>(), {
 @media (max-width: 640px) {
   .dialog-container {
     padding: 1.5rem;
-    min-width: 180px;
+    min-width: 11.25rem;
   }
 
   .spinner {

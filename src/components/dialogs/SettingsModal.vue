@@ -195,13 +195,13 @@ const handleOverlayClick = (event: MouseEvent) => {
   background-color: var(--color-stage-800);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
-  max-width: 500px;
+  max-width: 31.25rem;
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.6);
 }
 
 /* Modal Header */
@@ -224,9 +224,9 @@ const handleOverlayClick = (event: MouseEvent) => {
   background: none;
   border: none;
   cursor: pointer;
-  /* タッチターゲット確保（>=44px） */
-  width: 44px;
-  height: 44px;
+  /* タッチターゲット確保（>=2.75rem） */
+  width: max(44px, 2.75rem);
+  height: max(44px, 2.75rem);
   margin: -0.5rem;
   display: flex;
   align-items: center;
@@ -306,8 +306,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 /* Range Slider */
 .slider {
   flex: 1;
-  height: 6px;
-  border-radius: 3px;
+  height: 0.375rem;
+  border-radius: 0.1875rem;
   outline: none;
   -webkit-appearance: none;
   appearance: none;
@@ -315,23 +315,23 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .slider::-webkit-slider-track {
   width: 100%;
-  height: 6px;
-  border-radius: 3px;
+  height: 0.375rem;
+  border-radius: 0.1875rem;
   background: transparent;
 }
 
 .slider::-moz-range-track {
   width: 100%;
-  height: 6px;
-  border-radius: 3px;
+  height: 0.375rem;
+  border-radius: 0.1875rem;
   background: transparent;
 }
 
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 1.25rem;
+  height: 1.25rem;
   border-radius: 50%;
   background: var(--color-info-400);
   cursor: pointer;
@@ -339,8 +339,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 1.25rem;
+  height: 1.25rem;
   border-radius: 50%;
   background: var(--color-info-400);
   border: none;
@@ -396,16 +396,17 @@ const handleOverlayClick = (event: MouseEvent) => {
 /* Primary Button */
 .primary-button {
   padding: 0.75rem 1.5rem;
-  background-color: var(--color-info-400);
-  color: white;
+  min-height: max(44px, 2.75rem);
+  background-color: var(--color-gold-400);
+  color: var(--color-stage-900);
   border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: bold;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 800;
   cursor: pointer;
   transition: background 0.2s;
   align-self: center;
-  min-width: 120px;
+  min-width: 7.5rem;
 }
 
 .primary-button:hover {

@@ -17,10 +17,10 @@
   --color-gold-600: #d99a14;
   --color-ok-400: #3ddc84;
   --color-info-400: #4f8cff;
-  /* 形状 */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  /* 形状（rem スケーリングに追従させる） */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.125rem;
   /* モーション */
   --duration-fast: 120ms;
   --duration-base: 240ms;
@@ -30,6 +30,11 @@
 /* カスタムスタイル */
 * {
   box-sizing: border-box;
+}
+
+html {
+  /* wireframe (315×700) に対する比率でUI全体をスケール。縦比率優先・幅不足時は幅基準 */
+  font-size: clamp(13px, calc(min(100dvh / 700, 100vw / 315) * 16), 26px);
 }
 
 html,

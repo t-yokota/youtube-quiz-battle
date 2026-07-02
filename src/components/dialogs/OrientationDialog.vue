@@ -69,14 +69,14 @@ withDefaults(defineProps<Props>(), {
   background-color: var(--color-stage-800);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
-  padding: 26px 22px;
+  padding: 1.625rem 1.375rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  max-width: 400px;
+  max-width: 25rem;
   text-align: center;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.6);
 }
 
 /* Rotation Icon */
@@ -113,7 +113,7 @@ withDefaults(defineProps<Props>(), {
 /* Dialog Message */
 .dialog-message {
   margin: 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--color-text-dim);
   line-height: 1.6;
 }

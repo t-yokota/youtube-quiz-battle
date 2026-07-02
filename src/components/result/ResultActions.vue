@@ -26,13 +26,13 @@ const handleReplay = () => {
 }
 
 .replay-button {
-  margin-top: 14px;
-  height: 48px;
+  margin-top: 0.875rem;
+  height: max(44px, 3rem);
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-signal-500);
   color: #fff;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   cursor: pointer;

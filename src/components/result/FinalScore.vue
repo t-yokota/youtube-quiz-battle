@@ -39,7 +39,7 @@ const percentage = computed(() => {
 .final-title {
   margin: 0;
   text-align: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   letter-spacing: 0.3em;
   color: var(--color-gold-400);
   font-weight: 800;
@@ -47,19 +47,19 @@ const percentage = computed(() => {
 
 .final-score {
   text-align: center;
-  margin: 14px 0 4px;
+  margin: 0.875rem 0 0.25rem;
   font-variant-numeric: tabular-nums;
 }
 
 .final-score .num {
-  font-size: 56px;
+  font-size: 3.5rem;
   font-weight: 800;
   line-height: 1;
   color: var(--color-text-main);
 }
 
 .final-score .den {
-  font-size: 20px;
+  font-size: 1.25rem;
   color: var(--color-text-dim);
   font-weight: 700;
 }
@@ -67,8 +67,8 @@ const percentage = computed(() => {
 .final-rate {
   text-align: center;
   color: var(--color-text-dim);
-  font-size: 13px;
-  margin: 0 0 18px;
+  font-size: 0.8125rem;
+  margin: 0 0 1.125rem;
 }
 
 .final-rate .pct {

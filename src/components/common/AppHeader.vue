@@ -52,7 +52,7 @@ const handleSettingsClick = () => {
 /* Header（ステージ調） */
 .header {
   flex-shrink: 0;
-  padding: 10px 12px 8px;
+  padding: 0.625rem 0.75rem 0.5rem;
   border-bottom: 1px solid var(--color-line);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent);
 }
@@ -67,7 +67,7 @@ const handleSettingsClick = () => {
 
 .wordmark {
   font-weight: 800;
-  font-size: 13px;
+  font-size: 0.8125rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-text-main);
@@ -82,10 +82,10 @@ const handleSettingsClick = () => {
   border: none;
   color: var(--color-text-dim);
   cursor: pointer;
-  /* タッチターゲット確保（≥44px）。視覚アイコンは 24px */
-  width: 44px;
-  height: 44px;
-  margin: -10px 0;
+  /* タッチターゲット確保（≥2.75rem）。視覚アイコンは 1.5rem */
+  width: max(44px, 2.75rem);
+  height: max(44px, 2.75rem);
+  margin: -0.625rem 0;
   display: flex;
   align-items: center;
   justify-content: center;

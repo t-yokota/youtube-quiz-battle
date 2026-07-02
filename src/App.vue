@@ -244,8 +244,8 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 14px 12px;
+  gap: 0.875rem;
+  padding: 0.875rem 0.75rem;
   min-height: 0;
 }
 
@@ -254,7 +254,7 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 28px 18px 18px;
+  padding: 1.75rem 1.125rem 1.125rem;
   min-height: 0;
   background:
     radial-gradient(120% 50% at 50% 0%, rgba(255, 197, 61, 0.12) 0%, transparent 60%),
@@ -273,8 +273,8 @@ onUnmounted(() => {
 /* 縦に短い画面のみ余白を詰める（上部セクションは wireframe の固定値を維持） */
 @media (max-height: 640px) {
   .game-ui {
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 0.625rem;
+    padding: 0.625rem 0.75rem;
   }
 }
 </style>

@@ -123,7 +123,7 @@ function moveChips(delta: number) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
+  padding: 0.625rem 0.875rem;
   background: var(--color-stage-800);
   border-bottom: 1px solid var(--color-line);
 }
@@ -132,22 +132,22 @@ function moveChips(delta: number) {
 .progress {
   font-variant-numeric: tabular-nums;
   font-weight: 800;
-  font-size: 17px;
+  font-size: 1.0625rem;
   letter-spacing: 0.04em;
   color: var(--color-text-main);
 }
 
 .progress .q-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-gold-400);
   letter-spacing: 0.2em;
-  margin-right: 4px;
+  margin-right: 0.25rem;
   vertical-align: 2px;
 }
 
 .progress .total {
   color: var(--color-text-dim);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -155,14 +155,14 @@ function moveChips(delta: number) {
 .score-chips {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.3125rem;
 }
 
-/* 三角ページャ（視覚は 7x9・タッチ領域は擬似要素で 44px 確保） */
+/* 三角ページャ（視覚は 7x9・タッチ領域は擬似要素で 2.75rem 確保） */
 .chips-nav {
   position: relative;
-  width: 14px;
-  height: 16px;
+  width: 0.875rem;
+  height: 1rem;
   display: grid;
   place-items: center;
   background: none;
@@ -177,8 +177,8 @@ function moveChips(delta: number) {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 44px;
-  height: 44px;
+  width: max(44px, 2.75rem);
+  height: max(44px, 2.75rem);
   transform: translate(-50%, -50%);
 }
 
@@ -192,8 +192,8 @@ function moveChips(delta: number) {
 }
 
 .chips-nav svg {
-  width: 7px;
-  height: 9px;
+  width: 0.4375rem;
+  height: 0.5625rem;
   display: block;
 }
 

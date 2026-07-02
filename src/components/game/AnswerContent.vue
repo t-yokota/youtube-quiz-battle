@@ -126,8 +126,8 @@ watch(
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 26px;
-  font-size: 12px;
+  height: 1.625rem;
+  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
@@ -146,7 +146,7 @@ watch(
 .answer-timer {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   font-weight: 800;
   color: var(--color-text-main);
 }
@@ -159,8 +159,8 @@ watch(
 }
 
 .timer-ring {
-  width: 22px;
-  height: 22px;
+  width: 1.375rem;
+  height: 1.375rem;
   border-radius: 50%;
   background: conic-gradient(
     var(--color-stage-700) calc((1 - var(--timer-progress)) * 360deg),
@@ -172,8 +172,8 @@ watch(
 
 .timer-ring::after {
   content: '';
-  width: 14px;
-  height: 14px;
+  width: 0.875rem;
+  height: 0.875rem;
   border-radius: 50%;
   background: var(--color-stage-800);
 }
@@ -204,13 +204,13 @@ watch(
 .answer-result {
   position: absolute;
   left: 50%;
-  top: 8px;
+  top: 0.5rem;
   transform: translateX(-50%);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  padding: 3px 14px;
-  border-radius: 999px;
+  padding: 0.1875rem 0.875rem;
+  border-radius: 62.4375rem;
   white-space: nowrap;
   animation: pop var(--duration-base) var(--ease-brand);
 }
@@ -237,15 +237,15 @@ watch(
 /* Answer Input Container */
 .answer-input-container {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .answer-input {
   flex: 1;
   min-width: 0;
-  height: 44px;
-  padding: 0 14px;
-  font-size: 16px; /* iOSズーム防止 */
+  height: max(44px, 2.75rem);
+  padding: 0 0.875rem;
+  font-size: max(16px, 1rem); /* iOSズーム防止（実 px 16 を下回らない） */
   color: var(--color-text-main);
   background: var(--color-stage-900);
   border: 2px solid var(--color-line);
@@ -260,7 +260,7 @@ watch(
 
 .answer-input:focus-visible {
   border-color: var(--color-info-400);
-  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.25);
+  box-shadow: 0 0 0 0.1875rem rgba(79, 140, 255, 0.25);
 }
 
 .answer-input:disabled {
@@ -268,9 +268,9 @@ watch(
 }
 
 .submit-button {
-  height: 44px;
-  padding: 0 16px;
-  font-size: 15px;
+  height: max(44px, 2.75rem);
+  padding: 0 1rem;
+  font-size: 0.9375rem;
   font-weight: 800;
   color: var(--color-stage-900);
   background: var(--color-gold-400);
