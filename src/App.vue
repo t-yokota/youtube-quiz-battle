@@ -215,7 +215,11 @@ onUnmounted(() => {
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  background-color: var(--color-legacy-bg);
+  /* ステージ背景: 下部に放射スポットライト + 縦方向グラデーション */
+  background:
+    radial-gradient(140% 60% at 50% 108%, rgba(255, 197, 61, 0.1) 0%, transparent 55%),
+    linear-gradient(180deg, var(--color-stage-900) 0%, #0d1226 60%, #0a0e1d 100%);
+  color: var(--color-text-main);
   overflow: hidden;
 }
 

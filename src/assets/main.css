@@ -74,3 +74,19 @@ body {
   width: 100%;
   height: 100%;
 }
+
+/* フォーカスリングの統一（info-400・2px offset） */
+:focus-visible {
+  outline: 2px solid var(--color-info-400);
+  outline-offset: 2px;
+}
+
+/* モーション低減設定への対応（全アニメーション・トランジション停止） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
