@@ -4,7 +4,7 @@
   "settings": {
     "maxAttempts": 3,
     "answerTimeLimit": 10,
-    "disableSeekbar": true,
+    "disableSeekbar": false,
     "jumpToRevealPeriod": false,
     "hideVideoPlayerDuringAnswer": false
   },
