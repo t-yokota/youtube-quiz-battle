@@ -173,7 +173,7 @@ tasks.md は 450 行のうち 350 行が完了済みタスク。`docs/tasks-arch
 - [x] D-9 requirements 3.3 の表現更新
 - [x] D-10 コンポーネントテスト方針の明記
 - [ ] D-11 design.md 分割（参照更新・grep 検証込み）
-- [ ] D-12 design-sync-handoff.md の転記と削除
+- [x] D-12 design-sync-handoff.md の転記と削除（2026-07-02: 採番体系は design.md 反映済みを確認し削除。裁定: specs/remaining-tasks-notes.md）
 - [ ] D-13 README / package.json name
 - [ ] D-14 button.webp の削除（処遇は確認済み: 不使用）
 - [ ] D-15 Analytics プライバシー記述整合（Task 25 実装時）
