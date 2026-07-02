@@ -252,8 +252,8 @@ export const useGameStore = defineStore('game', () => {
     }
 
     // 残り回数あり → リトライ可能（QUESTIONING 復帰は controller が担う）
+    // answerResult は 'incorrect' のまま維持し、次の解答時に上書きする（Task 21-3）
     answerInput.value = ''
-    answerResult.value = null // QUESTIONING では結果表示を非表示にする
     logger.log(`[GameStore] Incorrect. Remaining attempts: ${remainingAttempts.value}`)
     return { isCorrect: false, isFinal: false }
   }

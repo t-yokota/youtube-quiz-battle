@@ -145,7 +145,7 @@ describe('handleAnswerSubmit: 不正解・残り回数管理', () => {
     store.handleAnswerSubmit('不正解の答え')
 
     expect(store.remainingAttempts).toBe(1)
-    expect(store.answerResult).toBeNull() // QUESTIONING復帰時にクリアされる
+    expect(store.answerResult).toBe('incorrect') // リトライ中も不正解表示を維持（Task 21-3）
   })
 
   it('残り回数がある不正解ではリトライ可能(isFinal=false)を返す', () => {
@@ -188,7 +188,7 @@ describe('handleAnswerSubmit: 不正解・残り回数管理', () => {
     expect(second).toEqual({ isCorrect: false, isFinal: true })
   })
 
-  it('残り回数がある不正解ではanswerResultがnullにクリアされる', () => {
+  it('残り回数がある不正解ではanswerResultがincorrectのまま維持される（Task 21-3）', () => {
     const store = useGameStore()
     store.setQuizData(makeQuizData(2))
     store.currentQuestionIndex = 0
@@ -197,7 +197,21 @@ describe('handleAnswerSubmit: 不正解・残り回数管理', () => {
     const result = store.handleAnswerSubmit('不正解')
 
     expect(result).toEqual({ isCorrect: false, isFinal: false })
-    expect(store.answerResult).toBeNull()
+    expect(store.answerResult).toBe('incorrect')
+  })
+
+  it('リトライで正解すると answerResult が correct に上書きされる（Task 21-3）', () => {
+    const store = useGameStore()
+    store.setQuizData(makeQuizData(2))
+    store.currentQuestionIndex = 0
+    store.transitionToState(GameState.ANSWERING)
+
+    store.handleAnswerSubmit('不正解')
+    expect(store.answerResult).toBe('incorrect')
+
+    store.transitionToState(GameState.ANSWERING)
+    store.handleAnswerSubmit('東京')
+    expect(store.answerResult).toBe('correct')
   })
 })
 
