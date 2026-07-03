@@ -2,7 +2,11 @@
 import type { QuizData, YouTubePlayerManager } from '@/types'
 import { GameState, ButtonState } from '@/types'
 import { createTimeManager, TimeManager } from './timeManager'
-import { BUTTON_PUSHED_DURATION_MS, BUTTON_CHECK_RELEASE_MS } from '@/constants/timing'
+import {
+  BUTTON_PUSHED_DURATION_MS,
+  BUTTON_CHECK_RELEASE_MS,
+  VIDEO_START_DELAY_MS,
+} from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
 import type { useSettingsStore } from '@/stores/settingsStore'
 import { logger } from '@/utils/logger'
@@ -148,8 +152,19 @@ export class GameManager {
           // ボタンチェック完了時の正解音（STANDBY復帰時）
           this.audioManager?.playSound(SOUND_TYPE.CORRECT)
           this.gameStore.transitionToState(GameState.TALKING)
-          // 動画再生開始
-          this.playerControl.playVideo()
+          // 動画再生開始は少し遅らせ、正解音と動画音声の重なりを避ける
+          setTimeout(() => {
+            // 遅延中にタブ切替等で External Pause になった場合は再生しない
+            // （復帰時の resumeExternal が再生を担う）。リセット等で TALKING を
+            // 離れた場合も再生しない
+            if (
+              this.externalPause.isExternalPaused() ||
+              this.gameStore.currentState !== GameState.TALKING
+            ) {
+              return
+            }
+            this.playerControl.playVideo()
+          }, VIDEO_START_DELAY_MS)
         }, BUTTON_CHECK_RELEASE_MS)
       } else if (stateAtPress === GameState.QUESTIONING) {
         // 早押し: ANSWERING状態へ遷移し、動画一時停止

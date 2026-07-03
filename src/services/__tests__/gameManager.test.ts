@@ -5,7 +5,7 @@ import { useGameStore } from '@/stores/gameStore'
 import { GameState, ButtonState } from '@/types'
 import type { QuizData, YouTubePlayerManager } from '@/types'
 import { YouTubePlayerState } from '@/types'
-import { STALL_WALL_MS, STALL_VIDEO_DELTA_SEC } from '@/constants/timing'
+import { STALL_WALL_MS, STALL_VIDEO_DELTA_SEC, VIDEO_START_DELAY_MS } from '@/constants/timing'
 
 // ============================================================================
 // テスト用データ・ヘルパー
@@ -918,11 +918,15 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     expect(store.buttonState).toBe(ButtonState.RELEASED)
     expect(store.currentState).toBe(GameState.READY)
 
-    // 1500ms後: TALKING遷移 + playVideo
+    // 1500ms後: TALKING遷移（再生はまだ — VIDEO_START_DELAY_MS 分遅れる）
     // transitionToState(TALKING) 内の updateButtonStateForGameState が STANDBY → DISABLED にする
     vi.advanceTimersByTime(1500)
     expect(store.buttonState).toBe(ButtonState.DISABLED)
     expect(store.currentState).toBe(GameState.TALKING)
+    expect(player.playVideo).not.toHaveBeenCalled()
+
+    // さらに VIDEO_START_DELAY_MS 後: playVideo（正解音との重なり回避の遅延再生）
+    vi.advanceTimersByTime(VIDEO_START_DELAY_MS)
     expect(player.playVideo).toHaveBeenCalledTimes(1)
   })
 
@@ -978,7 +982,8 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     // transitionToState(TALKING) 内の updateButtonStateForGameState が DISABLED にする
     expect(store.buttonState).toBe(ButtonState.DISABLED)
     expect(store.currentState).toBe(GameState.TALKING)
-    // playVideo は1回だけ
+    // playVideo は遅延再生後に1回だけ（連打しても増えない）
+    vi.advanceTimersByTime(VIDEO_START_DELAY_MS)
     expect(player.playVideo).toHaveBeenCalledTimes(1)
   })
 

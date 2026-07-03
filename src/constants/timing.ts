@@ -58,6 +58,12 @@ export const BUTTON_CHECK_RELEASE_MS = 1500
 export const BUTTON_CHECK_LABEL_HOLD_MS = 2000
 
 /**
+ * ボタンチェック完了（STANDBY/TALKING 遷移）から動画再生開始までの遅延（ミリ秒）
+ * 正解音（2秒）と動画音声の重なりを避け、チェック完了の「間」を作る。0 で即時再生
+ */
+export const VIDEO_START_DELAY_MS = 2000
+
+/**
  * 解答カウントダウンのインターバル（ミリ秒）
  * 1秒ごとに残り時間をデクリメントする
  */
