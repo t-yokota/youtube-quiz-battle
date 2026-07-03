@@ -180,7 +180,7 @@ watch(
 
 .answer-timer.urgent {
   color: var(--color-signal-500);
-  animation: throb 0.5s ease-in-out infinite;
+  animation: throb 0.8s ease-in-out infinite;
 }
 
 .answer-timer.urgent .timer-ring {
@@ -196,7 +196,7 @@ watch(
     transform: scale(1);
   }
   50% {
-    transform: scale(1.12);
+    transform: scale(1.05);
   }
 }
 
