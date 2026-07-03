@@ -104,6 +104,7 @@ watch(
         :value="gameStore.answerInput"
         :disabled="gameStore.isInputDisabled"
         @input="handleInput"
+        @keydown.enter="handleSubmit"
       />
       <button class="submit-button" :disabled="isSubmitDisabled()" @click="handleSubmit">
         送信
