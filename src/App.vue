@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // YouTube Quiz Battle - メインアプリケーション
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import VideoPlayer from './components/common/VideoPlayer.vue'
 import GameInfo from './components/game/GameInfo.vue'
@@ -142,6 +142,13 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
 })
 
+// hideVideoPlayerDuringAnswer=true の場合、ANSWERING 中は動画を visibility で隠す（Task 20-4）
+const shouldHidePlayer = computed(
+  () =>
+    (quizData.value?.settings.hideVideoPlayerDuringAnswer ?? false) &&
+    gameStore.currentState === GameState.ANSWERING,
+)
+
 // GamePanel 解答送信 → GameManager に委譲
 function handleAnswerSubmit(answer: string) {
   gameManager.value?.handleAnswerSubmit(answer)
@@ -193,10 +200,12 @@ onUnmounted(() => {
 
     <!-- Main Content Area -->
     <main class="main-content">
-      <!-- Video Player（FINISHED 中は非表示。v-show で iframe を破棄せずプレイヤー状態を保持） -->
+      <!-- Video Player（FINISHED 中は非表示。v-show で iframe を破棄せずプレイヤー状態を保持。
+           hideVideoPlayerDuringAnswer=true の ANSWERING 中は visibility で隠す — 高さ保持・iframe 非破棄） -->
       <VideoPlayer
         v-if="quizData"
         v-show="gameStore.currentState !== GameState.FINISHED"
+        :class="{ 'player-hidden': shouldHidePlayer }"
         :video-id="quizData.videoId"
         :settings="quizData.settings"
         @ready="handlePlayerReady"
@@ -272,6 +281,11 @@ onUnmounted(() => {
 }
 
 /* Main Content（wireframe: 各セクションはフルブリードで密着・余白は game-ui のみ） */
+/* ANSWERING 中の動画非表示（高さ・iframe を保持したまま見えなくする） */
+.player-hidden {
+  visibility: hidden;
+}
+
 .main-content {
   flex: 1;
   display: flex;
