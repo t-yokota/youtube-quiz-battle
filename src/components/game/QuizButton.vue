@@ -198,7 +198,7 @@ const handlePress = () => {
     0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
     0 0.1875rem 0.625rem rgba(0, 0, 0, 0.45),
     inset 0 0 0.875rem rgba(0, 0, 0, 0.3),
-    0 0 1.75rem 0.625rem rgba(61, 220, 132, 0.45);
+    0 0 1.75rem 0.625rem rgba(230, 64, 46, 0.55);
   animation: led-breathe 1.2s ease-in-out infinite;
 }
 
