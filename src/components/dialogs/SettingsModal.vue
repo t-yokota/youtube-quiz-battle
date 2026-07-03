@@ -277,7 +277,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .modal-title {
   margin: 0;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: bold;
   color: var(--color-text-main);
 }
@@ -324,7 +324,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .section-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--color-text-main);
 }
@@ -361,19 +361,19 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .seek-label {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-main);
   font-weight: 500;
 }
 
 .seek-description {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--color-text-dim);
 }
 
 .volume-description {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-dim);
   font-weight: 500;
 }
@@ -464,7 +464,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 /* Privacy Text */
 .privacy-text {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--color-text-dim);
   line-height: 1.55;
 }
