@@ -19,17 +19,17 @@ describe('validate: 完全一致判定（正規化なし）', () => {
   })
 
   it('空白を含む入力は完全一致しない（trim なし）', () => {
-    expect(validate(' 東京', ['東京'])).toBe(false)
-    expect(validate('東京 ', ['東京'])).toBe(false)
+    expect(validate(' 東京', ['東京'], false)).toBe(false)
+    expect(validate('東京 ', ['東京'], false)).toBe(false)
   })
 
   it('大文字小文字は区別する', () => {
-    expect(validate('tokyo', ['Tokyo'])).toBe(false)
+    expect(validate('tokyo', ['Tokyo'], false)).toBe(false)
     expect(validate('Tokyo', ['Tokyo'])).toBe(true)
   })
 
   it('全角数字と半角数字は区別する（正規化なし）', () => {
-    expect(validate('１２３', ['123'])).toBe(false)
+    expect(validate('１２３', ['123'], false)).toBe(false)
     expect(validate('123', ['123'])).toBe(true)
   })
 })
@@ -46,7 +46,7 @@ describe('validate: 複数正解パターン', () => {
   })
 
   it('どのパターンとも一致しなければ false', () => {
-    expect(validate('フジサン', ['富士山', 'ふじさん', 'Mt.Fuji'])).toBe(false)
+    expect(validate('フジサン', ['富士山', 'ふじさん', 'Mt.Fuji'], false)).toBe(false)
   })
 
   it('空配列は常に false', () => {
@@ -93,8 +93,8 @@ describe('normalizeAnswer', () => {
     expect(normalizeAnswer('  東京  ')).toBe('東京')
   })
 
-  it('NFKC正規化: 全角英字を半角に変換する', () => {
-    expect(normalizeAnswer('Ａ')).toBe('A')
+  it('NFKC正規化 + casefold: 全角英字を半角小文字に変換する', () => {
+    expect(normalizeAnswer('Ａ')).toBe('a')
   })
 
   it('NFKC正規化: 全角数字を半角に変換する', () => {
