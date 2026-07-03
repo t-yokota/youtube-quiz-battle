@@ -79,7 +79,12 @@ function hiraganaToKatakana(input: string): string {
  * @returns 正規化された文字列
  */
 export function normalizeAnswer(input: string): string {
-  const nfkcNormalized = input.normalize('NFKC')
+  // 全角ハイフンマイナス「－」は NFKC で半角「-」に変換されてしまうため、
+  // 日本語を含む入力に限り NFKC 前に長音異体を統一しておく
+  // （日本語を含まない入力では「１－２」→「1-2」のようにハイフンとして扱う）
+  const choonUnifiedInput = containsJapanese(input) ? input.replace(RE_CHOON_VARIANTS, 'ー') : input
+
+  const nfkcNormalized = choonUnifiedInput.normalize('NFKC')
   const caseFolded = nfkcNormalized.toLowerCase()
   const trimmed = caseFolded.trim()
 
