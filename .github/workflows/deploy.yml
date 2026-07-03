@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Pages 設定の検証（公式スターター workflow と同構成。有効化自体は Settings で手動設定済み）
+      - uses: actions/configure-pages@v5
       # node のバージョンは mise.toml を単一の真実源とする（ローカルと CI で共通）
       - uses: jdx/mise-action@v2
         with:
