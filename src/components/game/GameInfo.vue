@@ -6,6 +6,7 @@
 import { ref, computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { CHIP_WINDOW } from '@/constants/scoreboard'
+import { GameState } from '@/types'
 import type { QuestionResult } from '@/types'
 import ResultChip, { type ChipVariant } from './ResultChip.vue'
 
@@ -56,13 +57,20 @@ interface ChipItem {
   isCurrent: boolean
 }
 
+// 問題区間の進行中か（QUESTIONING〜REVEALING）。REVEAL 終了（TALKING 等）でグローを消す
+const isQuestionActive = computed(() =>
+  [GameState.QUESTIONING, GameState.ANSWERING, GameState.WAITING, GameState.REVEALING].includes(
+    gameStore.currentState,
+  ),
+)
+
 const chips = computed<ChipItem[]>(() => {
   const items: ChipItem[] = []
   for (let q = start.value; q <= end.value; q++) {
     // 結果確定（正解 or 解答権 0 or スキップ）した時点で即マーク表示
     const variant: ChipVariant = q <= current.value ? (resultMap.value.get(q) ?? 'empty') : 'empty'
-    // 金カーソルはマーク表示の有無に関わらず現在の問題に重ねる（次の問題開始で移動）
-    items.push({ q, variant, isCurrent: q === current.value && current.value >= 1 })
+    // 金グローはマーク表示に関わらず現在の問題に重ね、REVEAL 終了で消灯
+    items.push({ q, variant, isCurrent: q === current.value && isQuestionActive.value })
   }
   return items
 })
