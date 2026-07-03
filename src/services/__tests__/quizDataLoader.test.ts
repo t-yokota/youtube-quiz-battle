@@ -225,6 +225,45 @@ describe('loadQuizData: HTTP エラー', () => {
   })
 })
 
+describe('loadQuizData: withRetry 統合（ネットワークエラーからの復旧）', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+
+  it('fetch が TypeError を2回投げた後に成功すればリトライして読み込みに成功する', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => makeRawData(),
+      })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const promise = loadQuizData('sample')
+
+    await vi.advanceTimersByTimeAsync(1000)
+    await vi.advanceTimersByTimeAsync(2000)
+
+    const result = await promise
+    expect(result.videoId).toBe('sample')
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('404（QUIZ_DATA_NOT_FOUND）は復旧不可能エラーのためリトライされず fetch は1回のみ', async () => {
+    mockFetchError(404)
+    await expect(loadQuizData('sample')).rejects.toThrow('QUIZ_DATA_NOT_FOUND')
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('loadQuizData: バリデーション（必須フィールド・スキーマ）', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
