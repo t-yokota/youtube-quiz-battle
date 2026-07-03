@@ -18,6 +18,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { extractVideoIdFromUrl, loadQuizData } from './services/quizDataLoader'
 import { createGameManager, type GameManager } from './services/gameManager'
 import { createAudioManager } from './services/audioManager'
+import { getErrorMessage } from './services/errorHandler'
 import { MAX_VOLUME_LEVEL } from './constants/audio'
 import { useGameLoop } from './composables/useGameLoop'
 import { GameState } from './types'
@@ -50,9 +51,8 @@ const audioManager = createAudioManager()
 audioManager.setSoundEnabled(settingsStore.soundEnabled)
 audioManager.setVolume(settingsStore.volumeLevel / MAX_VOLUME_LEVEL)
 audioManager.init().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : 'Unknown error'
   logger.error('[App] Failed to initialize AudioManager:', error)
-  initError.value = message
+  initError.value = getErrorMessage(error)
 })
 
 watch(
@@ -80,9 +80,8 @@ async function initQuizData() {
     gameStore.setQuizData(quizData.value)
     logger.log(`[App] Quiz data loaded: ${quizData.value.questions.length} questions`)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
     logger.error('[App] Failed to load quiz data:', error)
-    initError.value = message
+    initError.value = getErrorMessage(error)
   }
 }
 
@@ -108,8 +107,11 @@ function handlePlayerReady(playerManager: YouTubePlayerManager) {
 }
 
 // VideoPlayer 初期化エラー時のハンドラ
+// VideoPlayer からは生の内部メッセージ（例: "YouTube Player Error: 2"）が渡ってくるため、
+// YOUTUBE_LOAD_FAILED として分類されるようコード接頭辞を付与してから変換する
 function handlePlayerError(message: string) {
-  initError.value = message
+  logger.error('[App] VideoPlayer error:', message)
+  initError.value = getErrorMessage(new Error(`YOUTUBE_LOAD_FAILED: ${message}`))
 }
 
 // --- イベントハンドラ ---

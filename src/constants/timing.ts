@@ -86,3 +86,9 @@ export const LOAD_VIDEO_SETTLE_MS = 1000
  * 残り時間がこの値以下になるとタイマーを赤色 + 脈動表示に切り替える
  */
 export const TIMER_URGENT_THRESHOLD_SEC = 3
+
+/**
+ * withRetry の指数バックオフ遅延（ミリ秒）
+ * リトライ1回目の前に1秒、2回目の前に2秒、3回目の前に4秒待機する
+ */
+export const RETRY_BACKOFF_MS = [1000, 2000, 4000]

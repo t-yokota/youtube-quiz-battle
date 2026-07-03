@@ -1,5 +1,6 @@
 // クイズデータ管理サービス
 import type { QuizData, QuizQuestion, QuizSettings } from '@/types'
+import { withRetry } from '@/services/errorHandler'
 
 // データファイルの型定義（実際のJSONファイルの構造）
 interface RawQuizData {
@@ -43,14 +44,16 @@ export async function loadQuizData(videoId: string): Promise<QuizData> {
     // videoId が "sample" の場合はサンプルデータを読み込む
     const dataPath = videoId === 'sample' ? '/data/sample/data.json' : `/data/${videoId}/data.json`
 
-    const response = await fetch(dataPath)
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('QUIZ_DATA_NOT_FOUND')
+    const response = await withRetry(async () => {
+      const res = await fetch(dataPath)
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error('QUIZ_DATA_NOT_FOUND')
+        }
+        throw new Error('QUIZ_DATA_LOAD_FAILED')
       }
-      throw new Error('QUIZ_DATA_LOAD_FAILED')
-    }
+      return res
+    })
 
     const rawData: RawQuizData = await response.json()
 
