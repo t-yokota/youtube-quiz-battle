@@ -191,14 +191,13 @@ const handlePress = () => {
     inset 0 0 1.375rem rgba(0, 0, 0, 0.45);
 }
 
-/* RELEASED: LEDリング点灯（解答権取得） */
+/* RELEASED: LEDグロー点灯（解答権取得）。太い実線リングは付けずグローのみ */
 .quiz-button.released {
   transform: scale(0.96);
   box-shadow:
     0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
     0 0.1875rem 0.625rem rgba(0, 0, 0, 0.45),
     inset 0 0 0.875rem rgba(0, 0, 0, 0.3),
-    0 0 0 0.625rem rgba(61, 220, 132, 0.85),
     0 0 1.75rem 0.625rem rgba(61, 220, 132, 0.45);
   animation: led-breathe 1.2s ease-in-out infinite;
 }
