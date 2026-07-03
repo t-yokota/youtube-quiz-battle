@@ -594,6 +594,42 @@ describe('External Pause: 可視性変化', () => {
   })
 })
 
+describe('External Pause: orientation', () => {
+  it("pauseExternal('orientation') で pauseVideo が呼ばれる", () => {
+    const player = makePlayerMock()
+    const { gm } = makeGameManager(makeQuizData(), player)
+
+    gm.pauseExternal('orientation')
+
+    expect(player.pauseVideo).toHaveBeenCalled()
+  })
+
+  it("orientation で pause 中に resumeExternalIfReason('orientation') を呼ぶと playVideo が呼ばれる", () => {
+    const player = makePlayerMock()
+    const { gm } = makeGameManager(makeQuizData(), player)
+
+    gm.pauseExternal('orientation')
+    gm.resumeExternalIfReason('orientation')
+
+    expect(player.playVideo).toHaveBeenCalled()
+  })
+
+  it("visibility で pause 中に resumeExternalIfReason('orientation') を呼んでも何も起きない", () => {
+    const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
+    const { gm } = makeGameManager(makeQuizData(), player)
+    gm.setupVisibilityHandlers()
+
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(player.pauseVideo).toHaveBeenCalled()
+
+    gm.resumeExternalIfReason('orientation')
+
+    expect(player.playVideo).not.toHaveBeenCalled()
+  })
+})
+
 // ============================================================================
 // destroy(): リソースリーク防止
 // ============================================================================

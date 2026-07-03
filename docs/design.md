@@ -1544,6 +1544,10 @@ _Privacy Info_
 - **Portrait Only**: モバイルで横画面時は警告表示
 - **Loading**: ダイアログ形式
 - **Error**: ダイアログ表示 → ページ再読み込み誘導
+- **External Pause 連動**: `useOrientationGuard`（`pointer: coarse` のみ対象）が横画面検出時に
+  `GameManager.pauseExternal('orientation')` を呼び動画・カウントダウンを一時停止する。
+  縦画面復帰時は `resumeExternalIfReason('orientation')` により、pause 要因が orientation の
+  場合のみ再開する（visibility 等、他要因による pause 中は再開しない）。
 
 ### Visual Reference
 

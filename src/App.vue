@@ -21,6 +21,7 @@ import { createAudioManager } from './services/audioManager'
 import { getErrorMessage } from './services/errorHandler'
 import { MAX_VOLUME_LEVEL } from './constants/audio'
 import { useGameLoop } from './composables/useGameLoop'
+import { useOrientationGuard } from './composables/useOrientationGuard'
 import { GameState } from './types'
 import type { QuizData, YouTubePlayerManager } from './types'
 import { shouldHandleSpaceKey } from './utils/keyboardHandler'
@@ -44,7 +45,16 @@ const initError = ref<string | null>(null)
 
 // モーダル・ダイアログの表示状態
 const isSettingsOpen = ref(false)
-const isOrientationOpen = ref(false)
+
+// 画面向き検出（横画面時は External Pause で一時停止し、ダイアログを表示）
+const { isLandscape: isOrientationOpen, stop: stopOrientationGuard } = useOrientationGuard(
+  () => {
+    gameManager.value?.pauseExternal('orientation')
+  },
+  () => {
+    gameManager.value?.resumeExternalIfReason('orientation')
+  },
+)
 
 // 音声管理（App レベルで単一インスタンスを保持）
 const audioManager = createAudioManager()
@@ -166,6 +176,7 @@ onUnmounted(() => {
 
   // 時間更新ループ停止 → GameManager 破棄 → Player 破棄 の順でリソースを解放
   gameLoop.stop()
+  stopOrientationGuard()
   gameManager.value?.destroy()
   playerManagerRef.value?.destroy()
   playerManagerRef.value = null

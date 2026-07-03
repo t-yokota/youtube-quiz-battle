@@ -27,7 +27,7 @@ export class ExternalPauseController {
 
   // External Pause関連
   private externalPaused: boolean = false
-  private externalPausedReason: 'visibility' | 'user' | 'stall' | null = null
+  private externalPausedReason: 'visibility' | 'user' | 'stall' | 'orientation' | null = null
 
   // 再生停滞（stall）の検出用
   private lastWallMs: number = 0
@@ -76,7 +76,7 @@ export class ExternalPauseController {
    * External Pauseを開始
    * @param reason 一時停止の要因
    */
-  pauseExternal(reason: 'visibility' | 'user' | 'stall'): void {
+  pauseExternal(reason: 'visibility' | 'user' | 'stall' | 'orientation'): void {
     if (this.externalPaused) return
 
     // 一時停止開始
@@ -157,6 +157,17 @@ export class ExternalPauseController {
       this.answerFlow.resumeAnswerCountdown()
     } else {
       this.playerControl.playVideo()
+    }
+  }
+
+  /**
+   * 指定した reason で一時停止中の場合のみ External Pauseを解除
+   * （visibility/pagehide/pageshow と同じパターンを orientation にも適用するため）
+   * @param reason 解除条件として照合する一時停止の要因
+   */
+  resumeExternalIfReason(reason: 'visibility' | 'user' | 'stall' | 'orientation'): void {
+    if (this.externalPausedReason === reason) {
+      this.resumeExternal()
     }
   }
 

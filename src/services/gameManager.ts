@@ -163,7 +163,7 @@ export class GameManager {
    * External Pauseを開始
    * @param reason 一時停止の要因
    */
-  pauseExternal(reason: 'visibility' | 'user' | 'stall'): void {
+  pauseExternal(reason: 'visibility' | 'user' | 'stall' | 'orientation'): void {
     this.externalPause.pauseExternal(reason)
   }
 
@@ -172,6 +172,14 @@ export class GameManager {
    */
   resumeExternal(): void {
     this.externalPause.resumeExternal()
+  }
+
+  /**
+   * 指定した reason で一時停止中の場合のみ External Pauseを解除
+   * @param reason 解除条件として照合する一時停止の要因
+   */
+  resumeExternalIfReason(reason: 'visibility' | 'user' | 'stall' | 'orientation'): void {
+    this.externalPause.resumeExternalIfReason(reason)
   }
 
   /**
