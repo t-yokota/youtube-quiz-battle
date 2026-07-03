@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # node のバージョンは mise.toml を単一の真実源とする（ローカルと CI で共通）
+      - uses: jdx/mise-action@v2
         with:
-          node-version: 24
-          cache: npm
+          cache: true
       - run: npm ci
       - run: npm run test
       - run: npm run build
