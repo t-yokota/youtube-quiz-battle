@@ -170,6 +170,10 @@ const handlePress = () => {
 .quiz-button {
   position: relative;
   z-index: 2;
+  /* タップハイライト・長押し選択が物理ボタン演出を壊さないように（Task 22-2） */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
   width: 9.375rem;
   height: 9.375rem;
   border-radius: 50%;

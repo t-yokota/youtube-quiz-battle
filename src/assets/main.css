@@ -64,6 +64,12 @@ body {
   height: 100%;
 }
 
+/* タッチ応答: ダブルタップズームの遅延・誤ズームを防止（Task 22-2） */
+button,
+input {
+  touch-action: manipulation;
+}
+
 /* フォーカスリングの統一（info-400・2px offset） */
 :focus-visible {
   outline: 2px solid var(--color-info-400);

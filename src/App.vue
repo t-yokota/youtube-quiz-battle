@@ -155,6 +155,15 @@ const shouldHidePlayer = computed(
     gameStore.currentState === GameState.ANSWERING,
 )
 
+// タッチデバイス判定（初回評価のみ。useOrientationGuard と同じ基準）
+const isTouchDevice = window.matchMedia('(pointer: coarse)').matches
+
+// タッチデバイスの ANSWERING 中は動画とボタン領域を高さごと畳み、
+// 解答エリアを画面上部に出してソフトキーボードと共存させる（Task 22-1）
+const shouldCollapseForKeyboard = computed(
+  () => isTouchDevice && gameStore.currentState === GameState.ANSWERING,
+)
+
 // GamePanel 解答送信 → GameManager に委譲
 function handleAnswerSubmit(answer: string) {
   gameManager.value?.handleAnswerSubmit(answer)
@@ -210,7 +219,7 @@ onUnmounted(() => {
            hideVideoPlayerDuringAnswer=true の ANSWERING 中は visibility で隠す — 高さ保持・iframe 非破棄） -->
       <VideoPlayer
         v-if="quizData"
-        v-show="gameStore.currentState !== GameState.FINISHED"
+        v-show="gameStore.currentState !== GameState.FINISHED && !shouldCollapseForKeyboard"
         :class="{ 'player-hidden': shouldHidePlayer }"
         :video-id="quizData.videoId"
         :settings="quizData.settings"
@@ -227,6 +236,7 @@ onUnmounted(() => {
           <GamePanel @submit="handleAnswerSubmit" />
           <QuizButton
             v-if="gameStore.isButtonVisible"
+            v-show="!shouldCollapseForKeyboard"
             :button-state="gameStore.buttonState"
             @press="handleButtonPress"
           />
@@ -277,7 +287,11 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
+  /* ノッチ・ホームバー対応（viewport-fit=cover 前提） */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
   /* ステージ背景: 下部に放射スポットライト + 縦方向グラデーション */
   background:
     radial-gradient(140% 60% at 50% 108%, rgba(255, 197, 61, 0.1) 0%, transparent 55%),
