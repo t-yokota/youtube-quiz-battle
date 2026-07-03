@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // QuizButton コンポーネント
 // 早押しボタン（物理ボタン: 真上視点の円形キャップ + 同心円台座 + LED リング）
-import { computed } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { ButtonState, GameState } from '@/types'
+import { BUTTON_CHECK_LABEL_HOLD_MS } from '@/constants/timing'
 import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 
@@ -38,6 +39,31 @@ const isButtonChecking = computed(
     gameStore.currentState === GameState.READY &&
     (props.buttonState === ButtonState.PUSHED || props.buttonState === ButtonState.RELEASED),
 )
+
+// チェック終了直後は正解音が鳴っている間の違和感を避けるため、
+// WAIT 表示への切り替えを少し遅らせてラベルだけ保持する（表示層のみの遅延）
+const holdCheckLabel = ref(false)
+let holdTimer: number | null = null
+
+watch(isButtonChecking, (now, was) => {
+  if (was && !now && props.buttonState === ButtonState.DISABLED) {
+    holdCheckLabel.value = true
+    if (holdTimer !== null) window.clearTimeout(holdTimer)
+    holdTimer = window.setTimeout(() => {
+      holdCheckLabel.value = false
+      holdTimer = null
+    }, BUTTON_CHECK_LABEL_HOLD_MS)
+  } else if (now) {
+    // 再チェック開始時は保持状態をリセット
+    holdCheckLabel.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (holdTimer !== null) window.clearTimeout(holdTimer)
+})
+
+const showCheckLabel = computed(() => isButtonChecking.value || holdCheckLabel.value)
 
 // ボタンラベル（wireframe: PUSH / ON! / WAIT）。props で明示指定があれば優先
 const buttonLabel = computed(() => {
@@ -84,7 +110,7 @@ const handlePress = () => {
         <svg v-if="isPlayMode" class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M8 5.5 L18.5 12 L8 18.5 Z" fill="#fff" />
         </svg>
-        <span v-else-if="isButtonChecking" class="check-label">BUTTON<br />CHECK</span>
+        <span v-else-if="showCheckLabel" class="check-label">BUTTON<br />CHECK</span>
         <template v-else>{{ buttonLabel }}</template>
       </button>
     </div>

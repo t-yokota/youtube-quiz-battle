@@ -52,6 +52,12 @@ export const BUTTON_PUSHED_DURATION_MS = 100
 export const BUTTON_CHECK_RELEASE_MS = 1500
 
 /**
+ * ボタンチェック終了後も BUTTON CHECK ラベルを保持する時間（ミリ秒）
+ * 正解音が鳴っている間に即 WAIT 表示へ変わる違和感を緩和する（表示層のみの遅延）
+ */
+export const BUTTON_CHECK_LABEL_HOLD_MS = 1000
+
+/**
  * 解答カウントダウンのインターバル（ミリ秒）
  * 1秒ごとに残り時間をデクリメントする
  */
