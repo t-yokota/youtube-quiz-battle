@@ -86,8 +86,8 @@ const handlePress = () => {
 <style scoped>
 /* 再生ボタンモードの三角形（Task 19-4） */
 .play-icon {
-  width: 3rem;
-  height: 3rem;
+  width: 4.5rem;
+  height: 4.5rem;
   display: block;
   margin: 0 auto;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
