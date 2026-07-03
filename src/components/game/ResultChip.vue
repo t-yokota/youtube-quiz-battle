@@ -7,11 +7,13 @@ export type ChipVariant = 'correct' | 'incorrect' | 'skipped' | 'noanswer' | 'em
 
 defineProps<{
   variant: ChipVariant
+  /** 現在の問題カーソル（金リング + グロー）。variant のマーク表示と併用できる */
+  current?: boolean
 }>()
 </script>
 
 <template>
-  <svg class="chip" :class="variant" viewBox="0 0 16 16" aria-hidden="true">
+  <svg class="chip" :class="[variant, { current }]" viewBox="0 0 16 16" aria-hidden="true">
     <circle class="ring" cx="8" cy="8" r="7.25" />
     <!-- ○（正解） -->
     <circle v-if="variant === 'correct'" class="mark" cx="8" cy="8" r="3.4" fill="none" />
@@ -58,6 +60,7 @@ defineProps<{
   --chip-line: var(--color-signal-500);
 }
 
+/* 現在の問題カーソル: 金リング + グロー（○×マークの色は variant のまま維持） */
 .chip.current {
   --chip-line: var(--color-gold-400);
   border-radius: 50%;
