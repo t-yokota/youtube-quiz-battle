@@ -32,6 +32,13 @@
   box-sizing: border-box;
 }
 
+/* タイマーリング進捗（transition で補間可能にするための型登録。使用箇所: AnswerContent） */
+@property --timer-progress {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
 html {
   /* wireframe (315×700) に対する比率でUI全体をスケール。縦比率優先・幅不足時は幅基準 */
   font-size: clamp(13px, calc(min(100dvh / 700, 100vw / 315) * 16), 26px);

@@ -149,6 +149,8 @@ watch(
   gap: 0.375rem;
   font-weight: 800;
   color: var(--color-text-main);
+  /* 1秒刻みの進捗更新を線形補間して連続的に見せる（@property 登録は main.css） */
+  transition: --timer-progress 1s linear;
 }
 
 /* 秒数を固定幅にしてリング位置が桁数で動かないようにする */
@@ -180,7 +182,7 @@ watch(
 
 .answer-timer.urgent {
   color: var(--color-signal-500);
-  animation: throb 0.8s ease-in-out infinite;
+  animation: throb 0.5s ease-in-out infinite;
 }
 
 .answer-timer.urgent .timer-ring {
