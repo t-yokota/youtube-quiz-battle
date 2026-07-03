@@ -7,6 +7,8 @@ import { logger } from '@/utils/logger'
 import type { TimeManager } from './timeManager'
 import type { InternalPlayerControl } from './internalPlayerControl'
 import type { ThresholdEngine } from './thresholdEngine'
+import type { AudioManager } from './audioManager'
+import { SOUND_TYPE } from '@/constants/audio'
 
 /**
  * 解答フロー制御
@@ -18,6 +20,7 @@ export class AnswerFlowController {
   private gameStore: ReturnType<typeof useGameStore>
   private timeManager: TimeManager
   private thresholdEngine: ThresholdEngine
+  private audioManager?: AudioManager
 
   // 解答カウントダウンタイマー（ANSWERING中の制限時間管理）
   private answerCountdownInterval: number | null = null
@@ -28,12 +31,14 @@ export class AnswerFlowController {
     gameStore: ReturnType<typeof useGameStore>,
     timeManager: TimeManager,
     thresholdEngine: ThresholdEngine,
+    audioManager?: AudioManager,
   ) {
     this.playerControl = playerControl
     this.quizData = quizData
     this.gameStore = gameStore
     this.timeManager = timeManager
     this.thresholdEngine = thresholdEngine
+    this.audioManager = audioManager
   }
 
   /**
@@ -114,6 +119,9 @@ export class AnswerFlowController {
    * @param result handleAnswerSubmitの戻り値
    */
   private resumeVideoAfterAnswer(result: { isCorrect: boolean; isFinal: boolean }): void {
+    // 正誤判定後の効果音（正解音 / 不正解音）
+    this.audioManager?.playSound(result.isCorrect ? SOUND_TYPE.CORRECT : SOUND_TYPE.INCORRECT)
+
     if (result.isFinal) {
       // 正解 or 最終不正解 → 遷移を一元決定する
       const questionIndex = this.gameStore.currentQuestionIndex
@@ -181,6 +189,14 @@ export function createAnswerFlowController(
   gameStore: ReturnType<typeof useGameStore>,
   timeManager: TimeManager,
   thresholdEngine: ThresholdEngine,
+  audioManager?: AudioManager,
 ): AnswerFlowController {
-  return new AnswerFlowController(playerControl, quizData, gameStore, timeManager, thresholdEngine)
+  return new AnswerFlowController(
+    playerControl,
+    quizData,
+    gameStore,
+    timeManager,
+    thresholdEngine,
+    audioManager,
+  )
 }

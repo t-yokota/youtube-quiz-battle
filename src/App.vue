@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // YouTube Quiz Battle - メインアプリケーション
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import VideoPlayer from './components/common/VideoPlayer.vue'
 import GameInfo from './components/game/GameInfo.vue'
@@ -14,8 +14,11 @@ import LoadingDialog from './components/dialogs/LoadingDialog.vue'
 import OrientationDialog from './components/dialogs/OrientationDialog.vue'
 import ErrorDialog from './components/dialogs/ErrorDialog.vue'
 import { useGameStore } from './stores/gameStore'
+import { useSettingsStore } from './stores/settingsStore'
 import { extractVideoIdFromUrl, loadQuizData } from './services/quizDataLoader'
 import { createGameManager, type GameManager } from './services/gameManager'
+import { createAudioManager } from './services/audioManager'
+import { MAX_VOLUME_LEVEL } from './constants/audio'
 import { useGameLoop } from './composables/useGameLoop'
 import { GameState } from './types'
 import type { QuizData, YouTubePlayerManager } from './types'
@@ -23,6 +26,7 @@ import { shouldHandleSpaceKey } from './utils/keyboardHandler'
 import { logger } from './utils/logger'
 
 const gameStore = useGameStore()
+const settingsStore = useSettingsStore()
 
 // 時間更新ループ（getCurrentTime() ポーリングに一本化）
 const gameLoop = useGameLoop()
@@ -41,8 +45,29 @@ const initError = ref<string | null>(null)
 const isSettingsOpen = ref(false)
 const isOrientationOpen = ref(false)
 
-// 音声設定の状態
-const volumeLevel = ref(3)
+// 音声管理（App レベルで単一インスタンスを保持）
+const audioManager = createAudioManager()
+audioManager.setSoundEnabled(settingsStore.soundEnabled)
+audioManager.setVolume(settingsStore.volumeLevel / MAX_VOLUME_LEVEL)
+audioManager.init().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : 'Unknown error'
+  logger.error('[App] Failed to initialize AudioManager:', error)
+  initError.value = message
+})
+
+watch(
+  () => settingsStore.volumeLevel,
+  (level) => {
+    audioManager.setVolume(level / MAX_VOLUME_LEVEL)
+  },
+)
+
+watch(
+  () => settingsStore.soundEnabled,
+  (enabled) => {
+    audioManager.setSoundEnabled(enabled)
+  },
+)
 
 // --- 初期化 ---
 
@@ -69,7 +94,7 @@ function handlePlayerReady(playerManager: YouTubePlayerManager) {
   if (!quizData.value) return
 
   // GameManager を作成して初期化
-  const manager = createGameManager(playerManager, quizData.value, gameStore)
+  const manager = createGameManager(playerManager, quizData.value, gameStore, audioManager)
   manager.initializeExternalPauseHandling()
   gameManager.value = manager
   playerManagerRef.value = playerManager
@@ -125,7 +150,7 @@ const handleCloseSettings = () => {
 }
 
 const handleUpdateVolume = (level: number) => {
-  volumeLevel.value = level
+  settingsStore.setVolumeLevel(level)
 }
 
 // ErrorDialog
@@ -196,7 +221,7 @@ onUnmounted(() => {
     <!-- Modals and Dialogs -->
     <SettingsModal
       :is-open="isSettingsOpen"
-      :volume-level="volumeLevel"
+      :volume-level="settingsStore.volumeLevel"
       @close="handleCloseSettings"
       @update-volume="handleUpdateVolume"
     />

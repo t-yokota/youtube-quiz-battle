@@ -9,6 +9,8 @@ import { createInternalPlayerControl, InternalPlayerControl } from './internalPl
 import { createThresholdEngine, ThresholdEngine } from './thresholdEngine'
 import { createAnswerFlowController, AnswerFlowController } from './answerFlowController'
 import { createExternalPauseController, ExternalPauseController } from './externalPauseController'
+import type { AudioManager } from './audioManager'
+import { SOUND_TYPE } from '@/constants/audio'
 
 /**
  * ゲーム管理システム（ファサード）
@@ -23,14 +25,17 @@ export class GameManager {
   private externalPause: ExternalPauseController
   private gameStore: ReturnType<typeof useGameStore>
   private quizData: QuizData
+  private audioManager?: AudioManager
 
   constructor(
     playerManager: YouTubePlayerManager,
     quizData: QuizData,
     gameStore: ReturnType<typeof useGameStore>,
+    audioManager?: AudioManager,
   ) {
     this.quizData = quizData
     this.gameStore = gameStore
+    this.audioManager = audioManager
     this.timeManager = createTimeManager(quizData.questions)
     this.playerControl = createInternalPlayerControl(playerManager)
     this.thresholdEngine = createThresholdEngine(quizData, gameStore)
@@ -40,6 +45,7 @@ export class GameManager {
       gameStore,
       this.timeManager,
       this.thresholdEngine,
+      audioManager,
     )
     this.externalPause = createExternalPauseController(
       this.playerControl,
@@ -115,6 +121,9 @@ export class GameManager {
 
     const stateAtPress = this.gameStore.currentState
 
+    // ボタン押下音
+    this.audioManager?.playSound(SOUND_TYPE.BUTTON)
+
     // ボタン状態遷移: STANDBY -> PUSHED -> RELEASED
     this.gameStore.setButtonState(ButtonState.PUSHED)
     setTimeout(() => {
@@ -124,6 +133,8 @@ export class GameManager {
         // ボタンチェック: BUTTON_CHECK_RELEASE_MS後にTALKING状態へ遷移し、動画再生開始
         setTimeout(() => {
           this.gameStore.setButtonState(ButtonState.STANDBY)
+          // ボタンチェック完了時の正解音（STANDBY復帰時）
+          this.audioManager?.playSound(SOUND_TYPE.CORRECT)
           this.gameStore.transitionToState(GameState.TALKING)
           // 動画再生開始
           this.playerControl.playVideo()
@@ -276,6 +287,7 @@ export function createGameManager(
   playerManager: YouTubePlayerManager,
   quizData: QuizData,
   gameStore: ReturnType<typeof useGameStore>,
+  audioManager?: AudioManager,
 ): GameManager {
-  return new GameManager(playerManager, quizData, gameStore)
+  return new GameManager(playerManager, quizData, gameStore, audioManager)
 }
