@@ -99,6 +99,7 @@ D-2 で hover / :focus-visible は網羅済みのため**確認 + 差分修正**
 
 - 25: PrivacyInfo の文言と送信内容の整合（D-15）を含む。着手時に spec を書く（Designer 手順）
 - 26: **YouTube iframe のモック方針**（YouTubePlayerManager の注入口 or 実動画）が最大の設計論点。着手時に spec を書く（Designer 手順）。WSL では Playwright headless shell の executablePath 直接指定が必要（環境メモ参照）
+- 既知の制約（2026-07-04）: YouTube プレイヤーの操作 UI（シークバー等）はクロスオリジン iframe 内部のため、表示/非表示をスクリプトから制御・タップ模擬できない。一時停止中に UI が表示され続けるのは YouTube 側仕様。消したい場合の唯一の手段は controls=0（シークバーも消える）
 
 ## 実行順とコミット
 
