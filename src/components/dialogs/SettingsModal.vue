@@ -319,11 +319,16 @@ const handleOverlayClick = (event: MouseEvent) => {
   gap: 18px;
 }
 
-/* Settings Section */
+/* Settings Section（セクション間に罫線） */
 .settings-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.settings-section + .settings-section {
+  border-top: 1px solid var(--color-line);
+  padding-top: 16px;
 }
 
 .section-title {
