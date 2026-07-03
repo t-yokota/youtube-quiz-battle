@@ -510,6 +510,61 @@ describe('FINISHED 状態の固定', () => {
 // シーク検出（disableSeekbar=true）
 // ============================================================================
 
+describe('ボタンチェック演出 OFF（Task 19-4）', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('OFF のとき READY のボタン押下は演出・効果音なしで即 TALKING + 再生開始', async () => {
+    const { useSettingsStore } = await import('@/stores/settingsStore')
+    const settingsStore = useSettingsStore()
+    settingsStore.setButtonCheckEnabled(false)
+
+    const playSound = vi.fn()
+    const audioManagerMock = { playSound } as unknown as import('../audioManager').AudioManager
+
+    const player = makePlayerMock()
+    const store = useGameStore()
+    const quiz = makeQuizData()
+    store.setQuizData(quiz)
+    const gm = createGameManager(player, quiz, store, audioManagerMock, settingsStore)
+
+    store.transitionToState(GameState.READY)
+    gm.handleButtonPress()
+
+    // タイマーを待たず即座に TALKING + 再生。演出（PUSHED）と効果音は発生しない
+    expect(store.currentState).toBe(GameState.TALKING)
+    expect(player.playVideo).toHaveBeenCalled()
+    expect(playSound).not.toHaveBeenCalled()
+    expect(store.buttonState).toBe(ButtonState.DISABLED) // TALKING で WAIT 表示
+  })
+
+  it('OFF でも QUESTIONING の早押しは通常どおり動作する（効果音あり）', async () => {
+    const { useSettingsStore } = await import('@/stores/settingsStore')
+    const settingsStore = useSettingsStore()
+    settingsStore.setButtonCheckEnabled(false)
+
+    const playSound = vi.fn()
+    const audioManagerMock = { playSound } as unknown as import('../audioManager').AudioManager
+
+    const player = makePlayerMock()
+    const store = useGameStore()
+    const quiz = makeQuizData()
+    store.setQuizData(quiz)
+    const gm = createGameManager(player, quiz, store, audioManagerMock, settingsStore)
+
+    simulatePlayback(gm, 11, 0)
+    gm.handleButtonPress()
+    vi.advanceTimersByTime(100)
+
+    expect(store.currentState).toBe(GameState.ANSWERING)
+    expect(playSound).toHaveBeenCalled()
+  })
+})
+
 describe('disableSeekbar のユーザー上書き（Task 19-3）', () => {
   it('override=false ならデータ設定 true でもシークが許可される（強制リセットされない）', async () => {
     const { useSettingsStore } = await import('@/stores/settingsStore')

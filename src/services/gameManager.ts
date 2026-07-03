@@ -125,6 +125,14 @@ export class GameManager {
 
     const stateAtPress = this.gameStore.currentState
 
+    // ボタンチェック演出 OFF: READY では単なる動画再生ボタンとして動作する（Task 19-4）
+    // 演出（PUSHED→RELEASED→STANDBY）・効果音なしで即 TALKING へ遷移し再生開始
+    if (stateAtPress === GameState.READY && this.settingsStore?.buttonCheckEnabled === false) {
+      this.gameStore.transitionToState(GameState.TALKING)
+      this.playerControl.playVideo()
+      return
+    }
+
     // ボタン押下音
     this.audioManager?.playSound(SOUND_TYPE.BUTTON)
 

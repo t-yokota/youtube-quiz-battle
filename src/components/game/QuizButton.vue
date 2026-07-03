@@ -4,6 +4,7 @@
 import { computed } from 'vue'
 import { ButtonState, GameState } from '@/types'
 import { useGameStore } from '@/stores/gameStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 interface Props {
   buttonState?: ButtonState
@@ -16,11 +17,17 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const gameStore = useGameStore()
+const settingsStore = useSettingsStore()
 
 // イベント定義
 const emit = defineEmits<{
   press: []
 }>()
+
+// ボタンチェック演出 OFF の READY: 単なる再生ボタンとして白い三角形を表示（Task 19-4）
+const isPlayMode = computed(
+  () => gameStore.currentState === GameState.READY && !settingsStore.buttonCheckEnabled,
+)
 
 // CSSクラス名用（standby / pushed / released / disabled）
 const buttonStateClass = computed(() => props.buttonState.toLowerCase())
@@ -64,15 +71,28 @@ const handlePress = () => {
       <button
         :class="['quiz-button', buttonStateClass]"
         :disabled="buttonState === ButtonState.DISABLED"
+        :aria-label="isPlayMode ? '動画を再生' : undefined"
         @click="handlePress"
       >
-        {{ buttonLabel }}
+        <svg v-if="isPlayMode" class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 5.5 L18.5 12 L8 18.5 Z" fill="#fff" />
+        </svg>
+        <template v-else>{{ buttonLabel }}</template>
       </button>
     </div>
   </section>
 </template>
 
 <style scoped>
+/* 再生ボタンモードの三角形（Task 19-4） */
+.play-icon {
+  width: 3rem;
+  height: 3rem;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
 /* ボタンエリア */
 .quiz-button-container {
   flex: 1;

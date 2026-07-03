@@ -33,6 +33,11 @@ const handleSeekToggle = (event: Event) => {
   settingsStore.setDisableSeekbarOverride(!target.checked)
 }
 
+const handleButtonCheckToggle = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  settingsStore.setButtonCheckEnabled(target.checked)
+}
+
 // イベント定義
 const emit = defineEmits<{
   close: []
@@ -164,6 +169,25 @@ const handleOverlayClick = (event: MouseEvent) => {
                     @input="handleVolumeChange(($event.target as HTMLInputElement).valueAsNumber)"
                   />
                 </div>
+              </div>
+            </section>
+
+            <!-- Button Check Settings -->
+            <section class="settings-section">
+              <h3 class="section-title">ボタンチェック演出</h3>
+              <div class="seek-control">
+                <label class="seek-toggle">
+                  <input
+                    type="checkbox"
+                    class="seek-checkbox"
+                    :checked="settingsStore.buttonCheckEnabled"
+                    @change="handleButtonCheckToggle"
+                  />
+                  <span class="seek-label">ゲーム開始前のボタンチェック演出を行う</span>
+                </label>
+                <p class="seek-description">
+                  OFF にすると、開始ボタンは効果音なしの再生ボタンとして動作します。
+                </p>
               </div>
             </section>
 

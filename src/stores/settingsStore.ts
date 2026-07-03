@@ -9,6 +9,8 @@ interface PersistedSettings {
   volumeLevel: number
   /** シーク許可のユーザー上書き（null = クイズデータの設定に従う） */
   disableSeekbarOverride: boolean | null
+  /** ボタンチェック演出の有無（false: READY のボタンは単なる再生ボタンとして動作） */
+  buttonCheckEnabled: boolean
 }
 
 function loadPersistedSettings(): PersistedSettings {
@@ -16,6 +18,7 @@ function loadPersistedSettings(): PersistedSettings {
     soundEnabled: true,
     volumeLevel: DEFAULT_VOLUME_LEVEL,
     disableSeekbarOverride: null,
+    buttonCheckEnabled: true,
   }
 
   const raw = localStorage.getItem(LOCALSTORAGE_KEY_SETTINGS)
@@ -32,6 +35,10 @@ function loadPersistedSettings(): PersistedSettings {
         typeof parsed.disableSeekbarOverride === 'boolean'
           ? parsed.disableSeekbarOverride
           : defaults.disableSeekbarOverride,
+      buttonCheckEnabled:
+        typeof parsed.buttonCheckEnabled === 'boolean'
+          ? parsed.buttonCheckEnabled
+          : defaults.buttonCheckEnabled,
     }
   } catch (error) {
     logger.warn(
@@ -52,12 +59,14 @@ export const useSettingsStore = defineStore('settings', () => {
   const soundEnabled = ref(initial.soundEnabled)
   const volumeLevel = ref(initial.volumeLevel)
   const disableSeekbarOverride = ref<boolean | null>(initial.disableSeekbarOverride)
+  const buttonCheckEnabled = ref(initial.buttonCheckEnabled)
 
   function persist(): void {
     persistSettings({
       soundEnabled: soundEnabled.value,
       volumeLevel: volumeLevel.value,
       disableSeekbarOverride: disableSeekbarOverride.value,
+      buttonCheckEnabled: buttonCheckEnabled.value,
     })
   }
 
@@ -77,12 +86,20 @@ export const useSettingsStore = defineStore('settings', () => {
     persist()
   }
 
+  /** ボタンチェック演出の有無を設定する */
+  function setButtonCheckEnabled(enabled: boolean): void {
+    buttonCheckEnabled.value = enabled
+    persist()
+  }
+
   return {
     soundEnabled,
     volumeLevel,
     disableSeekbarOverride,
+    buttonCheckEnabled,
     setSoundEnabled,
     setVolumeLevel,
     setDisableSeekbarOverride,
+    setButtonCheckEnabled,
   }
 })
