@@ -67,11 +67,13 @@ const chips = computed<ChipItem[]>(() => {
   const items: ChipItem[] = []
   for (let q = start.value; q <= end.value; q++) {
     let variant: ChipVariant
-    if (q === current.value && isQuestionActive.value) {
-      // 進行中の問題は金カーソル。REVEAL 終了後は下の分岐で戦績マークに切り替わる
+    const recorded = resultMap.value.get(q)
+    if (recorded !== undefined && q <= current.value) {
+      // 結果確定（正解 or 解答権 0 or スキップ）した時点で即マーク表示
+      variant = recorded
+    } else if (q === current.value && isQuestionActive.value) {
+      // 進行中で未確定の問題は金カーソル
       variant = 'current'
-    } else if (q <= current.value) {
-      variant = resultMap.value.get(q) ?? 'empty'
     } else {
       variant = 'empty'
     }
@@ -150,7 +152,7 @@ function moveChips(delta: number) {
   font-size: 0.9375rem;
   color: var(--color-gold-400);
   letter-spacing: 0.2em;
-  margin-right: 0.25rem;
+  margin-right: 0.2rem;
   vertical-align: 1px;
 }
 

@@ -82,14 +82,15 @@ export class AnswerFlowController {
 
   /**
    * 解答制限時間切れ処理
-   * カウントダウンが0になった時に呼ばれる。空文字で送信して不正解扱いにする。
+   * カウントダウンが0になった時に呼ばれる。
+   * その時点の入力内容で正誤判定を行う（未入力なら空文字 = 不正解）。
    */
   private handleAnswerTimeout(): void {
     this.stopAnswerCountdown()
     logger.log('[AnswerFlowController] Answer timeout')
 
-    // 空文字で送信（不正解扱い）
-    const result = this.gameStore.handleAnswerSubmit('')
+    // 入力途中の内容をそのまま送信して判定する
+    const result = this.gameStore.handleAnswerSubmit(this.gameStore.answerInput)
     if (result) {
       this.resumeVideoAfterAnswer(result)
     }

@@ -914,6 +914,22 @@ describe('解答カウントダウンタイマー', () => {
     expect(store.results[0].userAnswers).toEqual([''])
   })
 
+  it('タイムアウト時は入力途中の内容で正誤判定される（正解なら正解扱い）', () => {
+    const { gm, store } = makeGameManager(makeQuizData({ answerTimeLimit: 3, maxAttempts: 1 }))
+
+    simulatePlayback(gm, 11, 0)
+    gm.handleButtonPress()
+    vi.advanceTimersByTime(100)
+
+    // 正解を入力したまま送信せずタイムアウト
+    store.updateAnswerInput('東京')
+    vi.advanceTimersByTime(3000)
+
+    expect(store.correctCount).toBe(1)
+    expect(store.results[0].isCorrect).toBe(true)
+    expect(store.results[0].userAnswers).toEqual(['東京'])
+  })
+
   it('GameManager.handleAnswerSubmit経由で解答するとカウントダウンが停止する', () => {
     const { gm, store } = makeGameManager(makeQuizData({ answerTimeLimit: 10, maxAttempts: 1 }))
 
