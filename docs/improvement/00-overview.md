@@ -82,8 +82,8 @@
 |---|---|---|
 | Orchestrator | Fable 5 | Opus 系の最新（なければ Sonnet 系の最新） |
 | Designer | Fable 5（インライン） | 原則ユーザー相談。軽微なら Orchestrator + 事後ユーザーレビュー |
-| Worker（機械的） | Sonnet 4.6 | Sonnet 系の最新 |
-| Worker（裁量中） | Opus 4.8 | Opus 系の最新 |
+| Worker（機械的） | Sonnet 5 | Sonnet 系の最新 |
+| Worker（裁量中） | Sonnet 5（2026-07-03 変更。spec が詳細なら十分。2ストライク時は Opus 系へ昇格） | Sonnet 系の最新（同左の昇格ルール） |
 | Reviewer | haiku（mobile-ui-reviewer 指定済み） | 同左 |
 
 切り出し判断は「**仕様の密度 vs 実装の表面積**」: 指示が短く編集量が多いタスクほど Worker 向き。判断中心で編集量が小さいタスクは Orchestrator がインラインで実行する。
