@@ -249,7 +249,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 1rem;
+  padding: 16px;
 }
 
 /* Modal Container */
@@ -257,13 +257,13 @@ const handleOverlayClick = (event: MouseEvent) => {
   background-color: var(--color-stage-800);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
-  max-width: 31.25rem;
+  max-width: 440px;
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.6);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
 }
 
 /* Modal Header */
@@ -271,13 +271,13 @@ const handleOverlayClick = (event: MouseEvent) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.25rem;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--color-line);
 }
 
 .modal-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 17px;
   font-weight: bold;
   color: var(--color-text-main);
 }
@@ -287,9 +287,9 @@ const handleOverlayClick = (event: MouseEvent) => {
   border: none;
   cursor: pointer;
   /* タッチターゲット確保（>=2.75rem） */
-  width: max(44px, 2.75rem);
-  height: max(44px, 2.75rem);
-  margin: -0.5rem;
+  width: 44px;
+  height: 44px;
+  margin: -8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,30 +302,30 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .close-icon {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 20px;
+  height: 20px;
 }
 
 /* Modal Content */
 .modal-content {
   overflow-y: auto;
-  padding: 1.25rem;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 18px;
 }
 
 /* Settings Section */
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 8px;
 }
 
 .section-title {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--color-text-main);
 }
 
@@ -333,47 +333,47 @@ const handleOverlayClick = (event: MouseEvent) => {
 .volume-control {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 8px;
 }
 
 /* Seek Control（Task 19-3） */
 .seek-control {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 4px;
 }
 
 .seek-toggle {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 10px;
   cursor: pointer;
   /* タッチターゲット確保 */
-  min-height: max(44px, 2.75rem);
+  min-height: 44px;
 }
 
 .seek-checkbox {
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   accent-color: var(--color-info-400);
   cursor: pointer;
 }
 
 .seek-label {
-  font-size: 0.875rem;
+  font-size: 13px;
   color: var(--color-text-main);
   font-weight: 500;
 }
 
 .seek-description {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 12px;
   color: var(--color-text-dim);
 }
 
 .volume-description {
-  font-size: 0.875rem;
+  font-size: 13px;
   color: var(--color-text-dim);
   font-weight: 500;
 }
@@ -381,13 +381,13 @@ const handleOverlayClick = (event: MouseEvent) => {
 .volume-slider {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0 0.5rem;
+  gap: 12px;
+  padding: 0 4px;
 }
 
 .volume-icon {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
   color: var(--color-info-400);
   transition: color 0.2s;
@@ -404,8 +404,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 /* Range Slider */
 .slider {
   flex: 1;
-  height: 0.375rem;
-  border-radius: 0.1875rem;
+  height: 6px;
+  border-radius: 3px;
   outline: none;
   -webkit-appearance: none;
   appearance: none;
@@ -413,8 +413,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .slider::-webkit-slider-track {
   width: 100%;
-  height: 0.375rem;
-  border-radius: 0.1875rem;
+  height: 6px;
+  border-radius: 3px;
   background: transparent;
 }
 
@@ -428,8 +428,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--color-info-400);
   cursor: pointer;
@@ -437,8 +437,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .slider::-moz-range-thumb {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--color-info-400);
   border: none;
@@ -464,25 +464,25 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 /* Privacy Text */
 .privacy-text {
-  font-size: 0.875rem;
+  font-size: 12px;
   color: var(--color-text-dim);
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
 .privacy-text p {
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 8px 0;
 }
 
 .privacy-list {
   margin: 0;
-  padding-left: 1rem;
+  padding-left: 4px;
   list-style: none;
 }
 
 .privacy-list li {
-  margin-bottom: 0.25rem;
+  margin-bottom: 2px;
   position: relative;
-  padding-left: 1rem;
+  padding-left: 12px;
 }
 
 .privacy-list li::before {
@@ -493,18 +493,18 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 /* Primary Button */
 .primary-button {
-  padding: 0.75rem 1.5rem;
-  min-height: max(44px, 2.75rem);
+  padding: 10px 24px;
+  min-height: 44px;
   background-color: var(--color-gold-400);
   color: var(--color-stage-900);
   border: none;
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  font-size: 13px;
   font-weight: 800;
   cursor: pointer;
   transition: background 0.2s;
   align-self: center;
-  min-width: 7.5rem;
+  min-width: 120px;
 }
 
 .primary-button:hover {
@@ -522,23 +522,5 @@ const handleOverlayClick = (event: MouseEvent) => {
   opacity: 0;
 }
 
-/* モバイル対応 */
-@media (max-width: 640px) {
-  .modal-overlay {
-    padding: 0.5rem;
-  }
-
-  .modal-header {
-    padding: 0.875rem 1rem;
-  }
-
-  .modal-title {
-    font-size: 1.125rem;
-  }
-
-  .modal-content {
-    padding: 1rem;
-    gap: 1.25rem;
-  }
-}
+/* 固定 px のため画面幅による追加縮小は不要 */
 </style>
