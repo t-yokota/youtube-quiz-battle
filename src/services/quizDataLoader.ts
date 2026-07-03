@@ -42,7 +42,11 @@ export function extractVideoIdFromUrl(): string | null {
 export async function loadQuizData(videoId: string): Promise<QuizData> {
   try {
     // videoId が "sample" の場合はサンプルデータを読み込む
-    const dataPath = videoId === 'sample' ? '/data/sample/data.json' : `/data/${videoId}/data.json`
+    // BASE_URL 前置: GitHub Pages のサブパス配信に対応（末尾スラッシュ付き）
+    const dataPath =
+      videoId === 'sample'
+        ? `${import.meta.env.BASE_URL}data/sample/data.json`
+        : `${import.meta.env.BASE_URL}data/${videoId}/data.json`
 
     const response = await withRetry(async () => {
       const res = await fetch(dataPath)
