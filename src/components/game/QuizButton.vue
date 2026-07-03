@@ -32,6 +32,13 @@ const isPlayMode = computed(
 // CSSクラス名用（standby / pushed / released / disabled）
 const buttonStateClass = computed(() => props.buttonState.toLowerCase())
 
+// ボタンチェック中（READY で押下〜点灯の間）は 2 行の BUTTON CHECK 表示
+const isButtonChecking = computed(
+  () =>
+    gameStore.currentState === GameState.READY &&
+    (props.buttonState === ButtonState.PUSHED || props.buttonState === ButtonState.RELEASED),
+)
+
 // ボタンラベル（wireframe: PUSH / ON! / WAIT）。props で明示指定があれば優先
 const buttonLabel = computed(() => {
   if (props.buttonText !== undefined) return props.buttonText
@@ -77,6 +84,7 @@ const handlePress = () => {
         <svg v-if="isPlayMode" class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M8 5.5 L18.5 12 L8 18.5 Z" fill="#fff" />
         </svg>
+        <span v-else-if="isButtonChecking" class="check-label">BUTTON<br />CHECK</span>
         <template v-else>{{ buttonLabel }}</template>
       </button>
     </div>
@@ -84,6 +92,14 @@ const handlePress = () => {
 </template>
 
 <style scoped>
+/* ボタンチェック中の 2 行ラベル */
+.check-label {
+  display: block;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  letter-spacing: 0.14em;
+}
+
 /* 再生ボタンモードの三角形（Task 19-4） */
 .play-icon {
   width: 4.5rem;

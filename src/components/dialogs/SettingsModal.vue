@@ -249,7 +249,8 @@ const handleOverlayClick = (event: MouseEvent) => {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 16px;
+  /* コンテンツが長いときも上下に十分な余白を残す */
+  padding: 32px 16px;
 }
 
 /* Modal Container */
@@ -259,7 +260,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   border-radius: var(--radius-lg);
   max-width: 440px;
   width: 100%;
-  max-height: 90vh;
+  max-height: calc(100dvh - 64px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
