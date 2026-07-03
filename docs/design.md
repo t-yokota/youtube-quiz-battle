@@ -434,6 +434,8 @@ export const SEEK_TOLERANCE_SEC = 1.0
 
 プレイヤーによるシークバーの利用が検出された場合の挙動として、以下の2パターンを設定変数の値によって選択できるようにする。
 
+> **実効値の優先順位（Task 19-3）**: 設定画面のユーザー上書き（`settingsStore.disableSeekbarOverride`、LocalStorage 永続化、null = 未設定）がクイズデータの `settings.disableSeekbar` より優先される。実効値の解決は GameManager が行う。
+
 | disableSeekbar設定 | シーク検出時の動作 |
 |---------------|------------------|
 | true | 動画の再生時間をpreviousVideoTimeまで強制リセットする |

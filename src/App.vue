@@ -103,7 +103,13 @@ function handlePlayerReady(playerManager: YouTubePlayerManager) {
   if (!quizData.value) return
 
   // GameManager を作成して初期化
-  const manager = createGameManager(playerManager, quizData.value, gameStore, audioManager)
+  const manager = createGameManager(
+    playerManager,
+    quizData.value,
+    gameStore,
+    audioManager,
+    settingsStore,
+  )
   manager.initializeExternalPauseHandling()
   gameManager.value = manager
   playerManagerRef.value = playerManager

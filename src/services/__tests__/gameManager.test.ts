@@ -510,6 +510,63 @@ describe('FINISHED 状態の固定', () => {
 // シーク検出（disableSeekbar=true）
 // ============================================================================
 
+describe('disableSeekbar のユーザー上書き（Task 19-3）', () => {
+  it('override=false ならデータ設定 true でもシークが許可される（強制リセットされない）', async () => {
+    const { useSettingsStore } = await import('@/stores/settingsStore')
+    const settingsStore = useSettingsStore()
+    settingsStore.setDisableSeekbarOverride(false)
+
+    const player = makePlayerMock()
+    const store = useGameStore()
+    const quiz = makeQuizData() // disableSeekbar: true
+    store.setQuizData(quiz)
+    const gm = createGameManager(player, quiz, store, undefined, settingsStore)
+
+    simulatePlayback(gm, 5.0)
+    gm.updateVideoTime(26.0) // Q1 (10-25) を丸ごと飛ばす
+
+    // 強制リセットされず、Q1 がシーク消費される
+    expect(player.seekTo).not.toHaveBeenCalled()
+    expect(store.results).toHaveLength(1)
+    expect(store.results[0].skipped).toBe(true)
+  })
+
+  it('override=true ならデータ設定 false でも強制リセットされる', async () => {
+    const { useSettingsStore } = await import('@/stores/settingsStore')
+    const settingsStore = useSettingsStore()
+    settingsStore.setDisableSeekbarOverride(true)
+
+    const player = makePlayerMock()
+    const store = useGameStore()
+    const quiz = makeQuizData({ disableSeekbar: false })
+    store.setQuizData(quiz)
+    const gm = createGameManager(player, quiz, store, undefined, settingsStore)
+
+    simulatePlayback(gm, 5.0)
+    gm.updateVideoTime(26.0)
+
+    expect(player.seekTo).toHaveBeenCalledWith(5.0)
+    expect(store.results).toHaveLength(0)
+  })
+
+  it('override=null（未設定）ならデータ設定に従う', async () => {
+    const { useSettingsStore } = await import('@/stores/settingsStore')
+    const settingsStore = useSettingsStore()
+    settingsStore.setDisableSeekbarOverride(null)
+
+    const player = makePlayerMock()
+    const store = useGameStore()
+    const quiz = makeQuizData() // disableSeekbar: true
+    store.setQuizData(quiz)
+    const gm = createGameManager(player, quiz, store, undefined, settingsStore)
+
+    simulatePlayback(gm, 5.0)
+    gm.updateVideoTime(26.0)
+
+    expect(player.seekTo).toHaveBeenCalledWith(5.0)
+  })
+})
+
 describe('シーク検出（disableSeekbar=true）', () => {
   it('1秒を超えるジャンプで seekTo が呼ばれ、リセット先は previousVideoTime', () => {
     const player = makePlayerMock()

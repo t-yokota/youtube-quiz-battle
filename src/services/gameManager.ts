@@ -4,6 +4,7 @@ import { GameState, ButtonState } from '@/types'
 import { createTimeManager, TimeManager } from './timeManager'
 import { BUTTON_PUSHED_DURATION_MS, BUTTON_CHECK_RELEASE_MS } from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
+import type { useSettingsStore } from '@/stores/settingsStore'
 import { logger } from '@/utils/logger'
 import { createInternalPlayerControl, InternalPlayerControl } from './internalPlayerControl'
 import { createThresholdEngine, ThresholdEngine } from './thresholdEngine'
@@ -26,16 +27,19 @@ export class GameManager {
   private gameStore: ReturnType<typeof useGameStore>
   private quizData: QuizData
   private audioManager?: AudioManager
+  private settingsStore?: ReturnType<typeof useSettingsStore>
 
   constructor(
     playerManager: YouTubePlayerManager,
     quizData: QuizData,
     gameStore: ReturnType<typeof useGameStore>,
     audioManager?: AudioManager,
+    settingsStore?: ReturnType<typeof useSettingsStore>,
   ) {
     this.quizData = quizData
     this.gameStore = gameStore
     this.audioManager = audioManager
+    this.settingsStore = settingsStore
     this.timeManager = createTimeManager(quizData.questions)
     this.playerControl = createInternalPlayerControl(playerManager)
     this.thresholdEngine = createThresholdEngine(quizData, gameStore)
@@ -239,10 +243,7 @@ export class GameManager {
     if (this.timeManager.isSeekDetected(current)) {
       logger.log('[GameManager] Seek detected:', prev, '->', current)
 
-      if (
-        this.gameStore.currentState === GameState.ANSWERING ||
-        this.quizData.settings.disableSeekbar
-      ) {
+      if (this.gameStore.currentState === GameState.ANSWERING || this.isSeekbarDisabled()) {
         // ANSWERING中 or disableSeekbar=true: 動画時間を強制リセット
         this.playerControl.seekTo(prev)
         // currentVideoTimeも元に戻す（submitAnswer内のrevealTime比較に影響するため）
@@ -264,6 +265,14 @@ export class GameManager {
 
     // previousVideoTimeを更新
     this.timeManager.updatePreviousVideoTime(current)
+  }
+
+  /**
+   * シークバー無効の実効値を解決する
+   * ユーザー設定（settingsStore.disableSeekbarOverride）> クイズデータの設定（Task 19-3）
+   */
+  private isSeekbarDisabled(): boolean {
+    return this.settingsStore?.disableSeekbarOverride ?? this.quizData.settings.disableSeekbar
   }
 
   /**
@@ -296,6 +305,7 @@ export function createGameManager(
   quizData: QuizData,
   gameStore: ReturnType<typeof useGameStore>,
   audioManager?: AudioManager,
+  settingsStore?: ReturnType<typeof useSettingsStore>,
 ): GameManager {
-  return new GameManager(playerManager, quizData, gameStore, audioManager)
+  return new GameManager(playerManager, quizData, gameStore, audioManager, settingsStore)
 }

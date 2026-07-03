@@ -2,6 +2,10 @@
 // SettingsModal コンポーネント
 // 設定画面のモーダル表示
 
+import { computed } from 'vue'
+import { useGameStore } from '@/stores/gameStore'
+import { useSettingsStore } from '@/stores/settingsStore'
+
 // Props定義（Phase 2で状態管理と連携予定）
 interface Props {
   isOpen?: boolean
@@ -13,6 +17,21 @@ const props = withDefaults(defineProps<Props>(), {
   isOpen: false,
   volumeLevel: 3,
 })
+
+const gameStore = useGameStore()
+const settingsStore = useSettingsStore()
+
+// シーク許可の実効値（ユーザー上書き > クイズデータの設定。Task 19-3）
+const isSeekAllowed = computed(
+  () =>
+    !(settingsStore.disableSeekbarOverride ?? gameStore.quizData?.settings.disableSeekbar ?? true),
+)
+
+const handleSeekToggle = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  // トグル操作でユーザー上書きを設定（checked = シーク許可 = disableSeekbar false）
+  settingsStore.setDisableSeekbarOverride(!target.checked)
+}
 
 // イベント定義
 const emit = defineEmits<{
@@ -148,6 +167,25 @@ const handleOverlayClick = (event: MouseEvent) => {
               </div>
             </section>
 
+            <!-- Seek Settings -->
+            <section class="settings-section">
+              <h3 class="section-title">シーク操作</h3>
+              <div class="seek-control">
+                <label class="seek-toggle">
+                  <input
+                    type="checkbox"
+                    class="seek-checkbox"
+                    :checked="isSeekAllowed"
+                    @change="handleSeekToggle"
+                  />
+                  <span class="seek-label">シークバーでの動画移動を許可する</span>
+                </label>
+                <p class="seek-description">
+                  許可すると、シークで飛ばした問題は不参加（スキップ）扱いになります。
+                </p>
+              </div>
+            </section>
+
             <!-- Privacy Info -->
             <section class="settings-section">
               <h3 class="section-title">データ収集について</h3>
@@ -272,6 +310,42 @@ const handleOverlayClick = (event: MouseEvent) => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+/* Seek Control（Task 19-3） */
+.seek-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.seek-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+  /* タッチターゲット確保 */
+  min-height: max(44px, 2.75rem);
+}
+
+.seek-checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  accent-color: var(--color-info-400);
+  cursor: pointer;
+}
+
+.seek-label {
+  font-size: 0.875rem;
+  color: var(--color-text-main);
+  font-weight: 500;
+}
+
+.seek-description {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
 }
 
 .volume-description {
