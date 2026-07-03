@@ -67,7 +67,7 @@ const handleOverlayClick = (event: MouseEvent) => {
         <div class="modal-container">
           <!-- Modal Header -->
           <div class="modal-header">
-            <h2 class="modal-title">Settings</h2>
+            <h2 class="modal-title">設定</h2>
             <button class="close-button" aria-label="設定を閉じる" @click="handleClose">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -268,8 +268,9 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 /* Modal Header */
 .modal-header {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 12px 16px;
   border-bottom: 1px solid var(--color-line);
@@ -283,13 +284,16 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .close-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
-  /* タッチターゲット確保（>=2.75rem） */
+  /* タッチターゲット確保 */
   width: 44px;
   height: 44px;
-  margin: -8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -499,7 +503,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   color: var(--color-stage-900);
   border: none;
   border-radius: var(--radius-md);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
   cursor: pointer;
   transition: background 0.2s;
