@@ -9,8 +9,8 @@
 |---|---|---|
 | P1 | GitHub Pages のパス | プロジェクトページ（`https://t-yokota.github.io/youtube-quiz-battle/`）前提。`vite.config.ts` に `base: '/youtube-quiz-battle/'` を設定。**`/data/...` と `/assets/sounds/...` の絶対パス fetch が 404 になるため `import.meta.env.BASE_URL` 前置が必須**（対象 2 箇所: quizDataLoader.ts L45, constants/audio.ts L17。他は rg で全数確認） |
 | P2 | デプロイ方式 | GitHub Actions（`actions/deploy-pages`）。main への push で自動デプロイ。**リポジトリが private の場合 Pages は有料プランが必要 — 着手時に public 化の可否をユーザーへ確認**（唯一の要確認点） |
-| P3 | ソフトキーボード対応の方式 | `visualViewport` の `resize` を監視する composable `useVisualViewport` を新設し、キーボード表示中は App コンテナの高さを `visualViewport.height` に追従させる（`--vvh` カスタムプロパティ）。ANSWERING 時に入力欄が隠れる問題は「コンテナ縮小 + 解答エリアへの scrollIntoView」で対処。iOS Safari の `100vh` 問題も同時に解消（既存の `100dvh` スケール式は `100dvh` のままでよい — dvh はキーボードでは変化しないため、キーボード分は --vvh で別途縮める） |
-| P4 | タイマーとキーボードの共存 | ANSWERING でキーボードが出た状態でも、解答エリア（タイマーリング・入力欄・送信）が可視であることを最優先。動画・スコアボードは隠れてよい（visualViewport 縮小時は上部が画面外にスクロールアウトする形を許容） |
+| P3 | ソフトキーボード対応の方式 | **ユーザー裁定（2026-07-03）: タッチデバイス × ANSWERING で動画プレイヤーとボタン領域を非表示にし、解答エリアを画面上部に出す**（ボタンは ANSWERING 中押せないため隠れて問題ない）。visualViewport 追従・--vvh・scrollIntoView は不採用（複雑さに見合わない） |
+| P4 | タイマーとキーボードの共存 | ANSWERING でキーボードが出た状態でも、解答エリア（タイマーリング・入力欄・送信）が可視であることを最優先。動画は非表示、ボタンはキーボード下で不可視・機能影響なし |
 | P5 | PC キーボードナビ | Tab 順は DOM 順（ヘッダー歯車 → チップページャ → 入力欄 → 送信 → 早押しボタン）で十分。追加の tabindex 制御は行わない。スペースキー早押しは実装済み（`keyboardHandler.ts`）のため、Enter での解答送信（入力欄フォーカス時）だけ確認・不足なら追加 |
 | P6 | バンドル予算 | 現状 JS 113.8kB / CSS 33.8kB（gzip 41.5/6.4kB）で十分小さい。分析は `rollup-plugin-visualizer` を devDependency で入れ `npm run analyze` を追加。**予算: JS gzip < 100kB**（現状の 2.4 倍。超えたら分割検討でよい） |
 | P7 | 22 の実機確認 | iOS Safari + Android Chrome。27 の Pages デプロイ後に実機 URL で行うのが効率的なので、**22 のコード実装 → 27 デプロイ → 22/23 の実機・手動確認**の順で締める |
@@ -19,21 +19,22 @@
 
 ## Task 22: モバイル最適化
 
-### 22-1. ソフトキーボード対応（本丸）
+### 22-1. ソフトキーボード対応（2026-07-03 ユーザー裁定で方式変更）
 
-1. 新規 composable `src/composables/useVisualViewport.ts`:
-   ```ts
-   /** visualViewport の高さを CSS 変数 --vvh (px) として documentElement に反映する。
-       未対応環境（visualViewport 無し）では何もしない（--vvh 未設定時のフォールバックは CSS 側の 100dvh） */
-   export function useVisualViewport(): { stop(): void }
-   ```
-   - **起動パターンは useOrientationGuard と同じ即時開始型**（呼び出しと同時にリスナー登録 + 現在値を反映。`.start()` は設けない）
-   - `window.visualViewport?.addEventListener('resize', ...)` で `document.documentElement.style.setProperty('--vvh', `${height}px`)`
-   - `stop()` でリスナー解除 + `--vvh` プロパティを削除（removeProperty）。App.vue の setup で呼び、**onUnmounted では stopOrientationGuard() の直後**に stop を呼ぶ
-2. `src/App.vue`: `.app-container` の `height: 100vh`（**App.vue の scoped style 内。main.css には無い**）を `height: var(--vvh, 100dvh)` に変更（main.css の rem スケール式の `100dvh` は**変更しない** — UI 比率はレイアウトビューポート基準を維持し、キーボード分はコンテナ縮小のみで吸収）
-   - main.css の `html, body { height: 100% }` は**変更しない**。キーボード表示中は body より container が短くなるが、露出する body 背景が白くならないよう `body { background: var(--color-stage-900) }` を main.css に追加しておく
-3. ANSWERING 遷移時のオートフォーカス watch（AnswerContent の **isInputDisabled を監視している方**。answerResult 監視の方は触らない）に `inputRef.value?.scrollIntoView({ block: 'nearest' })` を focus() の直後に追加
-4. テスト: useVisualViewport の単体テスト。**jsdom に visualViewport は無いため**、`Object.defineProperty(window, 'visualViewport', { value: mockVV, configurable: true })` で addEventListener/removeEventListener/height を持つモックを注入する方式（afterEach で削除）。検証: resize で --vvh 反映 / visualViewport 未定義環境で no-op / stop 後に反映されない + プロパティ削除
+> 当初案（visualViewport でコンテナ高さ追従）は**不採用**。ANSWERING 中のボタンは押せない状態
+> （isButtonEnabled=false）なのでキーボードに隠れても問題なく、必要なのは「解答エリアが
+> キーボードの上に見えること」だけ。上部の空間を空ける方式で達成する。
+
+1. **タッチデバイス × ANSWERING のとき、VideoPlayer とボタン領域（QuizButton コンテナ）を非表示**にする:
+   - タッチ判定は `matchMedia('(pointer: coarse)')`（useOrientationGuard と同じ基準）。App.vue の setup で 1 回評価し `isTouchDevice` 定数化でよい（動的変化は考慮不要）
+   - 条件 computed: `isTouchDevice && gameStore.currentState === GameState.ANSWERING`
+   - VideoPlayer: 既存の `.player-hidden`（visibility）ではなく **v-show（display:none）で高さごと畳む**（空間を空けるのが目的。iframe は破棄されないのでプレイヤー状態は保持）。既存の FINISHED 用 v-show と条件を合成する
+   - QuizButton: 同条件で v-show 非表示（隠れても機能上は問題ないが、非表示にして解答エリアに集中させる）
+   - 結果: ヘッダー + スコアボード + 解答エリアのみが残り、解答エリアが画面上部に来るためキーボードと確実に共存する
+2. ANSWERING 終了（WAITING/REVEALING 等への遷移）で自動復帰（computed なので追加処理不要）
+3. 20-4 の `hideVideoPlayerDuringAnswer`（visibility 方式・高さ保持）とは**別条件の別機構**として共存させる（20-4 は「データ設定による演出」、本件は「モバイル UX」。両方 true の場合は v-show が勝ち高さごと消える — 問題なし）
+4. キーボードを閉じても ANSWERING 中は非表示のまま（許容。タイマーが進んでいるため解答に集中する状態は変わらない）
+5. テスト: App.vue のロジックは computed 1 個のため単体テストは不要（Task 26 の E2E で担保）。手動確認は 22-3 で実施
 
 ### 22-2. タッチ応答の仕上げ
 
