@@ -209,9 +209,8 @@ export const useGameStore = defineStore('game', () => {
     pendingUserAnswers.value.push(answer)
 
     if (isCorrect) {
-      // 正解
+      // 正解（answerInput は結果表示中も残し、次の問題の initializeForQuestion でクリアする）
       answerResult.value = 'correct'
-      answerInput.value = ''
 
       // 結果を記録
       recordResult(
@@ -233,8 +232,7 @@ export const useGameStore = defineStore('game', () => {
     answerResult.value = 'incorrect'
 
     if (remainingAttempts.value <= 0) {
-      // 残り回数なし → 不正解確定
-      answerInput.value = ''
+      // 残り回数なし → 不正解確定（answerInput は結果表示中も残す）
 
       // 結果を記録
       recordResult(
@@ -253,7 +251,7 @@ export const useGameStore = defineStore('game', () => {
 
     // 残り回数あり → リトライ可能（QUESTIONING 復帰は controller が担う）
     // answerResult は 'incorrect' のまま維持し、次の解答時に上書きする（Task 21-3）
-    answerInput.value = ''
+    // answerInput も残す（リトライ時に修正して再送信できる）
     logger.log(`[GameStore] Incorrect. Remaining attempts: ${remainingAttempts.value}`)
     return { isCorrect: false, isFinal: false }
   }

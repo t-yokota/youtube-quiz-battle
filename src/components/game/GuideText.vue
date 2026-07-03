@@ -23,13 +23,13 @@ const showDownCue = computed(() => gameStore.currentState === GameState.READY)
 <style scoped>
 /* Guide Text */
 .guide-text {
+  position: relative;
   width: 100%;
+  height: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 0.375rem;
   font-size: 0.875rem;
   color: var(--color-text-dim);
   line-height: 1.5;
@@ -39,8 +39,12 @@ const showDownCue = computed(() => gameStore.currentState === GameState.READY)
   margin: 0;
 }
 
-/* READY時: ボタンへの視線誘導 */
+/* READY時: ボタンへの視線誘導（絶対配置で本文の上下センターを崩さない） */
 .down-cue {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 1rem);
+  transform: translateX(-50%);
   font-size: 0.875rem;
   color: var(--color-gold-400);
   animation: bob 1.2s ease-in-out infinite;
@@ -49,10 +53,10 @@ const showDownCue = computed(() => gameStore.currentState === GameState.READY)
 @keyframes bob {
   0%,
   100% {
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(0);
   }
   50% {
-    transform: translateY(0.25rem);
+    transform: translateX(-50%) translateY(0.25rem);
   }
 }
 </style>

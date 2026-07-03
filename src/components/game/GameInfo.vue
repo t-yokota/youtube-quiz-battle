@@ -147,11 +147,11 @@ function moveChips(delta: number) {
 }
 
 .progress .q-label {
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   color: var(--color-gold-400);
   letter-spacing: 0.2em;
   margin-right: 0.25rem;
-  vertical-align: 2px;
+  vertical-align: 1px;
 }
 
 .progress .total {

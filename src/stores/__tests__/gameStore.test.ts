@@ -92,7 +92,7 @@ describe('handleAnswerSubmit: 基本動作', () => {
     expect(store.answerResult).toBe('correct')
   })
 
-  it('正解後はanswerInputがクリアされる', () => {
+  it('正解後もanswerInputは結果表示のため残る（次問題開始でクリア）', () => {
     const store = useGameStore()
     store.setQuizData(makeQuizData())
     store.currentQuestionIndex = 0
@@ -100,7 +100,9 @@ describe('handleAnswerSubmit: 基本動作', () => {
     store.updateAnswerInput('東京')
 
     store.handleAnswerSubmit('東京')
+    expect(store.answerInput).toBe('東京')
 
+    store.initializeForQuestion()
     expect(store.answerInput).toBe('')
   })
 })
