@@ -1177,14 +1177,14 @@ enum SOUND_TYPE {
 const DEFAULT_AUDIO_SPRITE = {
   src: '/assets/sounds/quiz-sounds.mp3',
   sprite: {
-    button: { start: 0, duration: 0.5 },
-    correct: { start: 0.5, duration: 1.0 },
-    incorrect: { start: 1.5, duration: 0.8 },
+    button: { start: 0, duration: 2.0 },
+    correct: { start: 3.0, duration: 2.0 },
+    incorrect: { start: 6.0, duration: 2.0 },
   },
 }
 ```
 
-> **素材注記**: `quiz-sounds.mp3` は未作成。素材の選定・ライセンス確認・スプライト作成は Task 19-0 で行う。
+> **素材注記**: 実ファイル（8.125s / mono 48kHz、2026-07-03 ユーザー用意）のスプライト位置に合わせて定義済み。新規再生時に前の効果音を停止するため、各区間の末尾無音は問題にならない。
 
 ### Answer Validator
 
