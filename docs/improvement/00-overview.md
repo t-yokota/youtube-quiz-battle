@@ -103,6 +103,7 @@
 | [specs/phase3-feature-specs.md](specs/phase3-feature-specs.md) | 19 / 19-2 / 20 / 20-2 / 20-3 / 20-4 / 21 / 21-2（要ユーザー確認 2 点を含む） |
 | [specs/design-tokens-and-case1.md](specs/design-tokens-and-case1.md) | D-1 / D-2 |
 | [specs/remaining-tasks-notes.md](specs/remaining-tasks-notes.md) | R-7 / R-9 / D-12 の裁定 |
+| [specs/phase4-quality-release.md](specs/phase4-quality-release.md) | 22 / 23 / 27（GitHub Pages）。25 / 26 は後回し・未設計 |
 
 ### 運用ルール
 
