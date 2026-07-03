@@ -60,11 +60,15 @@ defineProps<{
   --chip-line: var(--color-signal-500);
 }
 
-/* 現在の問題カーソル: 金リング + グロー（○×マークの色は variant のまま維持） */
+/* 現在の問題カーソル: 金のグローのみ重ねる（枠線色は正誤の variant に従う） */
 .chip.current {
-  --chip-line: var(--color-gold-400);
   border-radius: 50%;
   box-shadow: 0 0 0.375rem rgba(255, 197, 61, 0.5);
+}
+
+/* 未確定（empty）の現在問題のみ枠線も金にする */
+.chip.empty.current {
+  --chip-line: var(--color-gold-400);
 }
 
 .ring {
