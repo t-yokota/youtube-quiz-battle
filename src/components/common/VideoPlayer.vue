@@ -64,7 +64,13 @@ function stopMaskPoll() {
 function startMaskPoll() {
   if (maskPollId !== null) return
   maskPollId = window.setInterval(() => {
-    if (playerManagerRef.value?.getPlayerState() === YouTubePlayerState.PLAYING) {
+    // READY 中の PLAYING（ゲートの warmup 再生や spurious イベント）は「再生開始」と
+    // みなさない。ゲームが始まった TALKING 以降の PLAYING のみでマスクを解除する
+    if (
+      gameStore.currentState !== GameState.READY &&
+      gameStore.currentState !== GameState.LOADING &&
+      playerManagerRef.value?.getPlayerState() === YouTubePlayerState.PLAYING
+    ) {
       hasPlaybackStarted.value = true
       stopMaskPoll()
     }
