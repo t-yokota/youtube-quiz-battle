@@ -94,15 +94,13 @@ const isSeekAllowed = computed(
     !(settingsStore.disableSeekbarOverride ?? gameStore.quizData?.settings.disableSeekbar ?? true),
 )
 
-const handleSeekToggle = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  // トグル操作でユーザー上書きを設定（checked = シーク許可 = disableSeekbar false）
-  settingsStore.setDisableSeekbarOverride(!target.checked)
+// トグル操作でユーザー上書きを設定（許可 = disableSeekbar false）
+const handleSeekToggle = () => {
+  settingsStore.setDisableSeekbarOverride(isSeekAllowed.value)
 }
 
-const handleButtonCheckToggle = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  settingsStore.setButtonCheckEnabled(target.checked)
+const handleButtonCheckToggle = () => {
+  settingsStore.setButtonCheckEnabled(!gameStore.isButtonCheckEnabled)
 }
 
 // イベント定義
@@ -177,13 +175,8 @@ const handleOverlayClick = (event: MouseEvent) => {
           <div class="modal-content">
             <!-- Audio Settings -->
             <section class="settings-section">
-              <h3 class="section-title">効果音設定</h3>
-
-              <!-- Volume Slider -->
-              <div class="volume-control">
-                <span class="volume-description"
-                  >早押しボタンと正誤判定音の音量を調整できます。</span
-                >
+              <div class="setting-row">
+                <span class="setting-label">効果音の音量を調整する</span>
                 <div class="volume-slider">
                   <!-- Volume Icon SVG -->
                   <svg
@@ -261,44 +254,55 @@ const handleOverlayClick = (event: MouseEvent) => {
                   />
                 </div>
               </div>
+              <p class="seek-description">早押しボタンと正誤判定の効果音に適用されます。</p>
             </section>
 
             <!-- Seek Settings -->
             <section class="settings-section">
-              <h3 class="section-title">シーク操作</h3>
-              <div class="seek-control">
-                <label class="seek-toggle">
-                  <input
-                    type="checkbox"
-                    class="seek-checkbox"
-                    :checked="isSeekAllowed"
-                    @change="handleSeekToggle"
-                  />
-                  <span class="seek-label">シークバーでの動画移動を許可する</span>
-                </label>
-                <p class="seek-description">
-                  許可すると、シークで飛ばした問題は不参加（スキップ）扱いになります。
-                </p>
+              <div class="setting-row">
+                <span class="setting-label">シークバーでの動画移動を許可する</span>
+                <button
+                  type="button"
+                  class="ui-switch"
+                  role="switch"
+                  :aria-checked="isSeekAllowed"
+                  aria-label="シークバーでの動画移動を許可する"
+                  @click="handleSeekToggle"
+                >
+                  <span class="ui-switch-track" :class="{ on: isSeekAllowed }">
+                    <span class="ui-switch-state">{{ isSeekAllowed ? 'ON' : 'OFF' }}</span>
+                    <span class="ui-switch-knob"></span>
+                  </span>
+                </button>
               </div>
+              <p class="seek-description">
+                許可すると、シークで飛ばした問題は不参加（スキップ）扱いになります。
+              </p>
             </section>
 
             <!-- Button Check Settings -->
             <section class="settings-section">
-              <h3 class="section-title">ボタンチェック演出</h3>
-              <div class="seek-control">
-                <label class="seek-toggle">
-                  <input
-                    type="checkbox"
-                    class="seek-checkbox"
-                    :checked="gameStore.isButtonCheckEnabled"
-                    @change="handleButtonCheckToggle"
-                  />
-                  <span class="seek-label">ゲーム開始前のボタンチェック演出を行う</span>
-                </label>
-                <p class="seek-description">
-                  OFF にすると、開始ボタンは効果音なしの再生ボタンとして動作します。
-                </p>
+              <div class="setting-row">
+                <span class="setting-label">ゲーム開始前のボタンチェック演出を行う</span>
+                <button
+                  type="button"
+                  class="ui-switch"
+                  role="switch"
+                  :aria-checked="gameStore.isButtonCheckEnabled"
+                  aria-label="ゲーム開始前のボタンチェック演出を行う"
+                  @click="handleButtonCheckToggle"
+                >
+                  <span class="ui-switch-track" :class="{ on: gameStore.isButtonCheckEnabled }">
+                    <span class="ui-switch-state">{{
+                      gameStore.isButtonCheckEnabled ? 'ON' : 'OFF'
+                    }}</span>
+                    <span class="ui-switch-knob"></span>
+                  </span>
+                </button>
               </div>
+              <p class="seek-description">
+                OFF にすると、開始ボタンは効果音なしの再生ボタンとして動作します。
+              </p>
             </section>
 
             <!-- Debug Settings（Task 29: debug データかつメニュー表示ONの時のみ） -->
@@ -541,35 +545,19 @@ const handleOverlayClick = (event: MouseEvent) => {
   color: var(--color-text-main);
 }
 
-/* Volume Control */
-.volume-control {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Seek Control（Task 19-3） */
-.seek-control {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.seek-toggle {
+/* 設定行（1段目: 見出しを兼ねるラベル + 右揃えの操作 UI） */
+.setting-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  cursor: pointer;
-  /* タッチターゲット確保 */
   min-height: 44px;
 }
 
-.seek-checkbox {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  accent-color: var(--color-info-400);
-  cursor: pointer;
+.setting-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-main);
 }
 
 .seek-label {
@@ -584,17 +572,81 @@ const handleOverlayClick = (event: MouseEvent) => {
   color: var(--color-text-dim);
 }
 
-.volume-description {
-  font-size: 14px;
+/* トグルスイッチ（ゲーム画面のボタンチェックトグルと同型・青系） */
+.ui-switch {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-switch-track {
+  position: relative;
+  width: 56px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--color-stage-700);
+  border: 1px solid var(--color-line);
+  flex-shrink: 0;
+  transition:
+    background var(--duration-base),
+    border-color var(--duration-base);
+}
+
+.ui-switch-track.on {
+  background: rgba(79, 140, 255, 0.22);
+  border-color: var(--color-info-400);
+}
+
+.ui-switch-state {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   color: var(--color-text-dim);
-  font-weight: 500;
+  /* OFF: ノブが左なので文言は右側 */
+  right: 7px;
+}
+
+.ui-switch-track.on .ui-switch-state {
+  color: var(--color-info-400);
+  /* ON: ノブが右なので文言は左側 */
+  right: auto;
+  left: 7px;
+}
+
+.ui-switch-knob {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-text-dim);
+  transition:
+    left var(--duration-base) var(--ease-brand),
+    background var(--duration-base);
+}
+
+.ui-switch-track.on .ui-switch-knob {
+  left: calc(100% - 20px - 3px);
+  background: var(--color-info-400);
 }
 
 .volume-slider {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 4px;
 }
 
 .volume-icon {
@@ -615,7 +667,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 /* Range Slider */
 .slider {
-  flex: 1;
+  width: 110px;
   height: 6px;
   border-radius: 3px;
   outline: none;
@@ -684,6 +736,8 @@ const handleOverlayClick = (event: MouseEvent) => {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  /* 行高を統一（数値入力 30px / トグル 44px の差で間隔がばらつかないように） */
+  min-height: 44px;
 }
 
 .debug-input {
