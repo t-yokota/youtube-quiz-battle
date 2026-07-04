@@ -114,10 +114,16 @@ export class AudioManager {
   private playWithWebAudio(type: SOUND_TYPE): void {
     if (!this.audioContext || !this.audioBuffer || !this.gainNode) return
 
-    // ユーザー操作前に生成した AudioContext は suspended で始まるため、再生時に復帰させる
-    // （playSound はボタン押下等のユーザー操作起点で呼ばれるので resume が許可される）
+    // ユーザー操作前に生成した AudioContext は suspended で始まる。
+    // resume は非同期のため、完了を待たずに start すると初回の発音が捨てられる（iOS）。
+    // resume 完了後に再生し直すことで初回の音も確実に鳴らす
     if (this.audioContext.state === 'suspended') {
-      void this.audioContext.resume()
+      void this.audioContext.resume().then(() => {
+        if (this.soundEnabled && !this.muted) {
+          this.playWithWebAudio(type)
+        }
+      })
+      return
     }
 
     const segment = this.sprite.sprite[type]

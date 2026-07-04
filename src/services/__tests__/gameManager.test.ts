@@ -955,16 +955,18 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     expect(store.buttonState).toBe(ButtonState.RELEASED)
     expect(store.currentState).toBe(GameState.READY)
 
-    // BUTTON_CHECK_RELEASE_MS 後: TALKING遷移（再生はまだ — VIDEO_START_DELAY_MS 分遅れる）
+    // BUTTON_CHECK_RELEASE_MS 後: TALKING遷移（本再生はまだ — VIDEO_START_DELAY_MS 分遅れる）
+    // ※押下時に iOS priming の play→即 pause が 1 回走る
     // transitionToState(TALKING) 内の updateButtonStateForGameState が STANDBY → DISABLED にする
     vi.advanceTimersByTime(BUTTON_CHECK_RELEASE_MS)
     expect(store.buttonState).toBe(ButtonState.DISABLED)
     expect(store.currentState).toBe(GameState.TALKING)
-    expect(player.playVideo).not.toHaveBeenCalled()
+    expect(player.playVideo).toHaveBeenCalledTimes(1) // priming のみ
+    expect(player.pauseVideo).toHaveBeenCalledTimes(1) // priming の即 pause
 
-    // さらに VIDEO_START_DELAY_MS 後: playVideo（正解音との重なり回避の遅延再生）
+    // さらに VIDEO_START_DELAY_MS 後: 本再生の playVideo（正解音との重なり回避の遅延再生）
     vi.advanceTimersByTime(VIDEO_START_DELAY_MS)
-    expect(player.playVideo).toHaveBeenCalledTimes(1)
+    expect(player.playVideo).toHaveBeenCalledTimes(2)
   })
 
   it('QUESTIONING状態で押下: PUSHED → 100ms後 RELEASED + ANSWERING遷移 + pauseVideo', () => {
@@ -1019,9 +1021,9 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     // transitionToState(TALKING) 内の updateButtonStateForGameState が DISABLED にする
     expect(store.buttonState).toBe(ButtonState.DISABLED)
     expect(store.currentState).toBe(GameState.TALKING)
-    // playVideo は遅延再生後に1回だけ（連打しても増えない）
+    // playVideo は priming 1回 + 遅延再生1回のみ（連打しても増えない）
     vi.advanceTimersByTime(VIDEO_START_DELAY_MS)
-    expect(player.playVideo).toHaveBeenCalledTimes(1)
+    expect(player.playVideo).toHaveBeenCalledTimes(2)
   })
 
   it('DISABLED状態では押下できない', () => {

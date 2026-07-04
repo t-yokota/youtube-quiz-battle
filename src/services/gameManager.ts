@@ -140,6 +140,16 @@ export class GameManager {
     // ボタン押下音
     this.audioManager?.playSound(SOUND_TYPE.BUTTON)
 
+    // iOS 対策の priming: ユーザー操作外の play() はブロックされるため、
+    // タップの同期処理内で play→即 pause してメディア再生を活性化しておく
+    // （これでボタンチェック後の遅延 playVideo が許可される）。
+    // priming が発火させる spurious PLAYING は抑止ウィンドウで無視する
+    if (stateAtPress === GameState.READY) {
+      this.externalPause.suppressSpuriousReadyPlay()
+      this.playerControl.playVideo()
+      this.playerControl.pauseVideo()
+    }
+
     // ボタン状態遷移: STANDBY -> PUSHED -> RELEASED
     this.gameStore.setButtonState(ButtonState.PUSHED)
     setTimeout(() => {

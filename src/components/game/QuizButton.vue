@@ -104,20 +104,22 @@ const handleButtonCheckToggle = () => {
 
 <template>
   <section class="quiz-button-container" :class="{ lit: isLit }">
-    <div class="button-rig">
-      <div class="pulse-ring" :class="{ active: isPulsing }"></div>
-      <button
-        :class="['quiz-button', buttonStateClass]"
-        :disabled="buttonState === ButtonState.DISABLED"
-        :aria-label="isPlayMode ? '動画を再生' : undefined"
-        @click="handlePress"
-      >
-        <svg v-if="isPlayMode" class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M8 5.5 L18.5 12 L8 18.5 Z" fill="#fff" />
-        </svg>
-        <span v-else-if="showCheckLabel" class="check-label">BUTTON<br />CHECK</span>
-        <template v-else>{{ buttonLabel }}</template>
-      </button>
+    <div class="button-stage">
+      <div class="button-rig">
+        <div class="pulse-ring" :class="{ active: isPulsing }"></div>
+        <button
+          :class="['quiz-button', buttonStateClass]"
+          :disabled="buttonState === ButtonState.DISABLED"
+          :aria-label="isPlayMode ? '動画を再生' : undefined"
+          @click="handlePress"
+        >
+          <svg v-if="isPlayMode" class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5.5 L18.5 12 L8 18.5 Z" fill="#fff" />
+          </svg>
+          <span v-else-if="showCheckLabel" class="check-label">BUTTON<br />CHECK</span>
+          <template v-else>{{ buttonLabel }}</template>
+        </button>
+      </div>
     </div>
 
     <!-- ボタンチェック演出のトグル（画面右下） -->
@@ -141,12 +143,10 @@ const handleButtonCheckToggle = () => {
 </template>
 
 <style scoped>
-/* ボタンチェック演出のトグル（コンテナ右下） */
+/* ボタンチェック演出のトグル（フロー配置・右寄せ。ボタンはこの上の残り空間で中央配置される） */
 .check-toggle {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  z-index: 3;
+  align-self: flex-end;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -239,14 +239,22 @@ const handleButtonCheckToggle = () => {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
 }
 
-/* ボタンエリア */
+/* ボタンエリア（縦スタック: 中央のボタン領域 + 右下のトグル） */
 .quiz-button-container {
   flex: 1;
   min-height: 15rem;
   display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ボタン本体の領域（残り空間の中央にボタンを置く） */
+.button-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
 }
 
 /* スポットライト: 押せる状態のときだけ点灯 */

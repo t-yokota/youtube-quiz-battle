@@ -369,6 +369,14 @@ export class ExternalPauseController {
   }
 
   /**
+   * READY 中の spurious PLAYING を一定時間無視する
+   * （iOS 向けの priming = タップ中の play→即 pause が発火させるイベント対策）
+   */
+  suppressSpuriousReadyPlay(): void {
+    this.readyPlaySuppressUntil = performance.now() + READY_PLAY_SUPPRESS_MS
+  }
+
+  /**
    * 登録済みイベントリスナーを解除（リソースリーク防止）
    *
    * 注意: setupPlayerStateHandlers が登録する onStateChange コールバックは

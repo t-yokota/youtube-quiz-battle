@@ -34,7 +34,7 @@ function createMockAudioContext(): MockAudioContextInstance {
   const gainNode: MockGainNode = { gain: { value: 0 }, connect: vi.fn() }
 
   const context: MockAudioContextInstance = {
-    state: 'suspended',
+    state: 'running',
     destination: {},
     gainNode,
     lastSource: null,
@@ -232,14 +232,22 @@ describe('AudioManager: Web Audio 経路', () => {
     expect(context.gainNode.gain.value).toBe(0.6)
   })
 
-  it('正常系: suspended な AudioContext は playSound 時に resume される', async () => {
+  it('正常系: suspended 中の playSound は resume 完了後に再生される（初回の音を落とさない）', async () => {
     const manager = new AudioManager()
     await manager.init()
-    expect(context.state).toBe('suspended')
+    context.state = 'suspended'
 
     manager.playSound(SOUND_TYPE.BUTTON)
 
+    // resume 完了前は start されない（suspended 中の発音は捨てられるため）
     expect(context.resume).toHaveBeenCalled()
+    expect(context.lastSource).toBeNull()
+
+    // resume の完了を待つと再生される
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(context.lastSource).not.toBeNull()
+    expect(context.lastSource!.start).toHaveBeenCalled()
   })
 
   it('異常系: init 前に playSound を呼んでも no-op で何も起きない', () => {
