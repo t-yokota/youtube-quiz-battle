@@ -444,15 +444,18 @@ describe('Single-Shot Guard', () => {
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
     vi.advanceTimersByTime(100)
+    store.updateAnswerInput('不正解')
     gm.handleAnswerSubmit('不正解')
     expect(store.currentState).toBe(GameState.QUESTIONING)
     expect(store.answerResult).toBe('incorrect') // リトライ中は表示維持
+    expect(store.answerInput).toBe('不正解') // 入力内容も表示のため残る
 
-    // 再度ボタン押下（解答アクション開始）→ 表示クリア
+    // 再度ボタン押下（解答アクション開始）→ 表示・入力内容ともクリア
     gm.handleButtonPress()
     vi.advanceTimersByTime(100)
     expect(store.currentState).toBe(GameState.ANSWERING)
     expect(store.answerResult).toBeNull()
+    expect(store.answerInput).toBe('')
   })
 
   it('正解時は WAITING を経由せず直接 REVEALING へ遷移する（jumpToRevealPeriod=true・ちらつき解消）', () => {

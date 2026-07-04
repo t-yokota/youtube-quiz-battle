@@ -172,25 +172,6 @@ const handleOverlayClick = (event: MouseEvent) => {
               </div>
             </section>
 
-            <!-- Button Check Settings -->
-            <section class="settings-section">
-              <h3 class="section-title">ボタンチェック演出</h3>
-              <div class="seek-control">
-                <label class="seek-toggle">
-                  <input
-                    type="checkbox"
-                    class="seek-checkbox"
-                    :checked="settingsStore.buttonCheckEnabled"
-                    @change="handleButtonCheckToggle"
-                  />
-                  <span class="seek-label">ゲーム開始前のボタンチェック演出を行う</span>
-                </label>
-                <p class="seek-description">
-                  OFF にすると、開始ボタンは効果音なしの再生ボタンとして動作します。
-                </p>
-              </div>
-            </section>
-
             <!-- Seek Settings -->
             <section class="settings-section">
               <h3 class="section-title">シーク操作</h3>
@@ -206,6 +187,25 @@ const handleOverlayClick = (event: MouseEvent) => {
                 </label>
                 <p class="seek-description">
                   許可すると、シークで飛ばした問題は不参加（スキップ）扱いになります。
+                </p>
+              </div>
+            </section>
+
+            <!-- Button Check Settings -->
+            <section class="settings-section">
+              <h3 class="section-title">ボタンチェック演出</h3>
+              <div class="seek-control">
+                <label class="seek-toggle">
+                  <input
+                    type="checkbox"
+                    class="seek-checkbox"
+                    :checked="settingsStore.buttonCheckEnabled"
+                    @change="handleButtonCheckToggle"
+                  />
+                  <span class="seek-label">ゲーム開始前のボタンチェック演出を行う</span>
+                </label>
+                <p class="seek-description">
+                  OFF にすると、開始ボタンは効果音なしの再生ボタンとして動作します。
                 </p>
               </div>
             </section>
