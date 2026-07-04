@@ -524,11 +524,15 @@ const handleOverlayClick = (event: MouseEvent) => {
   transition: color 0.2s;
 }
 
-.debug-menu-toggle:hover {
-  color: var(--color-text-main);
+/* タッチデバイスの :hover 残留で --active の色が隠れないよう、ホバー可能環境に限定 */
+@media (hover: hover) {
+  .debug-menu-toggle:hover {
+    color: var(--color-text-main);
+  }
 }
 
-.debug-menu-toggle--active {
+.debug-menu-toggle--active,
+.debug-menu-toggle--active:hover {
   color: var(--color-gold-400);
 }
 
