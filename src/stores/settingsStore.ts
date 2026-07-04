@@ -9,8 +9,8 @@ interface PersistedSettings {
   volumeLevel: number
   /** シーク許可のユーザー上書き（null = クイズデータの設定に従う） */
   disableSeekbarOverride: boolean | null
-  /** ボタンチェック演出の有無（false: READY のボタンは単なる再生ボタンとして動作） */
-  buttonCheckEnabled: boolean
+  /** ボタンチェック演出のユーザー上書き（null = クイズデータの設定に従う） */
+  buttonCheckOverride: boolean | null
 }
 
 function loadPersistedSettings(): PersistedSettings {
@@ -18,7 +18,7 @@ function loadPersistedSettings(): PersistedSettings {
     soundEnabled: true,
     volumeLevel: DEFAULT_VOLUME_LEVEL,
     disableSeekbarOverride: null,
-    buttonCheckEnabled: true,
+    buttonCheckOverride: null,
   }
 
   const raw = localStorage.getItem(LOCALSTORAGE_KEY_SETTINGS)
@@ -35,10 +35,11 @@ function loadPersistedSettings(): PersistedSettings {
         typeof parsed.disableSeekbarOverride === 'boolean'
           ? parsed.disableSeekbarOverride
           : defaults.disableSeekbarOverride,
-      buttonCheckEnabled:
-        typeof parsed.buttonCheckEnabled === 'boolean'
-          ? parsed.buttonCheckEnabled
-          : defaults.buttonCheckEnabled,
+      // 旧形式の buttonCheckEnabled は引き継がない（データ側デフォルトへ移行）
+      buttonCheckOverride:
+        typeof parsed.buttonCheckOverride === 'boolean'
+          ? parsed.buttonCheckOverride
+          : defaults.buttonCheckOverride,
     }
   } catch (error) {
     logger.warn(
@@ -59,14 +60,14 @@ export const useSettingsStore = defineStore('settings', () => {
   const soundEnabled = ref(initial.soundEnabled)
   const volumeLevel = ref(initial.volumeLevel)
   const disableSeekbarOverride = ref<boolean | null>(initial.disableSeekbarOverride)
-  const buttonCheckEnabled = ref(initial.buttonCheckEnabled)
+  const buttonCheckOverride = ref<boolean | null>(initial.buttonCheckOverride)
 
   function persist(): void {
     persistSettings({
       soundEnabled: soundEnabled.value,
       volumeLevel: volumeLevel.value,
       disableSeekbarOverride: disableSeekbarOverride.value,
-      buttonCheckEnabled: buttonCheckEnabled.value,
+      buttonCheckOverride: buttonCheckOverride.value,
     })
   }
 
@@ -86,9 +87,9 @@ export const useSettingsStore = defineStore('settings', () => {
     persist()
   }
 
-  /** ボタンチェック演出の有無を設定する */
+  /** ボタンチェック演出のユーザー上書きを設定する（トグル操作後はユーザー任せ） */
   function setButtonCheckEnabled(enabled: boolean): void {
-    buttonCheckEnabled.value = enabled
+    buttonCheckOverride.value = enabled
     persist()
   }
 
@@ -96,7 +97,7 @@ export const useSettingsStore = defineStore('settings', () => {
     soundEnabled,
     volumeLevel,
     disableSeekbarOverride,
-    buttonCheckEnabled,
+    buttonCheckOverride,
     setSoundEnabled,
     setVolumeLevel,
     setDisableSeekbarOverride,

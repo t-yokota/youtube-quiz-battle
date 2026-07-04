@@ -27,7 +27,7 @@ const emit = defineEmits<{
 
 // ボタンチェック演出 OFF の READY: 単なる再生ボタンとして白い三角形を表示（Task 19-4）
 const isPlayMode = computed(
-  () => gameStore.currentState === GameState.READY && !settingsStore.buttonCheckEnabled,
+  () => gameStore.currentState === GameState.READY && !gameStore.isButtonCheckEnabled,
 )
 
 // CSSクラス名用（standby / pushed / released / disabled）
@@ -98,7 +98,7 @@ const handlePress = () => {
 
 // ボタンチェック演出のトグル（設定画面と同じ settingsStore を切り替える）
 const handleButtonCheckToggle = () => {
-  settingsStore.setButtonCheckEnabled(!settingsStore.buttonCheckEnabled)
+  settingsStore.setButtonCheckEnabled(!gameStore.isButtonCheckEnabled)
 }
 </script>
 
@@ -127,14 +127,14 @@ const handleButtonCheckToggle = () => {
       type="button"
       class="check-toggle"
       role="switch"
-      :aria-checked="settingsStore.buttonCheckEnabled"
+      :aria-checked="gameStore.isButtonCheckEnabled"
       aria-label="ボタンチェック演出"
       @click="handleButtonCheckToggle"
     >
       <span class="check-toggle-label">BUTTON CHECK</span>
-      <span class="check-toggle-track" :class="{ on: settingsStore.buttonCheckEnabled }">
+      <span class="check-toggle-track" :class="{ on: gameStore.isButtonCheckEnabled }">
         <span class="check-toggle-state">{{
-          settingsStore.buttonCheckEnabled ? 'ON' : 'OFF'
+          gameStore.isButtonCheckEnabled ? 'ON' : 'OFF'
         }}</span>
         <span class="check-toggle-knob"></span>
       </span>

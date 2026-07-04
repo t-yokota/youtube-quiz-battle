@@ -7,6 +7,7 @@
     "disableSeekbar": false,
     "jumpToRevealPeriod": false,
     "hideVideoPlayerDuringAnswer": true,
+    "buttonCheckEnabled": true,
     "debug": true
   },
   "questions": [

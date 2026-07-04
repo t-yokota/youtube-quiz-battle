@@ -34,6 +34,7 @@ function makeQuizData(maxAttempts = 2): QuizData {
       disableSeekbar: true,
       jumpToRevealPeriod: false,
       hideVideoPlayerDuringAnswer: false,
+      buttonCheckEnabled: true,
       debug: false,
     },
   }

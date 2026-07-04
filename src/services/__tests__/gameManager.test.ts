@@ -48,6 +48,7 @@ function makeQuizData(overrides?: Partial<QuizData['settings']>): QuizData {
       disableSeekbar: true,
       jumpToRevealPeriod: false,
       hideVideoPlayerDuringAnswer: false,
+      buttonCheckEnabled: true,
       debug: false,
       ...overrides,
     },
@@ -73,6 +74,7 @@ function makeMultiThresholdQuizData(): QuizData {
       disableSeekbar: true,
       jumpToRevealPeriod: false,
       hideVideoPlayerDuringAnswer: false,
+      buttonCheckEnabled: true,
       debug: false,
     },
   }
@@ -127,6 +129,8 @@ function simulatePlayback(gm: GameManager, to: number, from = 0, step = 0.15) {
 beforeEach(() => {
   setActivePinia(createPinia())
   vi.restoreAllMocks()
+  // settingsStore の永続化（buttonCheckOverride 等）がテスト間に漏れないようクリア
+  localStorage.clear()
   // document.hidden をリセット
   Object.defineProperty(document, 'hidden', { value: false, configurable: true })
 })
@@ -1752,7 +1756,8 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
         disableSeekbar: false,
         jumpToRevealPeriod: false,
         hideVideoPlayerDuringAnswer: false,
-        debug: false,
+        buttonCheckEnabled: true,
+      debug: false,
       },
     }
   }

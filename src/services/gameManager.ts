@@ -174,7 +174,7 @@ export class GameManager {
 
     // ボタンチェック演出 OFF: READY では単なる動画再生ボタンとして動作する（Task 19-4）
     // 演出（PUSHED→RELEASED→STANDBY）・効果音なしで即 TALKING へ遷移し再生開始
-    if (stateAtPress === GameState.READY && this.settingsStore?.buttonCheckEnabled === false) {
+    if (stateAtPress === GameState.READY && !this.gameStore.isButtonCheckEnabled) {
       // ウォームアップ停止タイマーが残っていると直後の再生が巻き込まれて止まるため破棄。
       // 再生位置だけ先頭に揃えて続行する
       this.clearWarmupStop(false)

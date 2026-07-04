@@ -5,6 +5,7 @@ import { GameState, ButtonState } from '@/types'
 import type { QuizData, QuestionResult, QuizSettings } from '@/types'
 import { validate } from '@/services/answerValidator'
 import { useDebugStore } from '@/stores/debugStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { logger } from '@/utils/logger'
 
 export const useGameStore = defineStore('game', () => {
@@ -90,6 +91,12 @@ export const useGameStore = defineStore('game', () => {
       default:
         return ''
     }
+  })
+
+  // ボタンチェック演出の実効値（ユーザー上書き > クイズデータの設定。省略時 false）
+  const isButtonCheckEnabled = computed(() => {
+    const settingsStore = useSettingsStore()
+    return settingsStore.buttonCheckOverride ?? quizData.value?.settings.buttonCheckEnabled ?? false
   })
 
   // 実効クイズ設定（debug=true のデータのみ debugStore の上書きを適用する。Task 29）
@@ -383,6 +390,7 @@ export const useGameStore = defineStore('game', () => {
     guideText,
     gamePanelMode,
     effectiveSettings,
+    isButtonCheckEnabled,
     // Actions
     transitionToState,
     recordResult,

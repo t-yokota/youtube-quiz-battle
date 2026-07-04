@@ -290,7 +290,7 @@ const handleOverlayClick = (event: MouseEvent) => {
                   <input
                     type="checkbox"
                     class="seek-checkbox"
-                    :checked="settingsStore.buttonCheckEnabled"
+                    :checked="gameStore.isButtonCheckEnabled"
                     @change="handleButtonCheckToggle"
                   />
                   <span class="seek-label">ゲーム開始前のボタンチェック演出を行う</span>
