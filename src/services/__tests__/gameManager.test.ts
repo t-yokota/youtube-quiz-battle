@@ -89,6 +89,8 @@ function makePlayerMock(): YouTubePlayerManager {
     playVideo: vi.fn(),
     pauseVideo: vi.fn(),
     seekTo: vi.fn(),
+    mute: vi.fn(),
+    unMute: vi.fn(),
     getCurrentTime: vi.fn(() => 0),
     getDuration: vi.fn(() => 60),
     getPlayerState: vi.fn(() => YouTubePlayerState.PLAYING),
