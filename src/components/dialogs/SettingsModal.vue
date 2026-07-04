@@ -247,7 +247,7 @@ const handleOverlayClick = (event: MouseEvent) => {
                     max="4"
                     :value="volumeLevel"
                     :style="{
-                      background: `linear-gradient(to right, var(--color-info-400) 0%, var(--color-info-400) ${(volumeLevel / 4) * 100}%, var(--color-stage-700) ${(volumeLevel / 4) * 100}%, var(--color-stage-700) 100%)`,
+                      background: `linear-gradient(to right, var(--color-gold-400) 0%, var(--color-gold-400) ${(volumeLevel / 4) * 100}%, #3a4569 ${(volumeLevel / 4) * 100}%, #3a4569 100%)`,
                     }"
                     class="slider"
                     @input="handleVolumeChange(($event.target as HTMLInputElement).valueAsNumber)"
@@ -260,13 +260,13 @@ const handleOverlayClick = (event: MouseEvent) => {
             <!-- Seek Settings -->
             <section class="settings-section">
               <div class="setting-row">
-                <span class="setting-label">シークバーでの動画移動を許可する</span>
+                <span class="setting-label">シークバーの操作を許可する</span>
                 <button
                   type="button"
                   class="ui-switch"
                   role="switch"
                   :aria-checked="isSeekAllowed"
-                  aria-label="シークバーでの動画移動を許可する"
+                  aria-label="シークバーの操作を許可する"
                   @click="handleSeekToggle"
                 >
                   <span class="ui-switch-track" :class="{ on: isSeekAllowed }">
@@ -283,13 +283,13 @@ const handleOverlayClick = (event: MouseEvent) => {
             <!-- Button Check Settings -->
             <section class="settings-section">
               <div class="setting-row">
-                <span class="setting-label">ゲーム開始前のボタンチェック演出を行う</span>
+                <span class="setting-label">ボタンチェック演出を行う</span>
                 <button
                   type="button"
                   class="ui-switch"
                   role="switch"
                   :aria-checked="gameStore.isButtonCheckEnabled"
-                  aria-label="ゲーム開始前のボタンチェック演出を行う"
+                  aria-label="ボタンチェック演出を行う"
                   @click="handleButtonCheckToggle"
                 >
                   <span class="ui-switch-track" :class="{ on: gameStore.isButtonCheckEnabled }">
@@ -301,7 +301,7 @@ const handleOverlayClick = (event: MouseEvent) => {
                 </button>
               </div>
               <p class="seek-description">
-                OFF にすると、開始ボタンは効果音なしの再生ボタンとして動作します。
+                クイズを始める（動画の再生を開始する）前にボタンチェックの演出を行います。
               </p>
             </section>
 
@@ -338,17 +338,17 @@ const handleOverlayClick = (event: MouseEvent) => {
                 <span class="seek-label">正解発表ジャンプ</span>
                 <button
                   type="button"
-                  class="debug-toggle"
+                  class="ui-switch"
                   role="switch"
                   :aria-checked="effectiveJumpToRevealPeriod"
                   aria-label="正解発表ジャンプ"
                   @click="handleJumpToRevealPeriodOverrideToggle"
                 >
-                  <span class="debug-toggle-track" :class="{ on: effectiveJumpToRevealPeriod }">
-                    <span class="debug-toggle-state">{{
+                  <span class="ui-switch-track" :class="{ on: effectiveJumpToRevealPeriod }">
+                    <span class="ui-switch-state">{{
                       effectiveJumpToRevealPeriod ? 'ON' : 'OFF'
                     }}</span>
-                    <span class="debug-toggle-knob"></span>
+                    <span class="ui-switch-knob"></span>
                   </span>
                 </button>
               </div>
@@ -357,20 +357,20 @@ const handleOverlayClick = (event: MouseEvent) => {
                 <span class="seek-label">解答中の動画非表示</span>
                 <button
                   type="button"
-                  class="debug-toggle"
+                  class="ui-switch"
                   role="switch"
                   :aria-checked="effectiveHideVideoPlayerDuringAnswer"
                   aria-label="解答中の動画非表示"
                   @click="handleHideVideoPlayerDuringAnswerOverrideToggle"
                 >
                   <span
-                    class="debug-toggle-track"
+                    class="ui-switch-track"
                     :class="{ on: effectiveHideVideoPlayerDuringAnswer }"
                   >
-                    <span class="debug-toggle-state">{{
+                    <span class="ui-switch-state">{{
                       effectiveHideVideoPlayerDuringAnswer ? 'ON' : 'OFF'
                     }}</span>
-                    <span class="debug-toggle-knob"></span>
+                    <span class="ui-switch-knob"></span>
                   </span>
                 </button>
               </div>
@@ -555,7 +555,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--color-text-main);
 }
@@ -586,7 +586,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .ui-switch-track {
   position: relative;
-  width: 56px;
+  width: 60px;
   height: 26px;
   border-radius: 999px;
   background: var(--color-stage-700);
@@ -598,8 +598,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .ui-switch-track.on {
-  background: rgba(79, 140, 255, 0.22);
-  border-color: var(--color-info-400);
+  background: rgba(255, 197, 61, 0.22);
+  border-color: var(--color-gold-400);
 }
 
 .ui-switch-state {
@@ -618,7 +618,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .ui-switch-track.on .ui-switch-state {
-  color: var(--color-info-400);
+  color: var(--color-gold-400);
   /* ON: ノブが右なので文言は左側 */
   right: auto;
   left: 7px;
@@ -640,7 +640,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .ui-switch-track.on .ui-switch-knob {
   left: calc(100% - 20px - 3px);
-  background: var(--color-info-400);
+  background: var(--color-gold-400);
 }
 
 .volume-slider {
@@ -653,7 +653,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
-  color: var(--color-info-400);
+  color: var(--color-gold-400);
   transition: color 0.2s;
 }
 
@@ -695,7 +695,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-info-400);
+  background: var(--color-gold-400);
   cursor: pointer;
   transition: transform 0.2s;
 }
@@ -704,7 +704,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-info-400);
+  background: var(--color-gold-400);
   border: none;
   cursor: pointer;
   transition: transform 0.2s;
@@ -736,8 +736,8 @@ const handleOverlayClick = (event: MouseEvent) => {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  /* 行高を統一（数値入力 30px / トグル 44px の差で間隔がばらつかないように） */
-  min-height: 44px;
+  /* 行高を統一しつつ詰める（gap 8px と合わせた実効間隔を確保） */
+  min-height: 36px;
 }
 
 .debug-input {
@@ -754,76 +754,6 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .debug-input:disabled {
   opacity: 0.45;
-}
-
-/* トグルスイッチ（クイズ画面右下の BUTTON CHECK トグルと同型・px 版） */
-.debug-toggle {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.debug-toggle-track {
-  position: relative;
-  width: 56px;
-  height: 26px;
-  border-radius: 999px;
-  background: var(--color-stage-700);
-  border: 1px solid var(--color-line);
-  transition:
-    background var(--duration-base),
-    border-color var(--duration-base);
-}
-
-.debug-toggle-track.on {
-  background: rgba(255, 197, 61, 0.22);
-  border-color: var(--color-gold-400);
-}
-
-.debug-toggle-state {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  font-size: 10px;
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--color-text-dim);
-  /* OFF: ノブが左なので文言は右側 */
-  right: 7px;
-}
-
-.debug-toggle-track.on .debug-toggle-state {
-  color: var(--color-gold-400);
-  /* ON: ノブが右なので文言は左側 */
-  right: auto;
-  left: 7px;
-}
-
-.debug-toggle-knob {
-  position: absolute;
-  top: 50%;
-  left: 3px;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--color-text-dim);
-  transition:
-    left var(--duration-base) var(--ease-brand),
-    background var(--duration-base);
-}
-
-.debug-toggle-track.on .debug-toggle-knob {
-  left: calc(100% - 20px - 3px);
-  background: var(--color-gold-400);
 }
 
 .debug-reset-button {
