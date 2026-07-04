@@ -19,7 +19,7 @@ import { extractVideoIdFromUrl, loadQuizData } from './services/quizDataLoader'
 import { createGameManager, type GameManager } from './services/gameManager'
 import { createAudioManager } from './services/audioManager'
 import { getErrorMessage } from './services/errorHandler'
-import { MAX_VOLUME_LEVEL, SOUND_TYPE } from './constants/audio'
+import { MAX_VOLUME_LEVEL } from './constants/audio'
 import { useGameLoop } from './composables/useGameLoop'
 import { useOrientationGuard } from './composables/useOrientationGuard'
 import { GameState } from './types'
@@ -158,12 +158,9 @@ function handleKeyDown(e: KeyboardEvent) {
 const isGateDismissed = ref(false)
 
 function handleGateTap() {
-  // 動画を一瞬実再生して停止（iOS に再生実績を作る）→ AudioContext をアンロック →
-  // 効果音を試し鳴らし（iOS ではこの 1 音は鳴らない可能性が高いが、
-  // 本命は以降のボタンチェック音）
+  // 動画を一瞬実再生して停止（iOS に再生実績を作る）→ AudioContext をアンロック
   gameManager.value?.warmupVideoPlayback()
   audioManager.unlock()
-  audioManager.playSound(SOUND_TYPE.BUTTON)
   isGateDismissed.value = true
 }
 

@@ -10,6 +10,18 @@ export interface AudioManagerOptions {
 }
 
 /**
+ * iOS（iPadOS 含む）判定
+ * iOS の Web Audio はサイレントスイッチで消音されるが、HTMLAudio（メディア要素）は
+ * 鳴るため、iOS では HTMLAudio 経路を優先する
+ */
+function isIOS(): boolean {
+  return (
+    /iP(hone|od|ad)/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  )
+}
+
+/**
  * Web Audio API のコンストラクタ型
  * Safari 等の旧実装向けに webkitAudioContext を許容する
  */
@@ -54,7 +66,7 @@ export class AudioManager {
       const AudioContextCtor =
         window.AudioContext ?? (window as WindowWithWebkitAudioContext).webkitAudioContext
 
-      if (AudioContextCtor) {
+      if (AudioContextCtor && !isIOS()) {
         await this.initWebAudio(AudioContextCtor)
         this.useWebAudio = true
       } else {
@@ -237,6 +249,24 @@ export class AudioManager {
    * 無音バッファを 1 サンプル再生し音声セッションを確実に活性化する
    */
   unlock(): void {
+    // HTMLAudio 経路: ジェスチャ内で一度 play→即 pause して要素の再生を解放する
+    if (!this.useWebAudio && this.htmlAudio) {
+      const audio = this.htmlAudio
+      audio.muted = true
+      void audio
+        .play()
+        .then(() => {
+          audio.pause()
+          audio.currentTime = 0
+          audio.muted = false
+        })
+        .catch((error) => {
+          audio.muted = false
+          logger.warn('[AudioManager] HTMLAudio unlock failed:', error)
+        })
+      return
+    }
+
     const context = this.ensureRunningContext()
     if (!context) return
     try {
