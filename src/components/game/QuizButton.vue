@@ -95,6 +95,11 @@ const handlePress = () => {
     emit('press')
   }
 }
+
+// ボタンチェック演出のトグル（設定画面と同じ settingsStore を切り替える）
+const handleButtonCheckToggle = () => {
+  settingsStore.setButtonCheckEnabled(!settingsStore.buttonCheckEnabled)
+}
 </script>
 
 <template>
@@ -114,10 +119,108 @@ const handlePress = () => {
         <template v-else>{{ buttonLabel }}</template>
       </button>
     </div>
+
+    <!-- ボタンチェック演出のトグル（画面右下） -->
+    <button
+      type="button"
+      class="check-toggle"
+      role="switch"
+      :aria-checked="settingsStore.buttonCheckEnabled"
+      aria-label="ボタンチェック演出"
+      @click="handleButtonCheckToggle"
+    >
+      <span class="check-toggle-label">BUTTON CHECK</span>
+      <span class="check-toggle-track" :class="{ on: settingsStore.buttonCheckEnabled }">
+        <span class="check-toggle-state">{{
+          settingsStore.buttonCheckEnabled ? 'ON' : 'OFF'
+        }}</span>
+        <span class="check-toggle-knob"></span>
+      </span>
+    </button>
   </section>
 </template>
 
 <style scoped>
+/* ボタンチェック演出のトグル（コンテナ右下） */
+.check-toggle {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.5rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  /* タッチターゲット確保 */
+  min-height: max(44px, 2.75rem);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.check-toggle-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--color-text-dim);
+}
+
+.check-toggle-track {
+  position: relative;
+  width: 2.625rem;
+  height: 1.25rem;
+  border-radius: 62.4375rem;
+  background: var(--color-stage-700);
+  border: 1px solid var(--color-line);
+  transition:
+    background var(--duration-base),
+    border-color var(--duration-base);
+}
+
+.check-toggle-track.on {
+  background: rgba(255, 197, 61, 0.22);
+  border-color: var(--color-gold-400);
+}
+
+.check-toggle-state {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-text-dim);
+  /* OFF: ノブが左なので文言は右側 */
+  right: 0.3125rem;
+}
+
+.check-toggle-track.on .check-toggle-state {
+  color: var(--color-gold-400);
+  /* ON: ノブが右なので文言は左側 */
+  right: auto;
+  left: 0.3125rem;
+}
+
+.check-toggle-knob {
+  position: absolute;
+  top: 50%;
+  left: 0.125rem;
+  transform: translateY(-50%);
+  width: 0.9375rem;
+  height: 0.9375rem;
+  border-radius: 50%;
+  background: var(--color-text-dim);
+  transition:
+    left var(--duration-base) var(--ease-brand),
+    background var(--duration-base);
+}
+
+.check-toggle-track.on .check-toggle-knob {
+  left: calc(100% - 0.9375rem - 0.125rem);
+  background: var(--color-gold-400);
+}
+
 /* ボタンチェック中の 2 行ラベル */
 .check-label {
   display: block;
