@@ -1026,6 +1026,33 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     expect(player.playVideo).toHaveBeenCalledTimes(1)
   })
 
+  it('warmupVideoPlayback: 一瞬再生して停止・先頭へ戻し、READY のまま（TALKING に遷移しない）', () => {
+    vi.useFakeTimers()
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+
+    let stateChangeCallback: ((state: number) => void) | null = null
+    player.onStateChange = vi.fn((cb: (state: number) => void) => {
+      stateChangeCallback = cb
+    })
+    gm.initializeExternalPauseHandling()
+    store.transitionToState(GameState.READY)
+
+    gm.warmupVideoPlayback()
+    expect(player.playVideo).toHaveBeenCalledTimes(1)
+
+    // ウォームアップ中の PLAYING イベントは無視される（pause も遷移もしない）
+    stateChangeCallback!(1) // PLAYING
+    expect(store.currentState).toBe(GameState.READY)
+
+    // ウォームアップ終了: 停止 + 先頭へ
+    vi.advanceTimersByTime(500)
+    expect(player.pauseVideo).toHaveBeenCalled()
+    expect(player.seekTo).toHaveBeenCalledWith(0)
+    expect(store.currentState).toBe(GameState.READY)
+    vi.useRealTimers()
+  })
+
   it('DISABLED状態では押下できない', () => {
     const player = makePlayerMock()
     const { gm, store } = makeGameManager(makeQuizData(), player)

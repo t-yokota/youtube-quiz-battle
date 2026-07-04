@@ -63,6 +63,13 @@ export const BUTTON_CHECK_LABEL_HOLD_MS = 0
 export const VIDEO_START_DELAY_MS = 1200
 
 /**
+ * 開始ゲートでの動画ウォームアップ再生時間（ミリ秒）
+ * ゲートタップ内で playVideo し、この時間だけ実再生してから停止 + 先頭へ戻す
+ * （iOS にユーザー操作由来の再生実績を作り、以後の遅延 playVideo を許可させる）
+ */
+export const GATE_WARMUP_PLAY_MS = 500
+
+/**
  * リプレイ直後に READY で PLAYING イベントを無視する時間（ミリ秒）
  * seekTo(0) の直後に YouTube が一瞬 PLAYING を発火することがあり、
  * これを「プレイヤーからの直接再生」と誤認して TALKING へ遷移するのを防ぐ

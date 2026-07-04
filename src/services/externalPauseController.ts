@@ -40,6 +40,10 @@ export class ExternalPauseController {
   // リプレイ直後の spurious PLAYING（seekTo(0) 起因）を無視する期限
   private readyPlaySuppressUntil: number = 0
 
+  // 開始ゲートのウォームアップ再生中は READY の PLAYING を単に無視する期限
+  // （リプレイ用の抑止と違い pause もしない — 一瞬の実再生を殺さないため）
+  private gateWarmupUntil: number = 0
+
   // 登録済みイベントリスナーの参照（destroy() で解除するために保持）
   private visibilityChangeHandler: (() => void) | null = null
   private pageHideHandler: (() => void) | null = null
@@ -280,6 +284,10 @@ export class ExternalPauseController {
         // READY中にプレイヤーから直接再生された場合はボタンチェックを封じて TALKING へ
         // （再生中にボタンチェックが走ると問題開始と衝突して状態不整合になるため）
         if (!this.externalPaused && this.gameStore.currentState === GameState.READY) {
+          // 開始ゲートのウォームアップ再生中は何もしない（意図した一瞬の再生）
+          if (performance.now() < this.gateWarmupUntil) {
+            return
+          }
           // リプレイの seekTo(0) 起因の spurious PLAYING は無視して停止状態を復元する
           if (performance.now() < this.readyPlaySuppressUntil) {
             logger.log('[ExternalPauseController] Suppressed spurious PLAYING after replay')
@@ -369,11 +377,19 @@ export class ExternalPauseController {
   }
 
   /**
-   * READY 中の spurious PLAYING を一定時間無視する
-   * （iOS 向けの priming = タップ中の play→即 pause が発火させるイベント対策）
+   * READY 中の spurious PLAYING を一定時間無視する（リプレイの seekTo(0) 対策）
    */
   suppressSpuriousReadyPlay(): void {
     this.readyPlaySuppressUntil = performance.now() + READY_PLAY_SUPPRESS_MS
+  }
+
+  /**
+   * 開始ゲートのウォームアップ再生ウィンドウを開始する
+   * この間の READY の PLAYING は無視される（pause も遷移もしない）
+   * @param durationMs ウォームアップ再生時間 + 余裕
+   */
+  beginGateWarmup(durationMs: number): void {
+    this.gateWarmupUntil = performance.now() + durationMs
   }
 
   /**

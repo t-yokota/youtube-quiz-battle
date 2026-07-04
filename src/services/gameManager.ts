@@ -6,6 +6,8 @@ import {
   BUTTON_PUSHED_DURATION_MS,
   BUTTON_CHECK_RELEASE_MS,
   VIDEO_START_DELAY_MS,
+  GATE_WARMUP_PLAY_MS,
+  READY_PLAY_SUPPRESS_MS,
 } from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
 import type { useSettingsStore } from '@/stores/settingsStore'
@@ -115,6 +117,23 @@ export class GameManager {
    */
   handleAnswerSubmit(answer: string): void {
     this.answerFlow.handleAnswerSubmit(answer)
+  }
+
+  /**
+   * 開始ゲートのタップ内から呼ぶ動画ウォームアップ:
+   * 一瞬（GATE_WARMUP_PLAY_MS）実再生してから停止し先頭へ戻す。
+   * iOS にユーザー操作由来の再生実績を作り、ボタンチェック後の遅延 playVideo を
+   * 許可させる。ウォームアップ中の PLAYING は無視され TALKING へは遷移しない
+   */
+  warmupVideoPlayback(): void {
+    this.externalPause.beginGateWarmup(GATE_WARMUP_PLAY_MS + READY_PLAY_SUPPRESS_MS)
+    this.playerControl.playVideo()
+    setTimeout(() => {
+      // ウォームアップ終了: 停止して先頭へ戻す（READY のままゲーム開始を待つ）
+      this.playerControl.pauseVideo()
+      this.playerControl.seekTo(0)
+      this.timeManager.resetTimeValues()
+    }, GATE_WARMUP_PLAY_MS)
   }
 
   /**
