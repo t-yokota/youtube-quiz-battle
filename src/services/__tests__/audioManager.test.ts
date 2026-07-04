@@ -289,51 +289,42 @@ describe('AudioManager: HTML Audio フォールバック経路', () => {
     vi.unstubAllGlobals()
   })
 
-  it('正常系: AudioContext 未定義の場合 HTML Audio にフォールバックして再生できる', async () => {
+  it('正常系: AudioContext 未定義の場合 HTML Audio（音別要素）にフォールバックして再生できる', async () => {
     const manager = new AudioManager()
     await manager.init()
 
     expect(manager.isSoundSupported()).toBe(true)
+    // 音の種類ぶんの要素が生成される
+    expect(audioElementInstances).toHaveLength(3)
 
     manager.playSound(SOUND_TYPE.CORRECT)
 
-    const audio = audioElementInstances[audioElementInstances.length - 1]
-    const segment = DEFAULT_AUDIO_SPRITE.sprite[SOUND_TYPE.CORRECT]
-    expect(audio.currentTime).toBe(segment.start)
+    // CORRECT 用の要素（2番目）が頭から再生される
+    const audio = audioElementInstances[1]
+    expect(audio.currentTime).toBe(0)
     expect(audio.play).toHaveBeenCalled()
   })
 
-  it('正常系: HTML Audio 再生は再生時間経過後に自動停止する', async () => {
-    const manager = new AudioManager()
-    await manager.init()
-
-    manager.playSound(SOUND_TYPE.BUTTON)
-    const audio = audioElementInstances[audioElementInstances.length - 1]
-
-    const segment = DEFAULT_AUDIO_SPRITE.sprite[SOUND_TYPE.BUTTON]
-    vi.advanceTimersByTime(segment.duration * 1000)
-
-    expect(audio.pause).toHaveBeenCalled()
-  })
-
-  it('正常系: HTML Audio 経路で stopSound を呼ぶと即座に停止しタイマーも解除される', async () => {
+  it('正常系: HTML Audio 経路で stopSound を呼ぶと全要素が停止する', async () => {
     const manager = new AudioManager()
     await manager.init()
     manager.playSound(SOUND_TYPE.BUTTON)
-    const audio = audioElementInstances[audioElementInstances.length - 1]
 
     manager.stopSound()
 
-    expect(audio.pause).toHaveBeenCalled()
+    for (const audio of audioElementInstances) {
+      expect(audio.pause).toHaveBeenCalled()
+    }
   })
 
   it('正常系: setVolume は HTML Audio の volume にも反映される', async () => {
     const manager = new AudioManager()
     await manager.init()
-    const audio = audioElementInstances[audioElementInstances.length - 1]
 
     manager.setVolume(0.3)
 
-    expect(audio.volume).toBe(0.3)
+    for (const audio of audioElementInstances) {
+      expect(audio.volume).toBe(0.3)
+    }
   })
 })

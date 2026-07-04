@@ -24,6 +24,15 @@ export const DEFAULT_AUDIO_SPRITE = {
 }
 
 /**
+ * 効果音の個別ファイル（HTMLAudio 経路用。スプライトのシーク遅延を避けるため音ごとに分割）
+ */
+export const SOUND_FILES: Record<SOUND_TYPE, string> = {
+  [SOUND_TYPE.BUTTON]: `${import.meta.env.BASE_URL}assets/sounds/button.wav`,
+  [SOUND_TYPE.CORRECT]: `${import.meta.env.BASE_URL}assets/sounds/correct.wav`,
+  [SOUND_TYPE.INCORRECT]: `${import.meta.env.BASE_URL}assets/sounds/incorrect.wav`,
+}
+
+/**
  * 設定情報（soundEnabled / volumeLevel）を保存する LocalStorage キー
  */
 export const LOCALSTORAGE_KEY_SETTINGS = 'yqb-settings'

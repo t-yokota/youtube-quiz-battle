@@ -1,6 +1,6 @@
 // 音声管理サービス
 // Web Audio API を主として使用し、AudioContext 未対応環境では HTML Audio にフォールバックする
-import { SOUND_TYPE, DEFAULT_AUDIO_SPRITE } from '@/constants/audio'
+import { SOUND_TYPE, DEFAULT_AUDIO_SPRITE, SOUND_FILES } from '@/constants/audio'
 import { logger } from '@/utils/logger'
 
 type SpriteDefinition = typeof DEFAULT_AUDIO_SPRITE
@@ -46,9 +46,8 @@ export class AudioManager {
   private gainNode: GainNode | null = null
   private currentSource: AudioBufferSourceNode | null = null
 
-  // HTML Audio フォールバック用
-  private htmlAudio: HTMLAudioElement | null = null
-  private htmlAudioStopTimer: number | null = null
+  // HTML Audio 経路用（音ごとの個別要素。シークなしで頭から再生するため遅延がない）
+  private htmlAudios: Partial<Record<SOUND_TYPE, HTMLAudioElement>> = {}
 
   private useWebAudio = false
   private initialized = false
@@ -102,9 +101,12 @@ export class AudioManager {
   }
 
   private initHtmlAudioFallback(): void {
-    const audio = new Audio(this.sprite.src)
-    audio.volume = this.currentGainValue()
-    this.htmlAudio = audio
+    for (const type of Object.values(SOUND_TYPE)) {
+      const audio = new Audio(SOUND_FILES[type])
+      audio.preload = 'auto'
+      audio.volume = this.currentGainValue()
+      this.htmlAudios[type] = audio
+    }
   }
 
   /**
@@ -180,19 +182,14 @@ export class AudioManager {
   }
 
   private playWithHtmlAudio(type: SOUND_TYPE): void {
-    if (!this.htmlAudio) return
+    const audio = this.htmlAudios[type]
+    if (!audio) return
 
-    const segment = this.sprite.sprite[type]
-    const audio = this.htmlAudio
-    audio.currentTime = segment.start
+    // 音ごとの個別要素を頭から再生（シーク・停止タイマー不要）
+    audio.currentTime = 0
     void audio.play().catch((error) => {
       logger.warn('[AudioManager] HTMLAudio play failed:', error)
     })
-
-    this.htmlAudioStopTimer = window.setTimeout(() => {
-      audio.pause()
-      this.htmlAudioStopTimer = null
-    }, segment.duration * 1000)
   }
 
   /**
@@ -210,13 +207,8 @@ export class AudioManager {
       this.currentSource = null
     }
 
-    if (this.htmlAudioStopTimer !== null) {
-      window.clearTimeout(this.htmlAudioStopTimer)
-      this.htmlAudioStopTimer = null
-    }
-
-    if (this.htmlAudio) {
-      this.htmlAudio.pause()
+    for (const audio of Object.values(this.htmlAudios)) {
+      audio.pause()
     }
   }
 
@@ -249,21 +241,16 @@ export class AudioManager {
    * 無音バッファを 1 サンプル再生し音声セッションを確実に活性化する
    */
   unlock(): void {
-    // HTMLAudio 経路: ジェスチャ内で一度 play→即 pause して要素の再生を解放する
-    if (!this.useWebAudio && this.htmlAudio) {
-      const audio = this.htmlAudio
-      audio.muted = true
-      void audio
-        .play()
-        .then(() => {
-          audio.pause()
-          audio.currentTime = 0
-          audio.muted = false
-        })
-        .catch((error) => {
-          audio.muted = false
+    // HTMLAudio 経路: ジェスチャ内で各要素の play を発行し同期で即 pause して解放する
+    // （promise 完了を待つと iOS で音が一瞬漏れる）
+    if (!this.useWebAudio) {
+      for (const audio of Object.values(this.htmlAudios)) {
+        void audio.play().catch((error) => {
           logger.warn('[AudioManager] HTMLAudio unlock failed:', error)
         })
+        audio.pause()
+        audio.currentTime = 0
+      }
       return
     }
 
@@ -292,8 +279,8 @@ export class AudioManager {
     if (this.gainNode) {
       this.gainNode.gain.value = this.currentGainValue()
     }
-    if (this.htmlAudio) {
-      this.htmlAudio.volume = this.currentGainValue()
+    for (const audio of Object.values(this.htmlAudios)) {
+      audio.volume = this.currentGainValue()
     }
   }
 }
