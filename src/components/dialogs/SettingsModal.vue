@@ -610,8 +610,6 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .ui-switch-track.on .ui-switch-knob {
   left: calc(100% - 20px - 3px);
-  /* ベタ gold の上で視認できる暗色に */
-  background: var(--color-stage-900);
 }
 
 .volume-slider {
