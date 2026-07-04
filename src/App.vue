@@ -141,7 +141,7 @@ function handleButtonPress() {
     const input = document.querySelector<HTMLInputElement>('.answer-input')
     if (input) {
       input.disabled = false
-      input.focus()
+      input.focus({ preventScroll: true })
     }
   }
   gameManager.value?.handleButtonPress()
@@ -154,14 +154,19 @@ function handleKeyDown(e: KeyboardEvent) {
   handleButtonPress()
 }
 
-// iOS: 最初のユーザー操作で AudioContext をアンロックする（1 回だけ）
-function unlockAudioOnce() {
+// 開始ゲート（音声許諾 + メディア priming）。READY 到達後に表示し、タップで解除する
+const isGateDismissed = ref(false)
+
+function handleGateTap() {
+  // 順序が重要: 先に動画の priming（音声セッションを一度動画に渡して即返す）、
+  // その後で AudioContext を作り直してアンロックする（以後の効果音が頭から鳴る）
+  gameManager.value?.primeMediaPlayback()
   audioManager.unlock()
+  isGateDismissed.value = true
 }
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
-  window.addEventListener('pointerdown', unlockAudioOnce, { once: true })
 })
 
 // hideVideoPlayerDuringAnswer=true の場合、ANSWERING 中は動画を visibility で隠す（Task 20-4）
@@ -179,6 +184,16 @@ const isTouchDevice = window.matchMedia('(pointer: coarse)').matches
 const shouldCollapseForKeyboard = computed(
   () => isTouchDevice && gameStore.currentState === GameState.ANSWERING,
 )
+
+// キーボード表示に伴う iOS の自動スクロールを打ち消す（解答エリアの押し出し防止）
+watch(shouldCollapseForKeyboard, (collapsed) => {
+  if (!collapsed) return
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0)
+    const main = document.querySelector('.main-content')
+    if (main) main.scrollTop = 0
+  })
+})
 
 // GamePanel 解答送信 → GameManager に委譲
 function handleAnswerSubmit(answer: string) {
@@ -295,6 +310,18 @@ onUnmounted(() => {
       :show-close="false"
       @action="handleErrorAction"
     />
+
+    <!-- 開始ゲート: 音声許諾 + メディア priming をユーザー操作内で行う -->
+    <button
+      v-if="!isGateDismissed && gameStore.currentState === GameState.READY"
+      type="button"
+      class="start-gate"
+      @click="handleGateTap"
+    >
+      <span class="start-gate-title">YOUTUBE <em>QUIZ BATTLE</em></span>
+      <span class="start-gate-action">タップしてはじめる</span>
+      <span class="start-gate-note">効果音と動画を有効にします</span>
+    </button>
   </div>
 </template>
 
@@ -318,6 +345,57 @@ onUnmounted(() => {
 }
 
 /* Main Content（wireframe: 各セクションはフルブリードで密着・余白は game-ui のみ） */
+/* 開始ゲート（フルスクリーン。タップで音声許諾 + priming） */
+.start-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-main);
+  background:
+    radial-gradient(80% 55% at 50% 60%, rgba(255, 197, 61, 0.1) 0%, transparent 65%),
+    linear-gradient(180deg, var(--color-stage-900) 0%, #0d1226 60%, #0a0e1d 100%);
+}
+
+.start-gate-title {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.start-gate-title em {
+  font-style: normal;
+  color: var(--color-gold-400);
+}
+
+.start-gate-action {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-gold-400);
+  animation: gate-blink 1.6s ease-in-out infinite;
+}
+
+.start-gate-note {
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+}
+
+@keyframes gate-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* ANSWERING 中の動画非表示（高さ・iframe を保持したまま見えなくする） */
 .player-hidden {
   visibility: hidden;

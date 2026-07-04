@@ -118,6 +118,18 @@ export class GameManager {
   }
 
   /**
+   * メディア再生の priming（開始ゲートのタップ内から呼ぶ）
+   * iOS ではユーザー操作外の play() がブロックされるため、ジェスチャ内で
+   * play→即 pause して媒体を活性化し、以後の遅延 playVideo を許可させる。
+   * priming が発火させる spurious PLAYING は抑止ウィンドウで無視する
+   */
+  primeMediaPlayback(): void {
+    this.externalPause.suppressSpuriousReadyPlay()
+    this.playerControl.playVideo()
+    this.playerControl.pauseVideo()
+  }
+
+  /**
    * ボタン押下処理
    * QuizButton の press イベントから App 経由で呼び出される
    * ボタン状態遷移・ゲーム状態遷移・動画制御を統合的に処理する
@@ -137,18 +149,15 @@ export class GameManager {
       return
     }
 
-    // ボタン押下音
-    this.audioManager?.playSound(SOUND_TYPE.BUTTON)
-
-    // iOS 対策の priming: ユーザー操作外の play() はブロックされるため、
-    // タップの同期処理内で play→即 pause してメディア再生を活性化しておく
-    // （これでボタンチェック後の遅延 playVideo が許可される）。
-    // priming が発火させる spurious PLAYING は抑止ウィンドウで無視する
-    if (stateAtPress === GameState.READY) {
-      this.externalPause.suppressSpuriousReadyPlay()
-      this.playerControl.playVideo()
+    // 早押し: 動画停止と押下音はタップの同期処理内で行う
+    // （iOS では動画再生中に音を鳴らすと音声セッションに奪われて頭が切れるため、
+    //   旧版と同じく「先に動画を止めてから鳴らす」順序にする）
+    if (stateAtPress === GameState.QUESTIONING) {
       this.playerControl.pauseVideo()
     }
+
+    // ボタン押下音（READY はゲートの priming 済みで動画停止中、QUESTIONING は直前で停止済み）
+    this.audioManager?.playSound(SOUND_TYPE.BUTTON)
 
     // ボタン状態遷移: STANDBY -> PUSHED -> RELEASED
     this.gameStore.setButtonState(ButtonState.PUSHED)
@@ -177,13 +186,11 @@ export class GameManager {
           }, VIDEO_START_DELAY_MS)
         }, BUTTON_CHECK_RELEASE_MS)
       } else if (stateAtPress === GameState.QUESTIONING) {
-        // 早押し: ANSWERING状態へ遷移し、動画一時停止
+        // 早押し: ANSWERING状態へ遷移（動画は押下の同期処理で停止済み）
         // リトライ時は前回の不正解表示と入力内容をクリアしてから解答アクションに入る（Task 21-3）
         this.gameStore.clearAnswerResult()
         this.gameStore.updateAnswerInput('')
         this.gameStore.transitionToState(GameState.ANSWERING)
-        // 動画一時停止
-        this.playerControl.pauseVideo()
         // カウントダウンタイマー開始
         this.answerFlow.startAnswerCountdown()
       }
