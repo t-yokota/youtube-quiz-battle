@@ -173,7 +173,7 @@ onMounted(async () => {
   left: 0;
 }
 
-/* サムネイルマスク */
+/* サムネイルマスク（表示中は裏のプレイヤーへのタップも遮断する） */
 .thumbnail-mask {
   position: absolute;
   inset: 0;
@@ -182,7 +182,6 @@ onMounted(async () => {
   height: 100%;
   object-fit: cover;
   background: #000;
-  pointer-events: none;
 }
 
 /* YouTube iframe（YT.Playerが自動生成）のスタイル調整 */
