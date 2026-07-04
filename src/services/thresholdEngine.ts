@@ -140,6 +140,18 @@ export class ThresholdEngine {
   }
 
   /**
+   * 動画終端（ENDED）到達時の確定処理:
+   * 未消費の残り問題をすべてスキップ消費し、FINISHED 判定まで進める。
+   * 終端付近では getCurrentTime() や lastQuestion.endTime との大小関係が
+   * 信用できないため、時刻に依存せず ENDED イベントを終端シグナルとして扱う
+   */
+  finalizeAtVideoEnd(): void {
+    const lastQuestion = this.quizData.questions[this.quizData.questions.length - 1]
+    // 全区間を対象にした前方シーク消費として処理する（既存の分岐・記録ガードを再利用）
+    this.consumeQuestionsBySeek(Number.NEGATIVE_INFINITY, lastQuestion.endTime)
+  }
+
+  /**
    * resetGame 用: 全 consumed を破棄
    */
   resetAll(): void {

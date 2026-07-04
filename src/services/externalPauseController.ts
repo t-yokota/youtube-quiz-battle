@@ -242,14 +242,18 @@ export class ExternalPauseController {
       // 内部操作による状態変化は除外
       if (this.playerControl.isInternalAction()) return
 
-      // 動画末尾（ENDED）に到達した場合: シーク操作の user pause が残っていると
-      // PLAYING が二度と来ず解除不能になるため、External Pause を解除して
-      // 時間更新（シーク消費 → FINISHED 判定）を通す。再生はしない
+      // 動画末尾（ENDED）に到達した場合: External Pause を解除し、
+      // 未消費の残り問題をすべて確定させて FINISHED まで進める
+      // （終端では時刻ベースのシーク検出が信用できないため、イベントで確定する）
       if (state === YouTubePlayerState.ENDED) {
         if (this.externalPaused) {
           logger.log('[ExternalPauseController] Video ended - clearing external pause')
           this.externalPaused = false
           this.externalPausedReason = null
+        }
+        if (this.gameStore.currentState !== GameState.FINISHED) {
+          logger.log('[ExternalPauseController] Video ended - finalizing remaining questions')
+          this.thresholdEngine.finalizeAtVideoEnd()
         }
         return
       }
