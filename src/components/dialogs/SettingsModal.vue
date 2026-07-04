@@ -63,7 +63,7 @@ const handleMaxAttemptsOverrideChange = (event: Event) => {
   input.value = effectiveMaxAttempts.value?.toString() ?? ''
 }
 
-// boolean 上書き: ON/OFF の 2 値セレクト。表示は実効値、変更で上書き設定
+// boolean 上書き: チェックボックストグル。表示は実効値、変更で上書き設定
 const effectiveJumpToRevealPeriod = computed(
   () =>
     debugStore.jumpToRevealPeriodOverride ??
@@ -78,13 +78,11 @@ const effectiveHideVideoPlayerDuringAnswer = computed(
 )
 
 const handleJumpToRevealPeriodOverrideChange = (event: Event) => {
-  debugStore.setJumpToRevealPeriodOverride((event.target as HTMLSelectElement).value === 'on')
+  debugStore.setJumpToRevealPeriodOverride((event.target as HTMLInputElement).checked)
 }
 
 const handleHideVideoPlayerDuringAnswerOverrideChange = (event: Event) => {
-  debugStore.setHideVideoPlayerDuringAnswerOverride(
-    (event.target as HTMLSelectElement).value === 'on',
-  )
+  debugStore.setHideVideoPlayerDuringAnswerOverride((event.target as HTMLInputElement).checked)
 }
 
 const handleResetOverrides = () => {
@@ -334,27 +332,27 @@ const handleOverlayClick = (event: MouseEvent) => {
               </div>
 
               <div class="debug-row">
-                <span class="seek-label">正解発表ジャンプ</span>
-                <select
-                  class="debug-select"
-                  :value="effectiveJumpToRevealPeriod ? 'on' : 'off'"
-                  @change="handleJumpToRevealPeriodOverrideChange"
-                >
-                  <option value="on">ON</option>
-                  <option value="off">OFF</option>
-                </select>
+                <label class="seek-toggle">
+                  <input
+                    type="checkbox"
+                    class="seek-checkbox"
+                    :checked="effectiveJumpToRevealPeriod"
+                    @change="handleJumpToRevealPeriodOverrideChange"
+                  />
+                  <span class="seek-label">正解発表ジャンプ</span>
+                </label>
               </div>
 
               <div class="debug-row">
-                <span class="seek-label">解答中の動画非表示</span>
-                <select
-                  class="debug-select"
-                  :value="effectiveHideVideoPlayerDuringAnswer ? 'on' : 'off'"
-                  @change="handleHideVideoPlayerDuringAnswerOverrideChange"
-                >
-                  <option value="on">ON</option>
-                  <option value="off">OFF</option>
-                </select>
+                <label class="seek-toggle">
+                  <input
+                    type="checkbox"
+                    class="seek-checkbox"
+                    :checked="effectiveHideVideoPlayerDuringAnswer"
+                    @change="handleHideVideoPlayerDuringAnswerOverrideChange"
+                  />
+                  <span class="seek-label">解答中の動画非表示</span>
+                </label>
               </div>
 
               <button type="button" class="debug-reset-button" @click="handleResetOverrides">
@@ -686,17 +684,6 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .debug-input:disabled {
   opacity: 0.45;
-}
-
-.debug-select {
-  min-height: 44px;
-  padding: 0 8px;
-  font-size: 14px;
-  color: var(--color-text-main);
-  background: var(--color-stage-700);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
-  cursor: pointer;
 }
 
 .debug-reset-button {
