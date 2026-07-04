@@ -609,6 +609,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .ui-switch-track.on .ui-switch-knob {
   left: calc(100% - 20px - 3px);
+  background: var(--color-gold-400);
 }
 
 .volume-slider {
