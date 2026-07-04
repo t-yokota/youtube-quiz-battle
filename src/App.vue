@@ -234,10 +234,10 @@ onUnmounted(() => {
 
         <div class="game-ui">
           <GamePanel @submit="handleAnswerSubmit" />
-          <!-- 動画を畳んだ分の高さを補い、ボタンの画面上の位置を保つ（Task 22-1 改定） -->
-          <div v-if="shouldCollapseForKeyboard" class="keyboard-spacer" aria-hidden="true"></div>
+          <!-- 動画を畳んだ分の高さを margin で補い、ボタンの画面上の位置を保つ（Task 22-1 改定） -->
           <QuizButton
             v-if="gameStore.isButtonVisible"
+            :class="{ 'keyboard-offset': shouldCollapseForKeyboard }"
             :button-state="gameStore.buttonState"
             @press="handleButtonPress"
           />
@@ -307,11 +307,10 @@ onUnmounted(() => {
   visibility: hidden;
 }
 
-/* 動画を畳んだ分の高さ補填（フルブリード幅 × 9/16 = 動画の高さ相当）。
-   解答エリアを上部に出しつつ、下のボタン位置は動かさない */
-.keyboard-spacer {
-  flex-shrink: 0;
-  height: calc(100vw * 9 / 16);
+/* 動画を畳んだ分の高さ補填（フルブリード幅 × 9/16 + 下ボーダー 1px）。
+   margin 方式なら game-ui の gap 数が変わらず、ボタン位置が正確に保たれる */
+.keyboard-offset {
+  margin-top: calc(100vw * 9 / 16 + 1px);
 }
 
 .main-content {
