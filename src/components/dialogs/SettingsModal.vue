@@ -39,58 +39,40 @@ const handleDebugMenuToggle = () => {
   debugStore.setMenuVisible(!debugStore.isMenuVisible)
 }
 
-// 上書きチェックボックスの ON/OFF（チェック状態は override が null かどうかで判定）
-const isAnswerTimeLimitOverrideEnabled = computed(() => debugStore.answerTimeLimitOverride !== null)
-const isMaxAttemptsOverrideEnabled = computed(() => debugStore.maxAttemptsOverride !== null)
-const isJumpToRevealPeriodOverrideEnabled = computed(
-  () => debugStore.jumpToRevealPeriodOverride !== null,
-)
-const isHideVideoPlayerDuringAnswerOverrideEnabled = computed(
-  () => debugStore.hideVideoPlayerDuringAnswerOverride !== null,
-)
-
-const handleAnswerTimeLimitOverrideCheck = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked
-  debugStore.setAnswerTimeLimitOverride(
-    checked ? (gameStore.quizData?.settings.answerTimeLimit ?? DEBUG_ANSWER_TIME_LIMIT_MIN) : null,
-  )
+// 数値上書き: 空欄 = 上書きなし。確定（change = blur/Enter）時のみ反映し、
+// タイピング途中に clamp で丸められないようにする
+const handleAnswerTimeLimitOverrideChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  debugStore.setAnswerTimeLimitOverride(input.value === '' ? null : input.valueAsNumber)
+  // clamp 後の確定値を表示に反映
+  input.value = debugStore.answerTimeLimitOverride?.toString() ?? ''
 }
 
-const handleAnswerTimeLimitOverrideInput = (event: Event) => {
-  debugStore.setAnswerTimeLimitOverride((event.target as HTMLInputElement).valueAsNumber)
+const handleMaxAttemptsOverrideChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  debugStore.setMaxAttemptsOverride(input.value === '' ? null : input.valueAsNumber)
+  input.value = debugStore.maxAttemptsOverride?.toString() ?? ''
 }
 
-const handleMaxAttemptsOverrideCheck = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked
-  debugStore.setMaxAttemptsOverride(
-    checked ? (gameStore.quizData?.settings.maxAttempts ?? DEBUG_MAX_ATTEMPTS_MIN) : null,
-  )
-}
+// boolean 上書き: 3 値（データ値 / ON / OFF）のセレクトで表現する
+type OverrideSelectValue = 'unset' | 'on' | 'off'
 
-const handleMaxAttemptsOverrideInput = (event: Event) => {
-  debugStore.setMaxAttemptsOverride((event.target as HTMLInputElement).valueAsNumber)
-}
+const toSelectValue = (override: boolean | null): OverrideSelectValue =>
+  override === null ? 'unset' : override ? 'on' : 'off'
 
-const handleJumpToRevealPeriodOverrideCheck = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked
+const fromSelectValue = (value: string): boolean | null =>
+  value === 'unset' ? null : value === 'on'
+
+const handleJumpToRevealPeriodOverrideChange = (event: Event) => {
   debugStore.setJumpToRevealPeriodOverride(
-    checked ? (gameStore.quizData?.settings.jumpToRevealPeriod ?? false) : null,
+    fromSelectValue((event.target as HTMLSelectElement).value),
   )
 }
 
-const handleJumpToRevealPeriodOverrideToggle = (event: Event) => {
-  debugStore.setJumpToRevealPeriodOverride((event.target as HTMLInputElement).checked)
-}
-
-const handleHideVideoPlayerDuringAnswerOverrideCheck = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked
+const handleHideVideoPlayerDuringAnswerOverrideChange = (event: Event) => {
   debugStore.setHideVideoPlayerDuringAnswerOverride(
-    checked ? (gameStore.quizData?.settings.hideVideoPlayerDuringAnswer ?? false) : null,
+    fromSelectValue((event.target as HTMLSelectElement).value),
   )
-}
-
-const handleHideVideoPlayerDuringAnswerOverrideToggle = (event: Event) => {
-  debugStore.setHideVideoPlayerDuringAnswerOverride((event.target as HTMLInputElement).checked)
 }
 
 const handleResetOverrides = () => {
@@ -316,87 +298,57 @@ const handleOverlayClick = (event: MouseEvent) => {
               <p class="seek-description">クイズ設定を一時的に上書きします（リロードで解除）</p>
 
               <div class="debug-row">
-                <label class="seek-toggle">
-                  <input
-                    type="checkbox"
-                    class="seek-checkbox"
-                    :checked="isAnswerTimeLimitOverrideEnabled"
-                    @change="handleAnswerTimeLimitOverrideCheck"
-                  />
-                  <span class="seek-label">解答制限時間を上書きする</span>
-                </label>
+                <span class="seek-label">解答制限時間（秒）</span>
                 <input
                   type="number"
                   class="debug-input"
                   :min="DEBUG_ANSWER_TIME_LIMIT_MIN"
                   :max="DEBUG_ANSWER_TIME_LIMIT_MAX"
-                  :disabled="!isAnswerTimeLimitOverrideEnabled"
                   :placeholder="String(gameStore.quizData?.settings.answerTimeLimit ?? '')"
                   :value="debugStore.answerTimeLimitOverride ?? ''"
-                  @input="handleAnswerTimeLimitOverrideInput"
+                  @change="handleAnswerTimeLimitOverrideChange"
                 />
               </div>
 
               <div class="debug-row">
-                <label class="seek-toggle">
-                  <input
-                    type="checkbox"
-                    class="seek-checkbox"
-                    :checked="isMaxAttemptsOverrideEnabled"
-                    @change="handleMaxAttemptsOverrideCheck"
-                  />
-                  <span class="seek-label">解答回数を上書きする</span>
-                </label>
+                <span class="seek-label">解答回数</span>
                 <input
                   type="number"
                   class="debug-input"
                   :min="DEBUG_MAX_ATTEMPTS_MIN"
                   :max="DEBUG_MAX_ATTEMPTS_MAX"
-                  :disabled="!isMaxAttemptsOverrideEnabled"
                   :placeholder="String(gameStore.quizData?.settings.maxAttempts ?? '')"
                   :value="debugStore.maxAttemptsOverride ?? ''"
-                  @input="handleMaxAttemptsOverrideInput"
+                  @change="handleMaxAttemptsOverrideChange"
                 />
               </div>
 
-              <p class="seek-description">解答時間・解答回数は次の問題から反映</p>
+              <p class="seek-description">空欄 = 上書きなし。解答時間・解答回数は次の問題から反映</p>
 
               <div class="debug-row">
-                <label class="seek-toggle">
-                  <input
-                    type="checkbox"
-                    class="seek-checkbox"
-                    :checked="isJumpToRevealPeriodOverrideEnabled"
-                    @change="handleJumpToRevealPeriodOverrideCheck"
-                  />
-                  <span class="seek-label">正解発表ジャンプを上書きする</span>
-                </label>
-                <input
-                  type="checkbox"
-                  class="debug-input debug-input-toggle"
-                  :disabled="!isJumpToRevealPeriodOverrideEnabled"
-                  :checked="debugStore.jumpToRevealPeriodOverride ?? false"
-                  @change="handleJumpToRevealPeriodOverrideToggle"
-                />
+                <span class="seek-label">正解発表ジャンプ</span>
+                <select
+                  class="debug-select"
+                  :value="toSelectValue(debugStore.jumpToRevealPeriodOverride)"
+                  @change="handleJumpToRevealPeriodOverrideChange"
+                >
+                  <option value="unset">データ値</option>
+                  <option value="on">ON</option>
+                  <option value="off">OFF</option>
+                </select>
               </div>
 
               <div class="debug-row">
-                <label class="seek-toggle">
-                  <input
-                    type="checkbox"
-                    class="seek-checkbox"
-                    :checked="isHideVideoPlayerDuringAnswerOverrideEnabled"
-                    @change="handleHideVideoPlayerDuringAnswerOverrideCheck"
-                  />
-                  <span class="seek-label">解答中の動画非表示を上書きする</span>
-                </label>
-                <input
-                  type="checkbox"
-                  class="debug-input debug-input-toggle"
-                  :disabled="!isHideVideoPlayerDuringAnswerOverrideEnabled"
-                  :checked="debugStore.hideVideoPlayerDuringAnswerOverride ?? false"
-                  @change="handleHideVideoPlayerDuringAnswerOverrideToggle"
-                />
+                <span class="seek-label">解答中の動画非表示</span>
+                <select
+                  class="debug-select"
+                  :value="toSelectValue(debugStore.hideVideoPlayerDuringAnswerOverride)"
+                  @change="handleHideVideoPlayerDuringAnswerOverrideChange"
+                >
+                  <option value="unset">データ値</option>
+                  <option value="on">ON</option>
+                  <option value="off">OFF</option>
+                </select>
               </div>
 
               <button type="button" class="debug-reset-button" @click="handleResetOverrides">
@@ -730,17 +682,15 @@ const handleOverlayClick = (event: MouseEvent) => {
   opacity: 0.45;
 }
 
-.debug-input-toggle {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  accent-color: var(--color-gold-400);
+.debug-select {
+  min-height: 44px;
+  padding: 0 8px;
+  font-size: 14px;
+  color: var(--color-text-main);
+  background: var(--color-stage-700);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  text-align: initial;
-}
-
-.debug-input-toggle:disabled {
-  cursor: not-allowed;
 }
 
 .debug-reset-button {
