@@ -234,9 +234,10 @@ onUnmounted(() => {
 
         <div class="game-ui">
           <GamePanel @submit="handleAnswerSubmit" />
+          <!-- 動画を畳んだ分の高さを補い、ボタンの画面上の位置を保つ（Task 22-1 改定） -->
+          <div v-if="shouldCollapseForKeyboard" class="keyboard-spacer" aria-hidden="true"></div>
           <QuizButton
             v-if="gameStore.isButtonVisible"
-            v-show="!shouldCollapseForKeyboard"
             :button-state="gameStore.buttonState"
             @press="handleButtonPress"
           />
@@ -304,6 +305,13 @@ onUnmounted(() => {
 /* ANSWERING 中の動画非表示（高さ・iframe を保持したまま見えなくする） */
 .player-hidden {
   visibility: hidden;
+}
+
+/* 動画を畳んだ分の高さ補填（フルブリード幅 × 9/16 = 動画の高さ相当）。
+   解答エリアを上部に出しつつ、下のボタン位置は動かさない */
+.keyboard-spacer {
+  flex-shrink: 0;
+  height: calc(100vw * 9 / 16);
 }
 
 .main-content {
