@@ -166,7 +166,7 @@ const handleButtonCheckToggle = () => {
 
 .check-toggle-track {
   position: relative;
-  width: 2.875rem;
+  width: 2.75rem;
   height: 1.25rem;
   border-radius: 62.4375rem;
   background: var(--color-stage-700);
