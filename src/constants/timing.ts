@@ -49,19 +49,19 @@ export const BUTTON_PUSHED_DURATION_MS = 100
 /**
  * ボタンチェック時の待機時間: RELEASED → STANDBY／TALKING遷移までの時間（ミリ秒）
  */
-export const BUTTON_CHECK_RELEASE_MS = 1500
+export const BUTTON_CHECK_RELEASE_MS = 1800
 
 /**
  * ボタンチェック終了後も BUTTON CHECK ラベルを保持する時間（ミリ秒）
  * 正解音が鳴っている間に即 WAIT 表示へ変わる違和感を緩和する（表示層のみの遅延）
  */
-export const BUTTON_CHECK_LABEL_HOLD_MS = 2000
+export const BUTTON_CHECK_LABEL_HOLD_MS = 10
 
 /**
  * ボタンチェック完了（STANDBY/TALKING 遷移）から動画再生開始までの遅延（ミリ秒）
  * 正解音（2秒）と動画音声の重なりを避け、チェック完了の「間」を作る。0 で即時再生
  */
-export const VIDEO_START_DELAY_MS = 2000
+export const VIDEO_START_DELAY_MS = 1200
 
 /**
  * 解答カウントダウンのインターバル（ミリ秒）
