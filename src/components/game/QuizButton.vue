@@ -242,7 +242,8 @@ const handleButtonCheckToggle = () => {
 /* ボタンエリア（縦スタック: 中央のボタン領域 + 右下のトグル） */
 .quiz-button-container {
   flex: 1;
-  min-height: 15rem;
+  /* iPhone Safari（下部バー表示時）で 1 画面に収まる高さ。トグル行を含む */
+  min-height: 13.5rem;
   display: flex;
   flex-direction: column;
   position: relative;

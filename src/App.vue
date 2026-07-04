@@ -144,8 +144,14 @@ function handleKeyDown(e: KeyboardEvent) {
   handleButtonPress()
 }
 
+// iOS: 最初のユーザー操作で AudioContext をアンロックする（1 回だけ）
+function unlockAudioOnce() {
+  audioManager.unlock()
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('pointerdown', unlockAudioOnce, { once: true })
 })
 
 // hideVideoPlayerDuringAnswer=true の場合、ANSWERING 中は動画を visibility で隠す（Task 20-4）

@@ -115,9 +115,10 @@ export class AudioManager {
     if (!this.audioContext || !this.audioBuffer || !this.gainNode) return
 
     // ユーザー操作前に生成した AudioContext は suspended で始まる。
-    // resume は非同期のため、完了を待たずに start すると初回の発音が捨てられる（iOS）。
-    // resume 完了後に再生し直すことで初回の音も確実に鳴らす
-    if (this.audioContext.state === 'suspended') {
+    // また iOS では動画再生が音声セッションを奪うと非標準の 'interrupted' になる。
+    // resume は非同期のため、完了を待たずに start すると発音が無音で捨てられる（iOS）。
+    // 'running' 以外はすべて resume 完了後に再生し直す
+    if (this.audioContext.state !== 'running') {
       void this.audioContext.resume().then(() => {
         if (this.soundEnabled && !this.muted) {
           this.playWithWebAudio(type)
@@ -203,6 +204,26 @@ export class AudioManager {
   setMute(muted: boolean): void {
     this.muted = muted
     this.applyGain()
+  }
+
+  /**
+   * iOS 向けのアンロック: 最初のユーザー操作内で呼び、AudioContext を resume して
+   * 無音バッファを 1 サンプル再生し音声セッションを確実に活性化する
+   */
+  unlock(): void {
+    if (!this.audioContext) return
+    if (this.audioContext.state !== 'running') {
+      void this.audioContext.resume()
+    }
+    try {
+      const silent = this.audioContext.createBuffer(1, 1, this.audioContext.sampleRate)
+      const source = this.audioContext.createBufferSource()
+      source.buffer = silent
+      source.connect(this.audioContext.destination)
+      source.start(0)
+    } catch (error) {
+      logger.warn('[AudioManager] unlock failed:', error)
+    }
   }
 
   isSoundSupported(): boolean {
