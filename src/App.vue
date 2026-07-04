@@ -158,6 +158,8 @@ function handleKeyDown(e: KeyboardEvent) {
 const isGateDismissed = ref(false)
 
 function handleGateTap() {
+  // READY（プレイヤー準備完了）までは解除しない
+  if (gameStore.currentState !== GameState.READY) return
   // 動画を一瞬実再生して停止（iOS に再生実績を作る）→ AudioContext をアンロック
   gameManager.value?.warmupVideoPlayback()
   audioManager.unlock()
@@ -310,16 +312,20 @@ onUnmounted(() => {
       @action="handleErrorAction"
     />
 
-    <!-- 開始ゲート: 音声許諾 + メディア priming をユーザー操作内で行う -->
+    <!-- 開始ゲート: 音声許諾 + 動画ウォームアップをユーザー操作内で行う（LOADING 中から表示） -->
     <button
-      v-if="!isGateDismissed && gameStore.currentState === GameState.READY"
+      v-if="!isGateDismissed && gameStore.currentState !== GameState.FINISHED"
       type="button"
       class="start-gate"
+      :disabled="gameStore.currentState !== GameState.READY"
       @click="handleGateTap"
     >
       <span class="start-gate-title">YOUTUBE <em>QUIZ BATTLE</em></span>
-      <span class="start-gate-action">タップしてはじめる</span>
-      <span class="start-gate-note">効果音と動画を有効にします</span>
+      <template v-if="gameStore.currentState === GameState.READY">
+        <span class="start-gate-action">タップしてはじめる</span>
+        <span class="start-gate-note">効果音と動画を有効にします</span>
+      </template>
+      <span v-else class="start-gate-note">読み込み中...</span>
     </button>
   </div>
 </template>

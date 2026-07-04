@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { loadYouTubeIframeAPI, createYouTubePlayerManager } from '@/services/youtubePlayer'
 import type { YouTubePlayerManager, QuizSettings } from '@/types'
+import { GameState, YouTubePlayerState } from '@/types'
+import { PLAYER_MASK_POLL_MS } from '@/constants/timing'
 import { logger } from '@/utils/logger'
+import { useGameStore } from '@/stores/gameStore'
 
 // Props定義
 interface Props {
@@ -18,8 +21,65 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
+const gameStore = useGameStore()
+
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
+const playerManagerRef = ref<YouTubePlayerManager | null>(null)
+
+// サムネイルマスク: 再生開始前（LOADING/READY と、開始後の最初の PLAYING まで）は
+// サムネイル画像でプレイヤーを覆い、warmup やリプレイの一時停止画面を見せない
+const thumbnailUrl = computed(() => `https://i.ytimg.com/vi/${props.videoId}/hqdefault.jpg`)
+const hasPlaybackStarted = ref(false)
+
+const showThumbnailMask = computed(() => {
+  if (hasPlaybackStarted.value) return false
+  return (
+    gameStore.currentState === GameState.LOADING ||
+    gameStore.currentState === GameState.READY ||
+    gameStore.currentState === GameState.TALKING
+  )
+})
+
+// READY へ戻ったら（初回・リプレイとも）マスクを再度有効化
+watch(
+  () => gameStore.currentState,
+  (state) => {
+    if (state === GameState.READY) {
+      hasPlaybackStarted.value = false
+    }
+  },
+)
+
+// マスク表示中は PLAYING をポーリングで検知して外す
+let maskPollId: number | null = null
+
+function stopMaskPoll() {
+  if (maskPollId !== null) {
+    window.clearInterval(maskPollId)
+    maskPollId = null
+  }
+}
+
+function startMaskPoll() {
+  if (maskPollId !== null) return
+  maskPollId = window.setInterval(() => {
+    if (playerManagerRef.value?.getPlayerState() === YouTubePlayerState.PLAYING) {
+      hasPlaybackStarted.value = true
+      stopMaskPoll()
+    }
+  }, PLAYER_MASK_POLL_MS)
+}
+
+watch(showThumbnailMask, (masked) => {
+  if (masked && playerManagerRef.value) {
+    startMaskPoll()
+  } else {
+    stopMaskPoll()
+  }
+})
+
+onBeforeUnmount(stopMaskPoll)
 
 onMounted(async () => {
   try {
@@ -31,8 +91,13 @@ onMounted(async () => {
       props.settings,
     )
 
+    playerManagerRef.value = playerManager
     isLoading.value = false
     emit('ready', playerManager)
+    // マスク表示中に ready になった場合はここからポーリング開始
+    if (showThumbnailMask.value) {
+      startMaskPoll()
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     logger.error('[VideoPlayer] Failed to initialize:', error)
@@ -64,6 +129,14 @@ onMounted(async () => {
       <!-- YouTube Player -->
       <div id="youtube-player-element"></div>
 
+      <!-- サムネイルマスク（再生開始まで warmup 等の一時停止画面を隠す） -->
+      <img
+        v-if="showThumbnailMask && !isLoading && !errorMessage"
+        class="thumbnail-mask"
+        :src="thumbnailUrl"
+        alt=""
+        aria-hidden="true"
+      />
     </div>
   </div>
 </template>
@@ -92,6 +165,18 @@ onMounted(async () => {
   position: absolute;
   top: 0;
   left: 0;
+}
+
+/* サムネイルマスク */
+.thumbnail-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+  pointer-events: none;
 }
 
 /* YouTube iframe（YT.Playerが自動生成）のスタイル調整 */
