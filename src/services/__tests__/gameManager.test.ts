@@ -968,16 +968,6 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     expect(player.playVideo).toHaveBeenCalledTimes(1)
   })
 
-  it('primeMediaPlayback は play→即 pause で媒体を活性化する', () => {
-    const player = makePlayerMock()
-    const { gm, store } = makeGameManager(makeQuizData(), player)
-    store.transitionToState(GameState.READY)
-
-    gm.primeMediaPlayback()
-
-    expect(player.playVideo).toHaveBeenCalledTimes(1)
-    expect(player.pauseVideo).toHaveBeenCalledTimes(1)
-  })
 
   it('QUESTIONING状態で押下: PUSHED → 100ms後 RELEASED + ANSWERING遷移 + pauseVideo', () => {
     const player = makePlayerMock()

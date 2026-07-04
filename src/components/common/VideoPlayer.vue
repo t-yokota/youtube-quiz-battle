@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { loadYouTubeIframeAPI, createYouTubePlayerManager } from '@/services/youtubePlayer'
 import type { YouTubePlayerManager, QuizSettings } from '@/types'
-import { GameState } from '@/types'
 import { logger } from '@/utils/logger'
-import { useGameStore } from '@/stores/gameStore'
 
 // Props定義
 interface Props {
@@ -20,16 +18,8 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const gameStore = useGameStore()
-
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
-
-// 再生開始前（LOADING/READY）は開始ゲートの priming による一時停止画面（暗転）を
-// 見せないよう、ステージ調カバーで覆う
-const showStandbyCover = computed(
-  () => gameStore.currentState === GameState.LOADING || gameStore.currentState === GameState.READY,
-)
 
 onMounted(async () => {
   try {
@@ -74,10 +64,6 @@ onMounted(async () => {
       <!-- YouTube Player -->
       <div id="youtube-player-element"></div>
 
-      <!-- 再生開始前のスタンバイカバー（priming の一時停止画面を隠す） -->
-      <div v-if="showStandbyCover && !isLoading && !errorMessage" class="standby-cover">
-        <span class="standby-label">STANDBY</span>
-      </div>
     </div>
   </div>
 </template>
@@ -106,26 +92,6 @@ onMounted(async () => {
   position: absolute;
   top: 0;
   left: 0;
-}
-
-/* 再生開始前のスタンバイカバー */
-.standby-cover {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background:
-    radial-gradient(80% 60% at 50% 50%, rgba(255, 197, 61, 0.06) 0%, transparent 70%),
-    linear-gradient(180deg, var(--color-stage-900) 0%, #0a0e1d 100%);
-}
-
-.standby-label {
-  font-size: 0.8125rem;
-  font-weight: 800;
-  letter-spacing: 0.35em;
-  color: var(--color-text-dim);
 }
 
 /* YouTube iframe（YT.Playerが自動生成）のスタイル調整 */

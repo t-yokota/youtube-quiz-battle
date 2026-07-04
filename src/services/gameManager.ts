@@ -118,18 +118,6 @@ export class GameManager {
   }
 
   /**
-   * メディア再生の priming（開始ゲートのタップ内から呼ぶ）
-   * iOS ではユーザー操作外の play() がブロックされるため、ジェスチャ内で
-   * play→即 pause して媒体を活性化し、以後の遅延 playVideo を許可させる。
-   * priming が発火させる spurious PLAYING は抑止ウィンドウで無視する
-   */
-  primeMediaPlayback(): void {
-    this.externalPause.suppressSpuriousReadyPlay()
-    this.playerControl.playVideo()
-    this.playerControl.pauseVideo()
-  }
-
-  /**
    * ボタン押下処理
    * QuizButton の press イベントから App 経由で呼び出される
    * ボタン状態遷移・ゲーム状態遷移・動画制御を統合的に処理する
@@ -156,7 +144,7 @@ export class GameManager {
       this.playerControl.pauseVideo()
     }
 
-    // ボタン押下音（READY はゲートの priming 済みで動画停止中、QUESTIONING は直前で停止済み）
+    // ボタン押下音（QUESTIONING は直前で動画停止済み）
     this.audioManager?.playSound(SOUND_TYPE.BUTTON)
 
     // ボタン状態遷移: STANDBY -> PUSHED -> RELEASED

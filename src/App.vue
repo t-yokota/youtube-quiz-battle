@@ -158,9 +158,7 @@ function handleKeyDown(e: KeyboardEvent) {
 const isGateDismissed = ref(false)
 
 function handleGateTap() {
-  // 順序が重要: 先に動画の priming（音声セッションを一度動画に渡して即返す）、
-  // その後で AudioContext を作り直してアンロックする（以後の効果音が頭から鳴る）
-  gameManager.value?.primeMediaPlayback()
+  // ユーザー操作内で AudioContext を作り直してアンロックする
   audioManager.unlock()
   isGateDismissed.value = true
 }
@@ -320,7 +318,7 @@ onUnmounted(() => {
     >
       <span class="start-gate-title">YOUTUBE <em>QUIZ BATTLE</em></span>
       <span class="start-gate-action">タップしてはじめる</span>
-      <span class="start-gate-note">効果音と動画を有効にします</span>
+      <span class="start-gate-note">効果音を有効にします</span>
     </button>
   </div>
 </template>
