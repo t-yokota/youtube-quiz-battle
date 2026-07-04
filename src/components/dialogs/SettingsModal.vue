@@ -688,7 +688,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .debug-input {
-  width: 72px;
+  width: 56px;
   height: 30px;
   padding: 0 8px;
   font-size: 14px;
