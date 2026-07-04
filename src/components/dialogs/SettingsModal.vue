@@ -270,7 +270,6 @@ const handleOverlayClick = (event: MouseEvent) => {
                   @click="handleSeekToggle"
                 >
                   <span class="ui-switch-track" :class="{ on: isSeekAllowed }">
-                    <span class="ui-switch-state">{{ isSeekAllowed ? 'ON' : 'OFF' }}</span>
                     <span class="ui-switch-knob"></span>
                   </span>
                 </button>
@@ -293,9 +292,6 @@ const handleOverlayClick = (event: MouseEvent) => {
                   @click="handleButtonCheckToggle"
                 >
                   <span class="ui-switch-track" :class="{ on: gameStore.isButtonCheckEnabled }">
-                    <span class="ui-switch-state">{{
-                      gameStore.isButtonCheckEnabled ? 'ON' : 'OFF'
-                    }}</span>
                     <span class="ui-switch-knob"></span>
                   </span>
                 </button>
@@ -345,9 +341,6 @@ const handleOverlayClick = (event: MouseEvent) => {
                   @click="handleJumpToRevealPeriodOverrideToggle"
                 >
                   <span class="ui-switch-track" :class="{ on: effectiveJumpToRevealPeriod }">
-                    <span class="ui-switch-state">{{
-                      effectiveJumpToRevealPeriod ? 'ON' : 'OFF'
-                    }}</span>
                     <span class="ui-switch-knob"></span>
                   </span>
                 </button>
@@ -367,9 +360,6 @@ const handleOverlayClick = (event: MouseEvent) => {
                     class="ui-switch-track"
                     :class="{ on: effectiveHideVideoPlayerDuringAnswer }"
                   >
-                    <span class="ui-switch-state">{{
-                      effectiveHideVideoPlayerDuringAnswer ? 'ON' : 'OFF'
-                    }}</span>
                     <span class="ui-switch-knob"></span>
                   </span>
                 </button>
@@ -586,7 +576,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .ui-switch-track {
   position: relative;
-  width: 60px;
+  width: 44px;
   height: 26px;
   border-radius: 999px;
   background: var(--color-stage-700);
@@ -602,27 +592,6 @@ const handleOverlayClick = (event: MouseEvent) => {
   border-color: var(--color-gold-400);
 }
 
-.ui-switch-state {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  font-size: 10px;
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--color-text-dim);
-  /* OFF: ノブが左なので文言は右側 */
-  right: 7px;
-}
-
-.ui-switch-track.on .ui-switch-state {
-  color: var(--color-gold-400);
-  /* ON: ノブが右なので文言は左側 */
-  right: auto;
-  left: 7px;
-}
 
 .ui-switch-knob {
   position: absolute;
@@ -640,7 +609,6 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .ui-switch-track.on .ui-switch-knob {
   left: calc(100% - 20px - 3px);
-  background: var(--color-gold-400);
 }
 
 .volume-slider {

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { loadYouTubeIframeAPI, createYouTubePlayerManager } from '@/services/youtubePlayer'
 import type { YouTubePlayerManager, QuizSettings } from '@/types'
-import { GameState, YouTubePlayerState } from '@/types'
-import { PLAYER_MASK_POLL_MS } from '@/constants/timing'
+import { GameState } from '@/types'
 import { logger } from '@/utils/logger'
 import { useGameStore } from '@/stores/gameStore'
 
@@ -25,67 +24,14 @@ const gameStore = useGameStore()
 
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
-const playerManagerRef = ref<YouTubePlayerManager | null>(null)
 
-// サムネイルマスク: 再生開始前（LOADING/READY と、開始後の最初の PLAYING まで）は
-// サムネイル画像でプレイヤーを覆い、warmup やリプレイの一時停止画面を見せない
+// サムネイルマスク: 再生開始前（LOADING/READY）はサムネイル画像でプレイヤーを覆い、
+// warmup やリプレイの一時停止画面を見せない。ボタン押下（TALKING 遷移）で即解除する
 const thumbnailUrl = computed(() => `https://i.ytimg.com/vi/${props.videoId}/hqdefault.jpg`)
-const hasPlaybackStarted = ref(false)
 
-const showThumbnailMask = computed(() => {
-  if (hasPlaybackStarted.value) return false
-  return (
-    gameStore.currentState === GameState.LOADING ||
-    gameStore.currentState === GameState.READY ||
-    gameStore.currentState === GameState.TALKING
-  )
-})
-
-// READY へ戻ったら（初回・リプレイとも）マスクを再度有効化
-watch(
-  () => gameStore.currentState,
-  (state) => {
-    if (state === GameState.READY) {
-      hasPlaybackStarted.value = false
-    }
-  },
+const showThumbnailMask = computed(
+  () => gameStore.currentState === GameState.LOADING || gameStore.currentState === GameState.READY,
 )
-
-// マスク表示中は PLAYING をポーリングで検知して外す
-let maskPollId: number | null = null
-
-function stopMaskPoll() {
-  if (maskPollId !== null) {
-    window.clearInterval(maskPollId)
-    maskPollId = null
-  }
-}
-
-function startMaskPoll() {
-  if (maskPollId !== null) return
-  maskPollId = window.setInterval(() => {
-    // READY 中の PLAYING（ゲートの warmup 再生や spurious イベント）は「再生開始」と
-    // みなさない。ゲームが始まった TALKING 以降の PLAYING のみでマスクを解除する
-    if (
-      gameStore.currentState !== GameState.READY &&
-      gameStore.currentState !== GameState.LOADING &&
-      playerManagerRef.value?.getPlayerState() === YouTubePlayerState.PLAYING
-    ) {
-      hasPlaybackStarted.value = true
-      stopMaskPoll()
-    }
-  }, PLAYER_MASK_POLL_MS)
-}
-
-watch(showThumbnailMask, (masked) => {
-  if (masked && playerManagerRef.value) {
-    startMaskPoll()
-  } else {
-    stopMaskPoll()
-  }
-})
-
-onBeforeUnmount(stopMaskPoll)
 
 onMounted(async () => {
   try {
@@ -97,13 +43,8 @@ onMounted(async () => {
       props.settings,
     )
 
-    playerManagerRef.value = playerManager
     isLoading.value = false
     emit('ready', playerManager)
-    // マスク表示中に ready になった場合はここからポーリング開始
-    if (showThumbnailMask.value) {
-      startMaskPoll()
-    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     logger.error('[VideoPlayer] Failed to initialize:', error)

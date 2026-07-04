@@ -262,17 +262,9 @@ export class AudioManager {
       logger.warn('[AudioManager] silent loop start failed:', error)
     })
 
-    const context = this.ensureRunningContext()
-    if (!context) return
-    try {
-      const silent = context.createBuffer(1, 1, context.sampleRate)
-      const source = context.createBufferSource()
-      source.buffer = silent
-      source.connect(context.destination)
-      source.start(0)
-    } catch (error) {
-      logger.warn('[AudioManager] unlock failed:', error)
-    }
+    // AudioContext を running にする（無音バッファの発音は行わない —
+    // クリックノイズの原因になり得るため。セッション活性は無音ループが担う）
+    this.ensureRunningContext()
   }
 
   isSoundSupported(): boolean {

@@ -70,11 +70,6 @@ export const VIDEO_START_DELAY_MS = 1200
 export const GATE_WARMUP_PLAY_MS = 500
 
 /**
- * サムネイルマスク解除用の再生検知ポーリング間隔（ミリ秒）
- */
-export const PLAYER_MASK_POLL_MS = 100
-
-/**
  * リプレイ直後に READY で PLAYING イベントを無視する時間（ミリ秒）
  * seekTo(0) の直後に YouTube が一瞬 PLAYING を発火することがあり、
  * これを「プレイヤーからの直接再生」と誤認して TALKING へ遷移するのを防ぐ
