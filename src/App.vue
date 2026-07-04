@@ -181,9 +181,14 @@ const shouldHidePlayer = computed(
 const isTouchDevice = window.matchMedia('(pointer: coarse)').matches
 
 // タッチデバイスの ANSWERING 中は動画とボタン領域を高さごと畳み、
-// 解答エリアを画面上部に出してソフトキーボードと共存させる（Task 22-1）
+// 解答エリアを画面上部に出してソフトキーボードと共存させる（Task 22-1）。
+// hideVideoPlayerDuringAnswer の実効値に従う（OFF ならキーボードが解答エリアに
+// 重なり得るが、短答想定のため致命的ではない — 2026-07-05 裁定）
 const shouldCollapseForKeyboard = computed(
-  () => isTouchDevice && gameStore.currentState === GameState.ANSWERING,
+  () =>
+    isTouchDevice &&
+    gameStore.currentState === GameState.ANSWERING &&
+    (gameStore.effectiveSettings?.hideVideoPlayerDuringAnswer ?? false),
 )
 
 // キーボード表示に伴う iOS の自動スクロールを打ち消す（解答エリアの押し出し防止）
