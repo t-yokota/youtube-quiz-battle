@@ -587,9 +587,8 @@ const handleOverlayClick = (event: MouseEvent) => {
     border-color var(--duration-base);
 }
 
-/* ON はスライダーと同じくベタの 1 色（枠との差をつけない） */
 .ui-switch-track.on {
-  background: var(--color-gold-400);
+  background: rgba(255, 197, 61, 0.22);
   border-color: var(--color-gold-400);
 }
 
