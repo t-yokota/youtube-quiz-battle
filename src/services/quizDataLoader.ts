@@ -12,6 +12,7 @@ interface RawQuizData {
     disableSeekbar?: boolean
     jumpToRevealPeriod?: boolean
     hideVideoPlayerDuringAnswer?: boolean
+    debug?: boolean
   }
   questions: Array<{
     questionNumber?: number // 問題番号（1-indexed）
@@ -111,6 +112,10 @@ function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
     throw new Error('QUIZ_DATA_INVALID: Invalid maxAttempts')
   }
 
+  if (data.settings.debug !== undefined && typeof data.settings.debug !== 'boolean') {
+    throw new Error('QUIZ_DATA_INVALID: Invalid debug')
+  }
+
   // 各問題のチェック
   data.questions.forEach((q, index) => {
     // 必須フィールド
@@ -200,6 +205,7 @@ function convertToQuizData(rawData: RawQuizData): QuizData {
     disableSeekbar: rawData.settings.disableSeekbar ?? true,
     jumpToRevealPeriod: rawData.settings.jumpToRevealPeriod ?? false,
     hideVideoPlayerDuringAnswer: rawData.settings.hideVideoPlayerDuringAnswer ?? false,
+    debug: rawData.settings.debug ?? false,
   }
 
   const questions: QuizQuestion[] = rawData.questions.map((q, idx) => {

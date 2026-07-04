@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { GameManager, createGameManager } from '../gameManager'
 import { useGameStore } from '@/stores/gameStore'
+import { useDebugStore } from '@/stores/debugStore'
 import { GameState, ButtonState } from '@/types'
 import type { QuizData, YouTubePlayerManager } from '@/types'
 import { YouTubePlayerState } from '@/types'
@@ -47,6 +48,7 @@ function makeQuizData(overrides?: Partial<QuizData['settings']>): QuizData {
       disableSeekbar: true,
       jumpToRevealPeriod: false,
       hideVideoPlayerDuringAnswer: false,
+      debug: false,
       ...overrides,
     },
   }
@@ -71,6 +73,7 @@ function makeMultiThresholdQuizData(): QuizData {
       disableSeekbar: true,
       jumpToRevealPeriod: false,
       hideVideoPlayerDuringAnswer: false,
+      debug: false,
     },
   }
 }
@@ -460,6 +463,28 @@ describe('Single-Shot Guard', () => {
 
   it('正解時は WAITING を経由せず直接 REVEALING へ遷移する（jumpToRevealPeriod=true・ちらつき解消）', () => {
     const { gm, store } = makeGameManager(makeQuizData({ jumpToRevealPeriod: true }))
+
+    // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING（currentVideoTime < revealTime=20）
+    simulatePlayback(gm, 11, 0)
+    gm.handleButtonPress()
+    vi.advanceTimersByTime(100)
+    expect(store.currentState).toBe(GameState.ANSWERING)
+
+    const transitionSpy = vi.spyOn(store, 'transitionToState')
+
+    // 正解を送信 → 直接 REVEALING（WAITING を挟まない）
+    gm.handleAnswerSubmit('東京')
+
+    expect(store.currentState).toBe(GameState.REVEALING)
+    const transitionedStates = transitionSpy.mock.calls.map((call) => call[0])
+    expect(transitionedStates).toContain(GameState.REVEALING)
+    expect(transitionedStates).not.toContain(GameState.WAITING)
+  })
+
+  it('jumpToRevealPeriod override=true（debug）でも REVEALING へ直行する（Task 29）', () => {
+    const { gm, store } = makeGameManager(makeQuizData({ debug: true, jumpToRevealPeriod: false }))
+    const debugStore = useDebugStore()
+    debugStore.setJumpToRevealPeriodOverride(true)
 
     // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING（currentVideoTime < revealTime=20）
     simulatePlayback(gm, 11, 0)
@@ -967,7 +992,6 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     vi.advanceTimersByTime(VIDEO_START_DELAY_MS)
     expect(player.playVideo).toHaveBeenCalledTimes(1)
   })
-
 
   it('QUESTIONING状態で押下: PUSHED → 100ms後 RELEASED + ANSWERING遷移 + pauseVideo', () => {
     const player = makePlayerMock()
@@ -1728,6 +1752,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
         disableSeekbar: false,
         jumpToRevealPeriod: false,
         hideVideoPlayerDuringAnswer: false,
+        debug: false,
       },
     }
   }

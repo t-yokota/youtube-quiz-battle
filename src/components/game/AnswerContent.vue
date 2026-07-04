@@ -21,7 +21,7 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const isSubmitDisabled = () => gameStore.isInputDisabled || gameStore.answerInput.trim() === ''
 
 // タイマーリング進捗（1 → 0。分母は設定の制限時間）
-const answerTimeLimit = computed(() => gameStore.quizData?.settings.answerTimeLimit ?? 10)
+const answerTimeLimit = computed(() => gameStore.effectiveSettings?.answerTimeLimit ?? 10)
 const timerProgress = computed(() => {
   if (answerTimeLimit.value <= 0) return 0
   return Math.max(0, Math.min(1, gameStore.answerTimeRemaining / answerTimeLimit.value))
@@ -71,7 +71,7 @@ watch(
     <div class="answer-meta">
       <span class="attempts-counter"
         >残り {{ gameStore.remainingAttempts }}回<span class="dim">
-          / {{ gameStore.quizData?.settings.maxAttempts ?? gameStore.remainingAttempts }}</span
+          / {{ gameStore.effectiveSettings?.maxAttempts ?? gameStore.remainingAttempts }}</span
         ></span
       >
       <span

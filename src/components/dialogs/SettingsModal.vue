@@ -5,6 +5,13 @@
 import { computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useDebugStore } from '@/stores/debugStore'
+import {
+  DEBUG_ANSWER_TIME_LIMIT_MIN,
+  DEBUG_ANSWER_TIME_LIMIT_MAX,
+  DEBUG_MAX_ATTEMPTS_MIN,
+  DEBUG_MAX_ATTEMPTS_MAX,
+} from '@/constants/debug'
 
 // Props定義（Phase 2で状態管理と連携予定）
 interface Props {
@@ -20,6 +27,75 @@ const props = withDefaults(defineProps<Props>(), {
 
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
+const debugStore = useDebugStore()
+
+// デバッグモード対応データかどうか（クイズデータの settings.debug）
+const isDebugData = computed(() => gameStore.quizData?.settings.debug === true)
+
+// デバッグセクションの表示条件（Task 29-4）
+const isDebugSectionVisible = computed(() => isDebugData.value && debugStore.isMenuVisible)
+
+const handleDebugMenuToggle = () => {
+  debugStore.setMenuVisible(!debugStore.isMenuVisible)
+}
+
+// 上書きチェックボックスの ON/OFF（チェック状態は override が null かどうかで判定）
+const isAnswerTimeLimitOverrideEnabled = computed(() => debugStore.answerTimeLimitOverride !== null)
+const isMaxAttemptsOverrideEnabled = computed(() => debugStore.maxAttemptsOverride !== null)
+const isJumpToRevealPeriodOverrideEnabled = computed(
+  () => debugStore.jumpToRevealPeriodOverride !== null,
+)
+const isHideVideoPlayerDuringAnswerOverrideEnabled = computed(
+  () => debugStore.hideVideoPlayerDuringAnswerOverride !== null,
+)
+
+const handleAnswerTimeLimitOverrideCheck = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked
+  debugStore.setAnswerTimeLimitOverride(
+    checked ? (gameStore.quizData?.settings.answerTimeLimit ?? DEBUG_ANSWER_TIME_LIMIT_MIN) : null,
+  )
+}
+
+const handleAnswerTimeLimitOverrideInput = (event: Event) => {
+  debugStore.setAnswerTimeLimitOverride((event.target as HTMLInputElement).valueAsNumber)
+}
+
+const handleMaxAttemptsOverrideCheck = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked
+  debugStore.setMaxAttemptsOverride(
+    checked ? (gameStore.quizData?.settings.maxAttempts ?? DEBUG_MAX_ATTEMPTS_MIN) : null,
+  )
+}
+
+const handleMaxAttemptsOverrideInput = (event: Event) => {
+  debugStore.setMaxAttemptsOverride((event.target as HTMLInputElement).valueAsNumber)
+}
+
+const handleJumpToRevealPeriodOverrideCheck = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked
+  debugStore.setJumpToRevealPeriodOverride(
+    checked ? (gameStore.quizData?.settings.jumpToRevealPeriod ?? false) : null,
+  )
+}
+
+const handleJumpToRevealPeriodOverrideToggle = (event: Event) => {
+  debugStore.setJumpToRevealPeriodOverride((event.target as HTMLInputElement).checked)
+}
+
+const handleHideVideoPlayerDuringAnswerOverrideCheck = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked
+  debugStore.setHideVideoPlayerDuringAnswerOverride(
+    checked ? (gameStore.quizData?.settings.hideVideoPlayerDuringAnswer ?? false) : null,
+  )
+}
+
+const handleHideVideoPlayerDuringAnswerOverrideToggle = (event: Event) => {
+  debugStore.setHideVideoPlayerDuringAnswerOverride((event.target as HTMLInputElement).checked)
+}
+
+const handleResetOverrides = () => {
+  debugStore.resetOverrides()
+}
 
 // シーク許可の実効値（ユーザー上書き > クイズデータの設定。Task 19-3）
 const isSeekAllowed = computed(
@@ -67,6 +143,30 @@ const handleOverlayClick = (event: MouseEvent) => {
         <div class="modal-container">
           <!-- Modal Header -->
           <div class="modal-header">
+            <!-- デバッグメニュー表示トグル（debug データのみ表示。× ボタンの反対側） -->
+            <button
+              v-if="isDebugData"
+              type="button"
+              class="debug-menu-toggle"
+              :class="{ 'debug-menu-toggle--active': debugStore.isMenuVisible }"
+              aria-label="デバッグメニュー"
+              @click="handleDebugMenuToggle"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+                class="debug-menu-icon"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 6v6l4 2M12 21a9 9 0 100-18 9 9 0 000 18z"
+                />
+              </svg>
+            </button>
             <h2 class="modal-title">設定</h2>
             <button class="close-button" aria-label="設定を閉じる" @click="handleClose">
               <svg
@@ -210,6 +310,100 @@ const handleOverlayClick = (event: MouseEvent) => {
               </div>
             </section>
 
+            <!-- Debug Settings（Task 29: debug データかつメニュー表示ONの時のみ） -->
+            <section v-if="isDebugSectionVisible" class="settings-section">
+              <h3 class="section-title debug-section-title">デバッグ</h3>
+              <p class="seek-description">クイズ設定を一時的に上書きします（リロードで解除）</p>
+
+              <div class="debug-row">
+                <label class="seek-toggle">
+                  <input
+                    type="checkbox"
+                    class="seek-checkbox"
+                    :checked="isAnswerTimeLimitOverrideEnabled"
+                    @change="handleAnswerTimeLimitOverrideCheck"
+                  />
+                  <span class="seek-label">解答制限時間を上書きする</span>
+                </label>
+                <input
+                  type="number"
+                  class="debug-input"
+                  :min="DEBUG_ANSWER_TIME_LIMIT_MIN"
+                  :max="DEBUG_ANSWER_TIME_LIMIT_MAX"
+                  :disabled="!isAnswerTimeLimitOverrideEnabled"
+                  :placeholder="String(gameStore.quizData?.settings.answerTimeLimit ?? '')"
+                  :value="debugStore.answerTimeLimitOverride ?? ''"
+                  @input="handleAnswerTimeLimitOverrideInput"
+                />
+              </div>
+
+              <div class="debug-row">
+                <label class="seek-toggle">
+                  <input
+                    type="checkbox"
+                    class="seek-checkbox"
+                    :checked="isMaxAttemptsOverrideEnabled"
+                    @change="handleMaxAttemptsOverrideCheck"
+                  />
+                  <span class="seek-label">解答回数を上書きする</span>
+                </label>
+                <input
+                  type="number"
+                  class="debug-input"
+                  :min="DEBUG_MAX_ATTEMPTS_MIN"
+                  :max="DEBUG_MAX_ATTEMPTS_MAX"
+                  :disabled="!isMaxAttemptsOverrideEnabled"
+                  :placeholder="String(gameStore.quizData?.settings.maxAttempts ?? '')"
+                  :value="debugStore.maxAttemptsOverride ?? ''"
+                  @input="handleMaxAttemptsOverrideInput"
+                />
+              </div>
+
+              <p class="seek-description">解答時間・解答回数は次の問題から反映</p>
+
+              <div class="debug-row">
+                <label class="seek-toggle">
+                  <input
+                    type="checkbox"
+                    class="seek-checkbox"
+                    :checked="isJumpToRevealPeriodOverrideEnabled"
+                    @change="handleJumpToRevealPeriodOverrideCheck"
+                  />
+                  <span class="seek-label">正解発表ジャンプを上書きする</span>
+                </label>
+                <input
+                  type="checkbox"
+                  class="debug-input debug-input-toggle"
+                  :disabled="!isJumpToRevealPeriodOverrideEnabled"
+                  :checked="debugStore.jumpToRevealPeriodOverride ?? false"
+                  @change="handleJumpToRevealPeriodOverrideToggle"
+                />
+              </div>
+
+              <div class="debug-row">
+                <label class="seek-toggle">
+                  <input
+                    type="checkbox"
+                    class="seek-checkbox"
+                    :checked="isHideVideoPlayerDuringAnswerOverrideEnabled"
+                    @change="handleHideVideoPlayerDuringAnswerOverrideCheck"
+                  />
+                  <span class="seek-label">解答中の動画非表示を上書きする</span>
+                </label>
+                <input
+                  type="checkbox"
+                  class="debug-input debug-input-toggle"
+                  :disabled="!isHideVideoPlayerDuringAnswerOverrideEnabled"
+                  :checked="debugStore.hideVideoPlayerDuringAnswerOverride ?? false"
+                  @change="handleHideVideoPlayerDuringAnswerOverrideToggle"
+                />
+              </div>
+
+              <button type="button" class="debug-reset-button" @click="handleResetOverrides">
+                すべてリセット
+              </button>
+            </section>
+
             <!-- Privacy Info -->
             <section class="settings-section">
               <h3 class="section-title">データ収集について</h3>
@@ -307,6 +501,38 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .close-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Debug Menu Toggle（ヘッダー左・× ボタンの反対側。Task 29-4） */
+.debug-menu-toggle {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  /* タッチターゲット確保 */
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-dim);
+  transition: color 0.2s;
+}
+
+.debug-menu-toggle:hover {
+  color: var(--color-text-main);
+}
+
+.debug-menu-toggle--active {
+  color: var(--color-gold-400);
+}
+
+.debug-menu-icon {
   width: 20px;
   height: 20px;
 }
@@ -470,6 +696,65 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .slider:active::-moz-range-thumb {
   transform: scale(1.1);
+}
+
+/* Debug Section（Task 29-4） */
+.debug-section-title {
+  color: var(--color-gold-400);
+}
+
+.debug-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.debug-input {
+  width: 72px;
+  height: 36px;
+  padding: 0 8px;
+  font-size: 14px;
+  color: var(--color-text-main);
+  background: var(--color-stage-900);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  text-align: right;
+}
+
+.debug-input:disabled {
+  opacity: 0.45;
+}
+
+.debug-input-toggle {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--color-gold-400);
+  cursor: pointer;
+  text-align: initial;
+}
+
+.debug-input-toggle:disabled {
+  cursor: not-allowed;
+}
+
+.debug-reset-button {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  background: var(--color-stage-900);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.debug-reset-button:hover {
+  border-color: var(--color-gold-400);
 }
 
 /* Privacy Text */

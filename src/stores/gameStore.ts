@@ -2,8 +2,9 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { GameState, ButtonState } from '@/types'
-import type { QuizData, QuestionResult } from '@/types'
+import type { QuizData, QuestionResult, QuizSettings } from '@/types'
 import { validate } from '@/services/answerValidator'
+import { useDebugStore } from '@/stores/debugStore'
 import { logger } from '@/utils/logger'
 
 export const useGameStore = defineStore('game', () => {
@@ -88,6 +89,23 @@ export const useGameStore = defineStore('game', () => {
           : '次の問題をお待ちください'
       default:
         return ''
+    }
+  })
+
+  // 実効クイズ設定（debug=true のデータのみ debugStore の上書きを適用する。Task 29）
+  const effectiveSettings = computed<QuizSettings | null>(() => {
+    if (!quizData.value) return null
+    const s = quizData.value.settings
+    if (!s.debug) return s
+
+    const debugStore = useDebugStore()
+    return {
+      ...s,
+      answerTimeLimit: debugStore.answerTimeLimitOverride ?? s.answerTimeLimit,
+      maxAttempts: debugStore.maxAttemptsOverride ?? s.maxAttempts,
+      jumpToRevealPeriod: debugStore.jumpToRevealPeriodOverride ?? s.jumpToRevealPeriod,
+      hideVideoPlayerDuringAnswer:
+        debugStore.hideVideoPlayerDuringAnswerOverride ?? s.hideVideoPlayerDuringAnswer,
     }
   })
 
@@ -261,8 +279,8 @@ export const useGameStore = defineStore('game', () => {
    * onStart() から呼ばれ、問題単位でリセットが必要な状態を初期化する
    */
   function initializeForQuestion() {
-    remainingAttempts.value = quizData.value?.settings.maxAttempts ?? 2
-    answerTimeRemaining.value = quizData.value?.settings.answerTimeLimit ?? 10
+    remainingAttempts.value = effectiveSettings.value?.maxAttempts ?? 2
+    answerTimeRemaining.value = effectiveSettings.value?.answerTimeLimit ?? 10
     answerInput.value = ''
     answerResult.value = null
     pendingUserAnswers.value = []
@@ -287,7 +305,7 @@ export const useGameStore = defineStore('game', () => {
    * answerTimeRemaining を制限時間初期値にリセットする
    */
   function resetAnswerTime(): void {
-    answerTimeRemaining.value = quizData.value?.settings.answerTimeLimit ?? 10
+    answerTimeRemaining.value = effectiveSettings.value?.answerTimeLimit ?? 10
     logger.log(`[GameStore] Answer time reset to: ${answerTimeRemaining.value}`)
   }
 
@@ -364,6 +382,7 @@ export const useGameStore = defineStore('game', () => {
     isInputDisabled,
     guideText,
     gamePanelMode,
+    effectiveSettings,
     // Actions
     transitionToState,
     recordResult,

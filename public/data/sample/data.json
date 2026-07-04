@@ -6,7 +6,8 @@
     "answerTimeLimit": 10,
     "disableSeekbar": false,
     "jumpToRevealPeriod": false,
-    "hideVideoPlayerDuringAnswer": false
+    "hideVideoPlayerDuringAnswer": false,
+    "debug": true
   },
   "questions": [
     {

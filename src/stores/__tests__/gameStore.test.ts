@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useGameStore } from '../gameStore'
+import { useDebugStore } from '../debugStore'
 import { GameState } from '@/types'
 import type { QuizData } from '@/types'
 
@@ -33,6 +34,7 @@ function makeQuizData(maxAttempts = 2): QuizData {
       disableSeekbar: true,
       jumpToRevealPeriod: false,
       hideVideoPlayerDuringAnswer: false,
+      debug: false,
     },
   }
 }
@@ -448,5 +450,81 @@ describe('handleAnswerSubmit: userAnswers 蓄積', () => {
 
     expect(store.results[0].userAnswers).toEqual([''])
     expect(store.results[0].skipped).toBe(false)
+  })
+})
+
+// ============================================================================
+// effectiveSettings（Task 29: デバッグモードによるクイズ設定の実行時上書き）
+// ============================================================================
+
+function makeDebugQuizData(): QuizData {
+  const base = makeQuizData(2)
+  return {
+    ...base,
+    settings: {
+      ...base.settings,
+      debug: true,
+    },
+  }
+}
+
+describe('effectiveSettings', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('debug=false では debugStore の上書きを無視する', () => {
+    const store = useGameStore()
+    const debugStore = useDebugStore()
+    store.setQuizData(makeQuizData(2)) // debug: false
+
+    debugStore.setAnswerTimeLimitOverride(3)
+    debugStore.setMaxAttemptsOverride(1)
+
+    expect(store.effectiveSettings?.answerTimeLimit).toBe(10)
+    expect(store.effectiveSettings?.maxAttempts).toBe(2)
+  })
+
+  it('debug=true では debugStore の上書きが優先される', () => {
+    const store = useGameStore()
+    const debugStore = useDebugStore()
+    store.setQuizData(makeDebugQuizData())
+
+    debugStore.setAnswerTimeLimitOverride(3)
+    debugStore.setMaxAttemptsOverride(1)
+    debugStore.setJumpToRevealPeriodOverride(true)
+    debugStore.setHideVideoPlayerDuringAnswerOverride(true)
+
+    expect(store.effectiveSettings?.answerTimeLimit).toBe(3)
+    expect(store.effectiveSettings?.maxAttempts).toBe(1)
+    expect(store.effectiveSettings?.jumpToRevealPeriod).toBe(true)
+    expect(store.effectiveSettings?.hideVideoPlayerDuringAnswer).toBe(true)
+  })
+
+  it('debug=true かつ上書きなしではデータ本来の値を返す', () => {
+    const store = useGameStore()
+    store.setQuizData(makeDebugQuizData())
+
+    expect(store.effectiveSettings?.answerTimeLimit).toBe(10)
+    expect(store.effectiveSettings?.maxAttempts).toBe(2)
+  })
+
+  it('initializeForQuestion で override が反映される（次の問題から）', () => {
+    const store = useGameStore()
+    const debugStore = useDebugStore()
+    store.setQuizData(makeDebugQuizData())
+
+    // 上書き前に問題開始した場合は反映されない
+    store.initializeForQuestion()
+    expect(store.remainingAttempts).toBe(2)
+    expect(store.answerTimeRemaining).toBe(10)
+
+    // 上書き後、次の問題開始で反映される
+    debugStore.setAnswerTimeLimitOverride(3)
+    debugStore.setMaxAttemptsOverride(1)
+    store.initializeForQuestion()
+
+    expect(store.remainingAttempts).toBe(1)
+    expect(store.answerTimeRemaining).toBe(3)
   })
 })

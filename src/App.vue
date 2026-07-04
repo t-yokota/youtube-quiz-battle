@@ -173,7 +173,7 @@ onMounted(() => {
 // hideVideoPlayerDuringAnswer=true の場合、ANSWERING 中は動画を visibility で隠す（Task 20-4）
 const shouldHidePlayer = computed(
   () =>
-    (quizData.value?.settings.hideVideoPlayerDuringAnswer ?? false) &&
+    (gameStore.effectiveSettings?.hideVideoPlayerDuringAnswer ?? false) &&
     gameStore.currentState === GameState.ANSWERING,
 )
 

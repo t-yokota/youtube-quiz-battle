@@ -23,6 +23,7 @@ export interface QuizSettings {
   disableSeekbar: boolean // シークバーの操作を無効にする設定
   jumpToRevealPeriod: boolean // 解答後に正解発表区間へジャンプするか
   hideVideoPlayerDuringAnswer: boolean // 解答中に動画プレイヤーを隠す設定
+  debug: boolean // デバッグモード（true で設定画面にクイズ設定の実行時上書きセクションを表示）
 }
 
 // クイズデータ全体の型定義

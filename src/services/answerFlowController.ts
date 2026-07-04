@@ -134,7 +134,7 @@ export class AnswerFlowController {
         this.gameStore.transitionToState(GameState.WAITING)
 
         // jumpToRevealPeriodでない場合は通常の動画再開
-        if (!this.quizData.settings.jumpToRevealPeriod) {
+        if (!(this.gameStore.effectiveSettings?.jumpToRevealPeriod ?? false)) {
           this.playerControl.playVideo()
         }
       }
@@ -155,7 +155,7 @@ export class AnswerFlowController {
   jumpToRevealIfConfigured(questionIndex: number, isCorrect: boolean): boolean {
     logger.log('[AnswerFlowController] submitAnswer:', questionIndex, 'isCorrect:', isCorrect)
 
-    if (!this.quizData.settings.jumpToRevealPeriod) {
+    if (!(this.gameStore.effectiveSettings?.jumpToRevealPeriod ?? false)) {
       // jumpToRevealPeriod=false の場合、何もしない
       return false
     }
