@@ -46,15 +46,6 @@ export class InternalPlayerControl {
     this.withInternalAction(() => this.playerManager.pauseVideo())
   }
 
-  mute(): void {
-    // ミュートはプレイヤーイベントを発火しないため内部アクション扱い不要
-    this.playerManager.mute()
-  }
-
-  unMute(): void {
-    this.playerManager.unMute()
-  }
-
   seekTo(seconds: number): void {
     this.withInternalAction(() => this.playerManager.seekTo(seconds))
   }

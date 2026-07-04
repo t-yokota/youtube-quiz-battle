@@ -26,8 +26,6 @@ export interface YouTubePlayerManager {
   playVideo(): void
   pauseVideo(): void
   seekTo(time: number): void
-  mute(): void
-  unMute(): void
 
   // 状態取得
   getCurrentTime(): number

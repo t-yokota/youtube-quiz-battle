@@ -113,15 +113,6 @@ export function createYouTubePlayerManager(
           player.seekTo(time, true)
         },
 
-        mute: () => {
-          if (!player) throw new Error('Player not initialized')
-          player.mute()
-        },
-
-        unMute: () => {
-          if (!player) throw new Error('Player not initialized')
-          player.unMute()
-        },
 
         getCurrentTime: () => {
           if (!player) return 0

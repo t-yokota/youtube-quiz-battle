@@ -130,8 +130,6 @@ export class GameManager {
    */
   warmupVideoPlayback(): void {
     this.externalPause.beginGateWarmup(GATE_WARMUP_PLAY_MS + READY_PLAY_SUPPRESS_MS)
-    // ミュートで一瞬再生する（ゲートタップ時に動画音声の頭が「プツッ」と鳴るのを防ぐ）
-    this.playerControl.mute()
     this.playerControl.playVideo()
     this.warmupStopTimer = window.setTimeout(() => {
       this.warmupStopTimer = null
@@ -145,7 +143,6 @@ export class GameManager {
   private stopWarmupNow(): void {
     this.playerControl.pauseVideo()
     this.playerControl.seekTo(0)
-    this.playerControl.unMute()
     this.timeManager.resetTimeValues()
   }
 
@@ -182,8 +179,6 @@ export class GameManager {
       // 再生位置だけ先頭に揃えて続行する
       this.clearWarmupStop(false)
       this.playerControl.seekTo(0)
-      // ウォームアップはミュート再生のため、本編開始時に必ず解除する
-      this.playerControl.unMute()
       this.timeManager.resetTimeValues()
       this.gameStore.transitionToState(GameState.TALKING)
       this.playerControl.playVideo()
