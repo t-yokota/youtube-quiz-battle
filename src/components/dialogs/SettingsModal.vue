@@ -689,7 +689,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .debug-input {
   width: 72px;
-  height: 36px;
+  height: 30px;
   padding: 0 8px;
   font-size: 14px;
   color: var(--color-text-main);
@@ -717,8 +717,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .debug-toggle-track {
   position: relative;
-  width: 44px;
-  height: 20px;
+  width: 56px;
+  height: 26px;
   border-radius: 999px;
   background: var(--color-stage-700);
   border: 1px solid var(--color-line);
@@ -738,29 +738,29 @@ const handleOverlayClick = (event: MouseEvent) => {
   bottom: 0;
   display: flex;
   align-items: center;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--color-text-dim);
   /* OFF: ノブが左なので文言は右側 */
-  right: 5px;
+  right: 7px;
 }
 
 .debug-toggle-track.on .debug-toggle-state {
   color: var(--color-gold-400);
   /* ON: ノブが右なので文言は左側 */
   right: auto;
-  left: 5px;
+  left: 7px;
 }
 
 .debug-toggle-knob {
   position: absolute;
   top: 50%;
-  left: 2px;
+  left: 3px;
   transform: translateY(-50%);
-  width: 15px;
-  height: 15px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--color-text-dim);
   transition:
@@ -769,7 +769,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .debug-toggle-track.on .debug-toggle-knob {
-  left: calc(100% - 15px - 2px);
+  left: calc(100% - 20px - 3px);
   background: var(--color-gold-400);
 }
 
