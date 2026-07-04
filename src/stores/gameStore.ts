@@ -4,7 +4,6 @@ import { defineStore } from 'pinia'
 import { GameState, ButtonState } from '@/types'
 import type { QuizData, QuestionResult } from '@/types'
 import { validate } from '@/services/answerValidator'
-import { useSettingsStore } from '@/stores/settingsStore'
 import { logger } from '@/utils/logger'
 
 export const useGameStore = defineStore('game', () => {
@@ -82,10 +81,7 @@ export const useGameStore = defineStore('game', () => {
       case GameState.LOADING:
         return '読み込み中...'
       case GameState.READY:
-        // ボタンチェック演出 OFF ではボタンが再生ボタンとして動作する（Task 19-4）
-        return useSettingsStore().buttonCheckEnabled
-          ? 'ボタンを押してゲームを開始'
-          : 'ボタンを押して再生を開始'
+        return 'ボタンを押してクイズを開始'
       case GameState.TALKING:
         return currentQuestionIndex.value === -1
           ? '問題の開始をお待ちください'

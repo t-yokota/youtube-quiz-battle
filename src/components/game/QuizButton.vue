@@ -183,9 +183,12 @@ const handleButtonCheckToggle = () => {
 
 .check-toggle-state {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
   font-size: 0.5rem;
+  line-height: 1;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--color-text-dim);
