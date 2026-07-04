@@ -35,6 +35,9 @@ export class GameManager {
   private audioManager?: AudioManager
   private settingsStore?: ReturnType<typeof useSettingsStore>
 
+  // ゲートのウォームアップ停止タイマー（ボタン押下と競合しないよう管理する）
+  private warmupStopTimer: number | null = null
+
   constructor(
     playerManager: YouTubePlayerManager,
     quizData: QuizData,
@@ -128,12 +131,33 @@ export class GameManager {
   warmupVideoPlayback(): void {
     this.externalPause.beginGateWarmup(GATE_WARMUP_PLAY_MS + READY_PLAY_SUPPRESS_MS)
     this.playerControl.playVideo()
-    setTimeout(() => {
-      // ウォームアップ終了: 停止して先頭へ戻す（READY のままゲーム開始を待つ）
-      this.playerControl.pauseVideo()
-      this.playerControl.seekTo(0)
-      this.timeManager.resetTimeValues()
+    this.warmupStopTimer = window.setTimeout(() => {
+      this.warmupStopTimer = null
+      this.stopWarmupNow()
     }, GATE_WARMUP_PLAY_MS)
+  }
+
+  /**
+   * ウォームアップ再生を停止して先頭へ戻す（READY のままゲーム開始を待つ）
+   */
+  private stopWarmupNow(): void {
+    this.playerControl.pauseVideo()
+    this.playerControl.seekTo(0)
+    this.timeManager.resetTimeValues()
+  }
+
+  /**
+   * 保留中のウォームアップ停止タイマーを解除する
+   * @param stopNow true なら停止処理をその場で実行（check ON の押下時）、
+   *                false ならタイマーだけ破棄して再生を続行（check OFF の押下時）
+   */
+  private clearWarmupStop(stopNow: boolean): void {
+    if (this.warmupStopTimer === null) return
+    window.clearTimeout(this.warmupStopTimer)
+    this.warmupStopTimer = null
+    if (stopNow) {
+      this.stopWarmupNow()
+    }
   }
 
   /**
@@ -151,9 +175,20 @@ export class GameManager {
     // ボタンチェック演出 OFF: READY では単なる動画再生ボタンとして動作する（Task 19-4）
     // 演出（PUSHED→RELEASED→STANDBY）・効果音なしで即 TALKING へ遷移し再生開始
     if (stateAtPress === GameState.READY && this.settingsStore?.buttonCheckEnabled === false) {
+      // ウォームアップ停止タイマーが残っていると直後の再生が巻き込まれて止まるため破棄。
+      // 再生位置だけ先頭に揃えて続行する
+      this.clearWarmupStop(false)
+      this.playerControl.seekTo(0)
+      this.timeManager.resetTimeValues()
       this.gameStore.transitionToState(GameState.TALKING)
       this.playerControl.playVideo()
       return
+    }
+
+    // ボタンチェック開始時: ウォームアップがまだ再生中なら即時停止に前倒し
+    // （チェック中は動画停止が正。タイマーに任せると押下音と停止が競合する）
+    if (stateAtPress === GameState.READY) {
+      this.clearWarmupStop(true)
     }
 
     // 早押し: 動画停止と押下音はタップの同期処理内で行う
@@ -338,6 +373,10 @@ export class GameManager {
    * - setupVisibilityHandlers で登録した document/window リスナーを解除
    */
   destroy(): void {
+    if (this.warmupStopTimer !== null) {
+      window.clearTimeout(this.warmupStopTimer)
+      this.warmupStopTimer = null
+    }
     this.answerFlow.stopAnswerCountdown()
     this.externalPause.destroy()
 

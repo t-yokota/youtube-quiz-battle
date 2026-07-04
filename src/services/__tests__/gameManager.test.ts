@@ -1053,6 +1053,55 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     vi.useRealTimers()
   })
 
+  it('check-OFF: ウォームアップ中にボタンを押しても再生が停止タイマーに巻き込まれない', async () => {
+    vi.useFakeTimers()
+    const { useSettingsStore } = await import('@/stores/settingsStore')
+    const settingsStore = useSettingsStore()
+    settingsStore.setButtonCheckEnabled(false)
+
+    const player = makePlayerMock()
+    const store = useGameStore()
+    const quiz = makeQuizData()
+    store.setQuizData(quiz)
+    const gm = createGameManager(player, quiz, store, undefined, settingsStore)
+    store.transitionToState(GameState.READY)
+
+    // ゲート: ウォームアップ再生開始（500ms 後に停止タイマー）
+    gm.warmupVideoPlayback()
+    expect(player.playVideo).toHaveBeenCalledTimes(1)
+
+    // 500ms 経過前にボタン押下（check-OFF: 即 TALKING + 再生）
+    vi.advanceTimersByTime(200)
+    gm.handleButtonPress()
+    expect(store.currentState).toBe(GameState.TALKING)
+    expect(player.playVideo).toHaveBeenCalledTimes(2)
+
+    // ウォームアップの停止タイマーは破棄済み → 500ms を過ぎても pause されない
+    vi.advanceTimersByTime(1000)
+    expect(player.pauseVideo).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('check-ON: ウォームアップ中にボタンを押すとその場で停止に前倒しされる', () => {
+    vi.useFakeTimers()
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    store.transitionToState(GameState.READY)
+
+    gm.warmupVideoPlayback()
+    vi.advanceTimersByTime(200)
+    gm.handleButtonPress()
+
+    // 押下の同期処理内でウォームアップ停止（pause + 先頭へ）が実行される
+    expect(player.pauseVideo).toHaveBeenCalledTimes(1)
+    expect(player.seekTo).toHaveBeenCalledWith(0)
+
+    // 元の停止タイマーは破棄済み → 二重停止しない
+    vi.advanceTimersByTime(1000)
+    expect(player.pauseVideo).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
   it('DISABLED状態では押下できない', () => {
     const player = makePlayerMock()
     const { gm, store } = makeGameManager(makeQuizData(), player)
