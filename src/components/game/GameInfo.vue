@@ -64,28 +64,14 @@ const isQuestionActive = computed(() =>
   ),
 )
 
-// 解答権を残したまま REVEALING に入った場合の暫定不正解表示:
-// 解答済み（最後の解答は不正解 = 正解なら記録済みのはず）かつ未記録なら、
-// 正解発表が始まった時点で結果は不正解に確定しているため×を表示する
-// （正式な記録は従来どおり onEnd で行われる）
-const isProvisionalIncorrect = computed(
-  () =>
-    gameStore.currentState === GameState.REVEALING &&
-    gameStore.pendingUserAnswers.length > 0 &&
-    !resultMap.value.has(current.value),
-)
-
 const chips = computed<ChipItem[]>(() => {
   const items: ChipItem[] = []
   for (let q = start.value; q <= end.value; q++) {
     // 結果が記録された瞬間に即マーク表示する。
-    // 正解/不正解（解答権 0）は確定時、スキップはシーク消費時に記録されるため、
+    // 記録タイミング: 正解/解答権0の不正解 = 判定時 / 解答権残しの不正解・無解答 =
+    // REVEALING 開始時 / スキップ = シーク消費時。
     // 未来の問題番号（前方シークで飛ばした問題）でも記録があれば表示する
-    let variant: ChipVariant = resultMap.value.get(q) ?? 'empty'
-    // 解答権残ありの不正解は REVEALING 突入の瞬間に×を表示
-    if (variant === 'empty' && q === current.value && isProvisionalIncorrect.value) {
-      variant = 'incorrect'
-    }
+    const variant: ChipVariant = resultMap.value.get(q) ?? 'empty'
     // 金グローはマーク表示に関わらず現在の問題に重ね、REVEAL 終了で消灯
     items.push({ q, variant, isCurrent: q === current.value && isQuestionActive.value })
   }

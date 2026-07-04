@@ -52,8 +52,7 @@ export const BUTTON_PUSHED_DURATION_MS = 100
 export const BUTTON_CHECK_RELEASE_MS = 1800
 
 /**
- * ボタンチェック終了後も BUTTON CHECK ラベルを保持する時間（ミリ秒）
- * 正解音が鳴っている間に即 WAIT 表示へ変わる違和感を緩和する（表示層のみの遅延）
+ * ボタンチェック終了後も BUTTON CHECK ラベルを保持する時間（ミリ秒, 表示層のみの遅延）
  */
 export const BUTTON_CHECK_LABEL_HOLD_MS = 10
 
@@ -62,6 +61,13 @@ export const BUTTON_CHECK_LABEL_HOLD_MS = 10
  * 正解音（2秒）と動画音声の重なりを避け、チェック完了の「間」を作る。0 で即時再生
  */
 export const VIDEO_START_DELAY_MS = 1200
+
+/**
+ * リプレイ直後に READY で PLAYING イベントを無視する時間（ミリ秒）
+ * seekTo(0) の直後に YouTube が一瞬 PLAYING を発火することがあり、
+ * これを「プレイヤーからの直接再生」と誤認して TALKING へ遷移するのを防ぐ
+ */
+export const READY_PLAY_SUPPRESS_MS = 1000
 
 /**
  * 解答カウントダウンのインターバル（ミリ秒）

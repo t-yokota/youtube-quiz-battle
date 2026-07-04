@@ -1163,6 +1163,57 @@ describe('解答カウントダウンタイマー', () => {
     expect(store.answerTimeRemaining).toBe(8)
   })
 
+  it('リプレイ直後の spurious PLAYING では TALKING に遷移しない（抑止ウィンドウ）', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+
+    let stateChangeCallback: ((state: number) => void) | null = null
+    player.onStateChange = vi.fn((cb: (state: number) => void) => {
+      stateChangeCallback = cb
+    })
+    gm.initializeExternalPauseHandling()
+
+    // FINISHED まで進めてリプレイ → READY
+    simulatePlayback(gm, 46, 0)
+    gm.handleReplay()
+    expect(store.currentState).toBe(GameState.READY)
+
+    // seekTo(0) 起因の spurious PLAYING が直後に到達
+    stateChangeCallback!(1) // PLAYING
+
+    // TALKING に遷移せず READY のまま、動画は停止し直される
+    expect(store.currentState).toBe(GameState.READY)
+    expect(player.pauseVideo).toHaveBeenCalled()
+  })
+
+  it('動画末尾で ENDED になると External Pause が解除され FINISHED 判定が通る', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(
+      makeQuizData({ disableSeekbar: false, maxAttempts: 1 }),
+      player,
+    )
+
+    let stateChangeCallback: ((state: number) => void) | null = null
+    player.onStateChange = vi.fn((cb: (state: number) => void) => {
+      stateChangeCallback = cb
+    })
+    gm.initializeExternalPauseHandling()
+
+    simulatePlayback(gm, 5.0)
+
+    // シーク操作でユーザー一時停止（PAUSED）→ External Pause
+    stateChangeCallback!(2) // PAUSED
+    expect(gm.isExternalPaused()).toBe(true)
+
+    // 末尾へシークして動画が ENDED に到達 → External Pause 解除
+    stateChangeCallback!(0) // ENDED
+    expect(gm.isExternalPaused()).toBe(false)
+
+    // 次の時間更新でシーク消費 → 全問スキップ → FINISHED
+    gm.updateVideoTime(60.0)
+    expect(store.currentState).toBe(GameState.FINISHED)
+  })
+
   it('READY中にプレイヤーから直接再生されるとTALKINGへ遷移する（ボタンチェック封じ）', () => {
     const player = makePlayerMock()
     const { gm, store } = makeGameManager(makeQuizData(), player)

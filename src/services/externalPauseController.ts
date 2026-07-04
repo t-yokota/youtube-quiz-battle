@@ -4,6 +4,7 @@ import {
   STALL_WALL_MS,
   STALL_VIDEO_DELTA_SEC,
   YOUTUBE_REWIND_THRESHOLD_SEC,
+  READY_PLAY_SUPPRESS_MS,
 } from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
 import { logger } from '@/utils/logger'
@@ -35,6 +36,9 @@ export class ExternalPauseController {
 
   // YouTube Playerによる巻き戻し関連
   private hasPassedRewindThreshold: boolean = false // 閾値通過フラグ
+
+  // リプレイ直後の spurious PLAYING（seekTo(0) 起因）を無視する期限
+  private readyPlaySuppressUntil: number = 0
 
   // 登録済みイベントリスナーの参照（destroy() で解除するために保持）
   private visibilityChangeHandler: (() => void) | null = null
@@ -228,6 +232,18 @@ export class ExternalPauseController {
       // 内部操作による状態変化は除外
       if (this.playerControl.isInternalAction()) return
 
+      // 動画末尾（ENDED）に到達した場合: シーク操作の user pause が残っていると
+      // PLAYING が二度と来ず解除不能になるため、External Pause を解除して
+      // 時間更新（シーク消費 → FINISHED 判定）を通す。再生はしない
+      if (state === YouTubePlayerState.ENDED) {
+        if (this.externalPaused) {
+          logger.log('[ExternalPauseController] Video ended - clearing external pause')
+          this.externalPaused = false
+          this.externalPausedReason = null
+        }
+        return
+      }
+
       // ユーザ操作による状態変化（user）をハンドリング
       // PAUSED状態になった場合
       if (state === YouTubePlayerState.PAUSED) {
@@ -250,6 +266,12 @@ export class ExternalPauseController {
         // READY中にプレイヤーから直接再生された場合はボタンチェックを封じて TALKING へ
         // （再生中にボタンチェックが走ると問題開始と衝突して状態不整合になるため）
         if (!this.externalPaused && this.gameStore.currentState === GameState.READY) {
+          // リプレイの seekTo(0) 起因の spurious PLAYING は無視して停止状態を復元する
+          if (performance.now() < this.readyPlaySuppressUntil) {
+            logger.log('[ExternalPauseController] Suppressed spurious PLAYING after replay')
+            this.playerControl.pauseVideo()
+            return
+          }
           logger.log('[ExternalPauseController] Playback started from player during READY')
           this.gameStore.transitionToState(GameState.TALKING)
           return
@@ -324,10 +346,12 @@ export class ExternalPauseController {
 
   /**
    * handleReplay 用: External Pause状態をクリア
+   * 直後の seekTo(0) が発火させる spurious PLAYING の無視期限もここで設定する
    */
   resetPauseState(): void {
     this.externalPaused = false
     this.externalPausedReason = null
+    this.readyPlaySuppressUntil = performance.now() + READY_PLAY_SUPPRESS_MS
   }
 
   /**

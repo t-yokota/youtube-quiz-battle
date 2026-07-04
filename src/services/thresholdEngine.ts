@@ -311,6 +311,10 @@ export class ThresholdEngine {
   private onReveal(question: QuizQuestion): void {
     logger.log('[ThresholdEngine] onReveal:', question.index)
 
+    // 未確定のまま正解発表に入った場合（解答権残しの不正解・無解答）は
+    // この時点で結果が確定するため記録する（記録済みなら重複ガードで無視される）
+    this.recordSkippedQuestion(question.index, false)
+
     // REVEALING 状態へ遷移
     this.gameStore.transitionToState(GameState.REVEALING)
   }
@@ -322,7 +326,7 @@ export class ThresholdEngine {
   private onEnd(question: QuizQuestion): void {
     logger.log('[ThresholdEngine] onEnd:', question.index)
 
-    // この問題の結果が未記録（スキップ・未解答）の場合、未解答として記録
+    // 通常は onReveal で記録済み。reveal を跨がず end に到達した稀なケースの保険
     this.recordSkippedQuestion(question.index, false)
 
     // 最後の問題かどうかをチェック
