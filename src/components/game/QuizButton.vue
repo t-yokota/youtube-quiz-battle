@@ -144,18 +144,16 @@ const handleButtonCheckToggle = () => {
 /* ボタンチェック演出のトグル（コンテナ右下） */
 .check-toggle {
   position: absolute;
-  right: 0.75rem;
-  bottom: 0.5rem;
+  right: 0;
+  bottom: 0;
   z-index: 3;
   display: flex;
   align-items: center;
   gap: 0.4rem;
   background: none;
   border: none;
-  padding: 0.5rem 0;
+  padding: 0;
   cursor: pointer;
-  /* タッチターゲット確保 */
-  min-height: max(44px, 2.75rem);
   -webkit-tap-highlight-color: transparent;
 }
 
