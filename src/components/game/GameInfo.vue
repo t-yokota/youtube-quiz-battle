@@ -64,21 +64,13 @@ const isQuestionActive = computed(() =>
   ),
 )
 
-// 現在の問題が正解発表（REVEALING）に到達したか。
-// 不正解マークはネタバレ防止のため REVEALING 到達まで表示しない
-const revealReached = computed(() =>
-  [GameState.REVEALING, GameState.TALKING, GameState.FINISHED].includes(gameStore.currentState),
-)
-
 const chips = computed<ChipItem[]>(() => {
   const items: ChipItem[] = []
   for (let q = start.value; q <= end.value; q++) {
-    // 正解・スキップ・無解答は確定した瞬間に即マーク表示
-    let variant: ChipVariant = q <= current.value ? (resultMap.value.get(q) ?? 'empty') : 'empty'
-    // 不正解のみ REVEAL 時点で反映（それまでは未確定表示のまま）
-    if (q === current.value && variant === 'incorrect' && !revealReached.value) {
-      variant = 'empty'
-    }
+    // 結果が記録された瞬間に即マーク表示する。
+    // 正解/不正解は確定（解答権 0）時、スキップはシーク消費時に記録されるため、
+    // 未来の問題番号（前方シークで飛ばした問題）でも記録があれば表示する
+    const variant: ChipVariant = resultMap.value.get(q) ?? 'empty'
     // 金グローはマーク表示に関わらず現在の問題に重ね、REVEAL 終了で消灯
     items.push({ q, variant, isCurrent: q === current.value && isQuestionActive.value })
   }
