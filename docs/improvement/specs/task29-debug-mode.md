@@ -28,12 +28,14 @@ state:
   maxAttemptsOverride: Ref<number | null>
   jumpToRevealPeriodOverride: Ref<boolean | null>
   hideVideoPlayerDuringAnswerOverride: Ref<boolean | null>
+  isMenuVisible: Ref<boolean>                      // デバッグメニューの表示状態（既定 false）
 actions:
   setAnswerTimeLimitOverride(v: number | null)
   setMaxAttemptsOverride(v: number | null)
   setJumpToRevealPeriodOverride(v: boolean | null)
   setHideVideoPlayerDuringAnswerOverride(v: boolean | null)
-  resetOverrides()   // 全て null に
+  setMenuVisible(visible: boolean)
+  resetOverrides()   // 全て null に（isMenuVisible は変更しない）
 ```
 
 - pinia-store.md 規約準拠（setup スタイル、action 経由の変更）
@@ -73,7 +75,15 @@ actions:
 
 ## 29-4. SettingsModal のデバッグセクション
 
-- 表示条件: `gameStore.quizData?.settings.debug === true`。位置は**「ボタンチェック演出」セクションの直下・「データ収集について」の直上**（現在の並びは 効果音設定 → シーク操作 → ボタンチェック演出 → データ収集）
+- **デバッグメニュー表示トグル（2026-07-05 追加要件）**: `settings.debug === true` のとき、
+  **モーダルヘッダーの左側（× ボタンの反対側）**に小さなトグルボタンを表示する
+  （タイトルのセンタリングを崩さないよう × と同様の絶対配置・44px タッチターゲット。
+  アイコン + aria-label「デバッグメニュー」。ON 状態は gold で点灯）
+  - トグル ON で `debugStore.isMenuVisible = true` → デバッグセクションを表示
+  - トグル OFF でセクション非表示。**非表示にしても設定済みの上書き値は生きたまま**
+    （表示状態は UI の見せ方のみ。UI 確認用途で隠せることが目的）
+  - isMenuVisible はセッション限り（既定 false = モーダルを開いてもまずは通常表示）
+- セクションの表示条件: `settings.debug === true && debugStore.isMenuVisible`。位置は**「ボタンチェック演出」セクションの直下・「データ収集について」の直上**（現在の並びは 効果音設定 → シーク操作 → ボタンチェック演出 → データ収集）
 - 見出し: 「デバッグ」+ 説明文「クイズ設定を一時的に上書きします（リロードで解除）」
 - 各項目の UI: **「上書きする」チェックボックス + 入力コントロール**の行構成
   - チェック OFF = override null（コントロールは disabled、プレースホルダにデータ値を表示）
@@ -85,14 +95,15 @@ actions:
 
 ## 29-5. テスト
 
-- debugStore.test.ts（新規）: 既定 null / setter / clamp（0→1、310→300 等）/ resetOverrides / **LocalStorage に書き込まれないこと**
+- debugStore.test.ts（新規）: 既定 null / setter / clamp（0→1、310→300 等）/ resetOverrides（isMenuVisible は不変）/ setMenuVisible / **LocalStorage に書き込まれないこと**
 - gameStore.test.ts に追補: effectiveSettings が debug=false では上書きを無視 / debug=true で上書きが優先 / initializeForQuestion で override が反映（次の問題から）
 - answerFlow 経由: jumpToRevealPeriod override=true で REVEALING 直行（既存テストのパターン流用、gameManager.test.ts に 1 件）
 - 既存テストは 29-1 の `debug: false` 追加以外は無修正
 
 ## 手動確認
 
-- [ ] sample（debug: true）で設定画面にデバッグセクションが出る / debug の無いデータでは出ない
+- [ ] sample（debug: true）でヘッダー左にデバッグトグルが出る / debug の無いデータでは出ない
+- [ ] トグル ON でセクション表示、OFF で非表示（上書き値は維持される）
 - [ ] answerTimeLimit を 3 に上書き → 次の問題からタイマーが 3 秒になる
 - [ ] maxAttempts を 1 に上書き → 次の問題から 1 回で確定
 - [ ] jumpToRevealPeriod ON → 正解時に即 REVEALING へジャンプ
