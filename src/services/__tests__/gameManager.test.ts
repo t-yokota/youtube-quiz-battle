@@ -573,6 +573,35 @@ describe('ボタンチェック演出 OFF（Task 19-4）', () => {
   })
 })
 
+describe('シーク離脱時の解答表示クリア', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('解答権残しの不正解状態でシークスキップすると不正解表示・入力・解答履歴がクリアされる', () => {
+    const { gm, store } = makeGameManager(makeQuizData({ disableSeekbar: false, maxAttempts: 3 }))
+
+    // Q1 で不正解（解答権残あり）
+    simulatePlayback(gm, 11, 0)
+    gm.handleButtonPress()
+    vi.advanceTimersByTime(100)
+    store.updateAnswerInput('まちがい')
+    gm.handleAnswerSubmit('まちがい')
+    expect(store.answerResult).toBe('incorrect')
+    expect(store.pendingUserAnswers).toHaveLength(1)
+
+    // 前方シークで Q1 を離脱（スキップ扱い）
+    gm.updateVideoTime(26.0)
+
+    expect(store.answerResult).toBeNull()
+    expect(store.answerInput).toBe('')
+    expect(store.pendingUserAnswers).toHaveLength(0)
+  })
+})
+
 describe('disableSeekbar のユーザー上書き（Task 19-3）', () => {
   it('override=false ならデータ設定 true でもシークが許可される（強制リセットされない）', async () => {
     const { useSettingsStore } = await import('@/stores/settingsStore')
@@ -1132,6 +1161,23 @@ describe('解答カウントダウンタイマー', () => {
     // カウントダウンが停止していないことを確認
     vi.advanceTimersByTime(2000)
     expect(store.answerTimeRemaining).toBe(8)
+  })
+
+  it('READY中にプレイヤーから直接再生されるとTALKINGへ遷移する（ボタンチェック封じ）', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+
+    let stateChangeCallback: ((state: number) => void) | null = null
+    player.onStateChange = vi.fn((cb: (state: number) => void) => {
+      stateChangeCallback = cb
+    })
+    gm.initializeExternalPauseHandling()
+
+    store.transitionToState(GameState.READY)
+    stateChangeCallback!(1) // PLAYING
+
+    expect(store.currentState).toBe(GameState.TALKING)
+    expect(store.buttonState).toBe(ButtonState.DISABLED)
   })
 
   it('READY中にonStateChange(PAUSED)が非同期到達してもExternal Pauseにならない', () => {

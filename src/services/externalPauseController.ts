@@ -247,6 +247,14 @@ export class ExternalPauseController {
           return
         }
 
+        // READY中にプレイヤーから直接再生された場合はボタンチェックを封じて TALKING へ
+        // （再生中にボタンチェックが走ると問題開始と衝突して状態不整合になるため）
+        if (!this.externalPaused && this.gameStore.currentState === GameState.READY) {
+          logger.log('[ExternalPauseController] Playback started from player during READY')
+          this.gameStore.transitionToState(GameState.TALKING)
+          return
+        }
+
         // External Pauseから復帰
         if (this.externalPaused) {
           this.resumeExternal()

@@ -100,6 +100,10 @@ export class ThresholdEngine {
         inUnconsumedQuestionRange ? GameState.WAITING : GameState.TALKING,
       )
     }
+
+    // シークで問題を離脱したため、解答途中の表示状態（不正解表示・入力内容・解答履歴）を
+    // クリアする。残っていると遷移先の REVEALING 等で前問の不正解 UI が誤表示される
+    this.gameStore.initializeForQuestion()
   }
 
   /**
