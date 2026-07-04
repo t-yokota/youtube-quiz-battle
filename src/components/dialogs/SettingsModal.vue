@@ -587,8 +587,9 @@ const handleOverlayClick = (event: MouseEvent) => {
     border-color var(--duration-base);
 }
 
+/* ON はスライダーと同じくベタの 1 色（枠との差をつけない） */
 .ui-switch-track.on {
-  background: rgba(255, 197, 61, 0.22);
+  background: var(--color-gold-400);
   border-color: var(--color-gold-400);
 }
 
@@ -609,6 +610,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .ui-switch-track.on .ui-switch-knob {
   left: calc(100% - 20px - 3px);
+  /* ベタ gold の上で視認できる暗色に */
+  background: var(--color-stage-900);
 }
 
 .volume-slider {
