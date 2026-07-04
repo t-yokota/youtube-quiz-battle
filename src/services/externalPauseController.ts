@@ -77,6 +77,16 @@ export class ExternalPauseController {
   }
 
   /**
+   * 時間更新（updateVideoTime）をスキップすべきか。
+   * user 一時停止中はスキップしない: 停止中のシークバー操作（特に末尾へのシーク）を
+   * 検出するため。動画時間は凍結しているので通常の窓走査は無害で、
+   * シークのジャンプだけが検出される。visibility 等は YouTube 巻き戻り補正のためスキップを維持
+   */
+  shouldSkipTimeUpdate(): boolean {
+    return this.externalPaused && this.externalPausedReason !== 'user'
+  }
+
+  /**
    * External Pauseを開始
    * @param reason 一時停止の要因
    */

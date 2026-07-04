@@ -1186,6 +1186,31 @@ describe('解答カウントダウンタイマー', () => {
     expect(player.pauseVideo).toHaveBeenCalled()
   })
 
+  it('user 一時停止中に末尾へシークしても検出され FINISHED になる（再生再開なし）', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(
+      makeQuizData({ disableSeekbar: false, maxAttempts: 1 }),
+      player,
+    )
+
+    let stateChangeCallback: ((state: number) => void) | null = null
+    player.onStateChange = vi.fn((cb: (state: number) => void) => {
+      stateChangeCallback = cb
+    })
+    gm.initializeExternalPauseHandling()
+
+    simulatePlayback(gm, 5.0)
+
+    // シークバー操作に伴うユーザー一時停止 → External Pause (user)
+    stateChangeCallback!(2) // PAUSED
+    expect(gm.isExternalPaused()).toBe(true)
+
+    // 停止したまま末尾へシーク（再生は再開されない）→ 時間更新でシーク検出される
+    gm.updateVideoTime(60.0)
+
+    expect(store.currentState).toBe(GameState.FINISHED)
+  })
+
   it('動画末尾で ENDED になると External Pause が解除され FINISHED 判定が通る', () => {
     const player = makePlayerMock()
     const { gm, store } = makeGameManager(

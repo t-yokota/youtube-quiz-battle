@@ -245,8 +245,8 @@ export class GameManager {
    * @param current 現在の動画時間（秒）
    */
   updateVideoTime(current: number): void {
-    // External Pause中は時間更新をスキップ
-    if (this.externalPause.isExternalPaused()) {
+    // External Pause中は時間更新をスキップ（ただし user 一時停止中はシーク検出のため通す）
+    if (this.externalPause.shouldSkipTimeUpdate()) {
       return
     }
 
