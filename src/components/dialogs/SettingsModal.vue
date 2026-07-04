@@ -39,39 +39,51 @@ const handleDebugMenuToggle = () => {
   debugStore.setMenuVisible(!debugStore.isMenuVisible)
 }
 
-// 数値上書き: 空欄 = 上書きなし。確定（change = blur/Enter）時のみ反映し、
-// タイピング途中に clamp で丸められないようにする
+// 上書きコントロールは常に実効値（上書き > データ値）を表示する。
+// 変更で上書き設定、リセットでデータ値表示に戻る。
+// 数値は確定（change = blur/Enter）時のみ反映し、タイピング途中に clamp で丸めない
+const effectiveAnswerTimeLimit = computed(
+  () =>
+    debugStore.answerTimeLimitOverride ?? gameStore.quizData?.settings.answerTimeLimit ?? null,
+)
+const effectiveMaxAttempts = computed(
+  () => debugStore.maxAttemptsOverride ?? gameStore.quizData?.settings.maxAttempts ?? null,
+)
+
 const handleAnswerTimeLimitOverrideChange = (event: Event) => {
   const input = event.target as HTMLInputElement
+  // 空欄で確定した場合は上書き解除（データ値表示に戻す）
   debugStore.setAnswerTimeLimitOverride(input.value === '' ? null : input.valueAsNumber)
-  // clamp 後の確定値を表示に反映
-  input.value = debugStore.answerTimeLimitOverride?.toString() ?? ''
+  input.value = effectiveAnswerTimeLimit.value?.toString() ?? ''
 }
 
 const handleMaxAttemptsOverrideChange = (event: Event) => {
   const input = event.target as HTMLInputElement
   debugStore.setMaxAttemptsOverride(input.value === '' ? null : input.valueAsNumber)
-  input.value = debugStore.maxAttemptsOverride?.toString() ?? ''
+  input.value = effectiveMaxAttempts.value?.toString() ?? ''
 }
 
-// boolean 上書き: 3 値（データ値 / ON / OFF）のセレクトで表現する
-type OverrideSelectValue = 'unset' | 'on' | 'off'
-
-const toSelectValue = (override: boolean | null): OverrideSelectValue =>
-  override === null ? 'unset' : override ? 'on' : 'off'
-
-const fromSelectValue = (value: string): boolean | null =>
-  value === 'unset' ? null : value === 'on'
+// boolean 上書き: ON/OFF の 2 値セレクト。表示は実効値、変更で上書き設定
+const effectiveJumpToRevealPeriod = computed(
+  () =>
+    debugStore.jumpToRevealPeriodOverride ??
+    gameStore.quizData?.settings.jumpToRevealPeriod ??
+    false,
+)
+const effectiveHideVideoPlayerDuringAnswer = computed(
+  () =>
+    debugStore.hideVideoPlayerDuringAnswerOverride ??
+    gameStore.quizData?.settings.hideVideoPlayerDuringAnswer ??
+    false,
+)
 
 const handleJumpToRevealPeriodOverrideChange = (event: Event) => {
-  debugStore.setJumpToRevealPeriodOverride(
-    fromSelectValue((event.target as HTMLSelectElement).value),
-  )
+  debugStore.setJumpToRevealPeriodOverride((event.target as HTMLSelectElement).value === 'on')
 }
 
 const handleHideVideoPlayerDuringAnswerOverrideChange = (event: Event) => {
   debugStore.setHideVideoPlayerDuringAnswerOverride(
-    fromSelectValue((event.target as HTMLSelectElement).value),
+    (event.target as HTMLSelectElement).value === 'on',
   )
 }
 
@@ -304,8 +316,7 @@ const handleOverlayClick = (event: MouseEvent) => {
                   class="debug-input"
                   :min="DEBUG_ANSWER_TIME_LIMIT_MIN"
                   :max="DEBUG_ANSWER_TIME_LIMIT_MAX"
-                  :placeholder="String(gameStore.quizData?.settings.answerTimeLimit ?? '')"
-                  :value="debugStore.answerTimeLimitOverride ?? ''"
+                  :value="effectiveAnswerTimeLimit ?? ''"
                   @change="handleAnswerTimeLimitOverrideChange"
                 />
               </div>
@@ -317,22 +328,18 @@ const handleOverlayClick = (event: MouseEvent) => {
                   class="debug-input"
                   :min="DEBUG_MAX_ATTEMPTS_MIN"
                   :max="DEBUG_MAX_ATTEMPTS_MAX"
-                  :placeholder="String(gameStore.quizData?.settings.maxAttempts ?? '')"
-                  :value="debugStore.maxAttemptsOverride ?? ''"
+                  :value="effectiveMaxAttempts ?? ''"
                   @change="handleMaxAttemptsOverrideChange"
                 />
               </div>
-
-              <p class="seek-description">空欄 = 上書きなし。解答時間・解答回数は次の問題から反映</p>
 
               <div class="debug-row">
                 <span class="seek-label">正解発表ジャンプ</span>
                 <select
                   class="debug-select"
-                  :value="toSelectValue(debugStore.jumpToRevealPeriodOverride)"
+                  :value="effectiveJumpToRevealPeriod ? 'on' : 'off'"
                   @change="handleJumpToRevealPeriodOverrideChange"
                 >
-                  <option value="unset">データ値</option>
                   <option value="on">ON</option>
                   <option value="off">OFF</option>
                 </select>
@@ -342,10 +349,9 @@ const handleOverlayClick = (event: MouseEvent) => {
                 <span class="seek-label">解答中の動画非表示</span>
                 <select
                   class="debug-select"
-                  :value="toSelectValue(debugStore.hideVideoPlayerDuringAnswerOverride)"
+                  :value="effectiveHideVideoPlayerDuringAnswer ? 'on' : 'off'"
                   @change="handleHideVideoPlayerDuringAnswerOverrideChange"
                 >
-                  <option value="unset">データ値</option>
                   <option value="on">ON</option>
                   <option value="off">OFF</option>
                 </select>
