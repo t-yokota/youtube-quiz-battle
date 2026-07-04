@@ -179,6 +179,22 @@ export class ExternalPauseController {
   }
 
   /**
+   * 横画面検出時の External Pause（orientation 用）
+   * visibility と同じ条件（動画再生中 or ANSWERING）のときだけ一時停止する。
+   * READY 等の停止中に無条件で pause すると、縦復帰時の resume が
+   * playVideo してしまい、タップなしで再生が始まる事故になる
+   */
+  pauseExternalForOrientation(): void {
+    const playerState = this.playerControl.getPlayerState()
+    if (
+      playerState === YouTubePlayerState.PLAYING ||
+      this.gameStore.currentState === GameState.ANSWERING
+    ) {
+      this.pauseExternal('orientation')
+    }
+  }
+
+  /**
    * 指定した reason で一時停止中の場合のみ External Pauseを解除
    * （visibility/pagehide/pageshow と同じパターンを orientation にも適用するため）
    * @param reason 解除条件として照合する一時停止の要因

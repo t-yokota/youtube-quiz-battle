@@ -188,7 +188,8 @@ describe('AudioManager: Web Audio 経路', () => {
     expect(manager.getVolume()).toBe(0)
 
     manager.setVolume(0.4)
-    expect(context.gainNode.gain.value).toBe(0.4)
+    // gain は聴感カーブ（2 乗）で反映される
+    expect(context.gainNode.gain.value).toBeCloseTo(0.16)
     expect(manager.getVolume()).toBe(0.4)
   })
 
@@ -231,7 +232,7 @@ describe('AudioManager: Web Audio 経路', () => {
 
     manager.setMute(false)
 
-    expect(context.gainNode.gain.value).toBe(0.6)
+    expect(context.gainNode.gain.value).toBeCloseTo(0.36)
   })
 
   it('正常系: suspended 中の playSound は resume 完了後に再生される（初回の音を落とさない）', async () => {
@@ -324,7 +325,7 @@ describe('AudioManager: HTML Audio フォールバック経路', () => {
     manager.setVolume(0.3)
 
     for (const audio of audioElementInstances) {
-      expect(audio.volume).toBe(0.3)
+      expect(audio.volume).toBeCloseTo(0.09)
     }
   })
 })

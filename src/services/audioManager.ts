@@ -272,7 +272,8 @@ export class AudioManager {
   }
 
   private currentGainValue(): number {
-    return this.muted ? 0 : this.volume
+    // 線形ゲインは聴感上の差が小さいため 2 乗カーブで段差を体感に合わせる
+    return this.muted ? 0 : this.volume * this.volume
   }
 
   private applyGain(): void {

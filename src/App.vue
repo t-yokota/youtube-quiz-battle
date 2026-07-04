@@ -49,7 +49,7 @@ const isSettingsOpen = ref(false)
 // 画面向き検出（横画面時は External Pause で一時停止し、ダイアログを表示）
 const { isLandscape: isOrientationOpen, stop: stopOrientationGuard } = useOrientationGuard(
   () => {
-    gameManager.value?.pauseExternal('orientation')
+    gameManager.value?.pauseExternalForOrientation()
   },
   () => {
     gameManager.value?.resumeExternalIfReason('orientation')

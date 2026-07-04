@@ -260,6 +260,13 @@ export class GameManager {
   }
 
   /**
+   * 横画面検出時の External Pause（再生中 or ANSWERING のときのみ停止する）
+   */
+  pauseExternalForOrientation(): void {
+    this.externalPause.pauseExternalForOrientation()
+  }
+
+  /**
    * External Pauseを解除
    */
   resumeExternal(): void {
