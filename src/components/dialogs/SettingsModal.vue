@@ -43,8 +43,7 @@ const handleDebugMenuToggle = () => {
 // 変更で上書き設定、リセットでデータ値表示に戻る。
 // 数値は確定（change = blur/Enter）時のみ反映し、タイピング途中に clamp で丸めない
 const effectiveAnswerTimeLimit = computed(
-  () =>
-    debugStore.answerTimeLimitOverride ?? gameStore.quizData?.settings.answerTimeLimit ?? null,
+  () => debugStore.answerTimeLimitOverride ?? gameStore.quizData?.settings.answerTimeLimit ?? null,
 )
 const effectiveMaxAttempts = computed(
   () => debugStore.maxAttemptsOverride ?? gameStore.quizData?.settings.maxAttempts ?? null,
@@ -775,8 +774,12 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .debug-reset-button {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
   padding: 0 16px;
+  line-height: 1;
   font-size: 14px;
   font-weight: 700;
   color: var(--color-text-main);
