@@ -111,15 +111,41 @@ export class AudioManager {
     }
   }
 
+  /**
+   * running 状態の AudioContext を確保する。
+   * iOS では動画再生に音声セッションを奪われると既存コンテキストが
+   * 非標準の 'interrupted' になり無音化するため、running でない場合は
+   * コンテキストを作り直す（ユーザー操作内で生成すれば最初から running になる）。
+   * デコード済み AudioBuffer はコンテキスト間で再利用できる
+   */
+  private ensureRunningContext(): AudioContext | null {
+    if (!this.audioContext) return null
+    if (this.audioContext.state === 'running') return this.audioContext
+
+    const Ctor =
+      window.AudioContext ?? (window as WindowWithWebkitAudioContext).webkitAudioContext
+    if (!Ctor) return this.audioContext
+
+    void this.audioContext.close().catch(() => {})
+    const context = new Ctor()
+    const gainNode = context.createGain()
+    gainNode.gain.value = this.currentGainValue()
+    gainNode.connect(context.destination)
+    this.audioContext = context
+    this.gainNode = gainNode
+    return context
+  }
+
   private playWithWebAudio(type: SOUND_TYPE): void {
     if (!this.audioContext || !this.audioBuffer || !this.gainNode) return
 
-    // ユーザー操作前に生成した AudioContext は suspended で始まる。
-    // また iOS では動画再生が音声セッションを奪うと非標準の 'interrupted' になる。
-    // resume は非同期のため、完了を待たずに start すると発音が無音で捨てられる（iOS）。
-    // 'running' 以外はすべて resume 完了後に再生し直す
-    if (this.audioContext.state !== 'running') {
-      void this.audioContext.resume().then(() => {
+    const context = this.ensureRunningContext()
+    if (!context) return
+
+    // 作り直しても running にならない場合（ユーザー操作外の呼び出し等）は
+    // resume 完了後に再生し直す
+    if (context.state !== 'running') {
+      void context.resume().then(() => {
         if (this.soundEnabled && !this.muted) {
           this.playWithWebAudio(type)
         }
@@ -128,9 +154,9 @@ export class AudioManager {
     }
 
     const segment = this.sprite.sprite[type]
-    const source = this.audioContext.createBufferSource()
+    const source = context.createBufferSource()
     source.buffer = this.audioBuffer
-    source.connect(this.gainNode)
+    source.connect(this.gainNode!)
     source.start(0, segment.start, segment.duration)
 
     this.currentSource = source
@@ -211,15 +237,13 @@ export class AudioManager {
    * 無音バッファを 1 サンプル再生し音声セッションを確実に活性化する
    */
   unlock(): void {
-    if (!this.audioContext) return
-    if (this.audioContext.state !== 'running') {
-      void this.audioContext.resume()
-    }
+    const context = this.ensureRunningContext()
+    if (!context) return
     try {
-      const silent = this.audioContext.createBuffer(1, 1, this.audioContext.sampleRate)
-      const source = this.audioContext.createBufferSource()
+      const silent = context.createBuffer(1, 1, context.sampleRate)
+      const source = context.createBufferSource()
       source.buffer = silent
-      source.connect(this.audioContext.destination)
+      source.connect(context.destination)
       source.start(0)
     } catch (error) {
       logger.warn('[AudioManager] unlock failed:', error)

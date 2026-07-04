@@ -134,6 +134,16 @@ function handlePlayerError(message: string) {
 
 // QuizButton 押下 → GameManager に委譲
 function handleButtonPress() {
+  // iOS ではキーボードがユーザー操作内の同期 focus() でしか開かないため、
+  // ANSWERING 遷移（100ms 後）を待たずタップ内で入力欄を有効化して focus する
+  // （disabled の直書きは直後の ANSWERING 遷移で Vue の束縛が正式に引き継ぐ）
+  if (isTouchDevice && gameStore.currentState === GameState.QUESTIONING) {
+    const input = document.querySelector<HTMLInputElement>('.answer-input')
+    if (input) {
+      input.disabled = false
+      input.focus()
+    }
+  }
   gameManager.value?.handleButtonPress()
 }
 

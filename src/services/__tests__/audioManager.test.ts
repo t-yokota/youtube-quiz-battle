@@ -28,6 +28,7 @@ interface MockAudioContextInstance {
   createBufferSource: ReturnType<typeof vi.fn>
   decodeAudioData: ReturnType<typeof vi.fn>
   resume: ReturnType<typeof vi.fn>
+  close: ReturnType<typeof vi.fn>
 }
 
 function createMockAudioContext(): MockAudioContextInstance {
@@ -54,6 +55,7 @@ function createMockAudioContext(): MockAudioContextInstance {
     resume: vi.fn(async () => {
       context.state = 'running'
     }),
+    close: vi.fn(async () => {}),
   }
 
   return context
