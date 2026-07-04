@@ -33,6 +33,13 @@ export const SOUND_FILES: Record<SOUND_TYPE, string> = {
 }
 
 /**
+ * 無音ループ用ファイル（iOS のサイレントスイッチ対策）
+ * 再生中のメディア要素があると音声セッションが「再生」カテゴリに保たれ、
+ * Web Audio の効果音が消音モードでも鳴るようになる
+ */
+export const SILENT_LOOP_FILE = `${import.meta.env.BASE_URL}assets/sounds/silence.wav`
+
+/**
  * 設定情報（soundEnabled / volumeLevel）を保存する LocalStorage キー
  */
 export const LOCALSTORAGE_KEY_SETTINGS = 'yqb-settings'

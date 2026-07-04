@@ -1,24 +1,12 @@
 // 音声管理サービス
 // Web Audio API を主として使用し、AudioContext 未対応環境では HTML Audio にフォールバックする
-import { SOUND_TYPE, DEFAULT_AUDIO_SPRITE, SOUND_FILES } from '@/constants/audio'
+import { SOUND_TYPE, DEFAULT_AUDIO_SPRITE, SOUND_FILES, SILENT_LOOP_FILE } from '@/constants/audio'
 import { logger } from '@/utils/logger'
 
 type SpriteDefinition = typeof DEFAULT_AUDIO_SPRITE
 
 export interface AudioManagerOptions {
   sprite?: SpriteDefinition
-}
-
-/**
- * iOS（iPadOS 含む）判定
- * iOS の Web Audio はサイレントスイッチで消音されるが、HTMLAudio（メディア要素）は
- * 鳴るため、iOS では HTMLAudio 経路を優先する
- */
-function isIOS(): boolean {
-  return (
-    /iP(hone|od|ad)/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  )
 }
 
 /**
@@ -49,6 +37,10 @@ export class AudioManager {
   // HTML Audio 経路用（音ごとの個別要素。シークなしで頭から再生するため遅延がない）
   private htmlAudios: Partial<Record<SOUND_TYPE, HTMLAudioElement>> = {}
 
+  // 無音ループ（iOS サイレントスイッチ対策）: 再生中のメディア要素で音声セッションを
+  // 「再生」カテゴリに保ち、Web Audio の効果音を消音モードでも鳴らす
+  private silentLoop: HTMLAudioElement | null = null
+
   private useWebAudio = false
   private initialized = false
 
@@ -65,7 +57,7 @@ export class AudioManager {
       const AudioContextCtor =
         window.AudioContext ?? (window as WindowWithWebkitAudioContext).webkitAudioContext
 
-      if (AudioContextCtor && !isIOS()) {
+      if (AudioContextCtor) {
         await this.initWebAudio(AudioContextCtor)
         this.useWebAudio = true
       } else {
@@ -117,6 +109,11 @@ export class AudioManager {
     if (!this.initialized || !this.soundEnabled || this.muted) return
 
     this.stopSound()
+
+    // 中断等で無音ループが止まっていたら再開（アンロック済み要素なのでジェスチャ外でも可）
+    if (this.silentLoop && this.silentLoop.paused) {
+      void this.silentLoop.play()?.catch(() => {})
+    }
 
     if (this.useWebAudio) {
       this.playWithWebAudio(type)
@@ -245,7 +242,7 @@ export class AudioManager {
     // （promise 完了を待つと iOS で音が一瞬漏れる）
     if (!this.useWebAudio) {
       for (const audio of Object.values(this.htmlAudios)) {
-        void audio.play().catch((error) => {
+        void audio.play()?.catch((error) => {
           logger.warn('[AudioManager] HTMLAudio unlock failed:', error)
         })
         audio.pause()
@@ -253,6 +250,17 @@ export class AudioManager {
       }
       return
     }
+
+    // 無音ループを開始（ジェスチャ内なので許可される。以後流しっぱなしにして
+    // 音声セッションを保持し、消音モードでも Web Audio を鳴らす）
+    if (!this.silentLoop) {
+      const loop = new Audio(SILENT_LOOP_FILE)
+      loop.loop = true
+      this.silentLoop = loop
+    }
+    void this.silentLoop.play()?.catch((error) => {
+      logger.warn('[AudioManager] silent loop start failed:', error)
+    })
 
     const context = this.ensureRunningContext()
     if (!context) return
