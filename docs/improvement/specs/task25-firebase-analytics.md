@@ -51,6 +51,7 @@ export interface AnswerSubmittedEvent {
   answer: string                 // この試行の解答文字列（100 文字超は切り詰め）
   isCorrect: boolean
   timeUntilPress: number         // この試行で解答権を得る（ボタンを押す）までの時間（問題開始からの秒・小数1桁）
+  questionText?: string          // データが問題文を持つ場合のみ送る（100 文字超は切り詰め）
 }
 
 export interface QuizSessionCompletedEvent {
