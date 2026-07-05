@@ -39,6 +39,8 @@ export interface QuestionAnsweredEvent {
                                  // GA4 のイベントパラメータは配列不可・値 100 文字上限のため、
                                  // 連結後 100 文字を超える場合は末尾を切り詰める
   questionText?: string          // データが問題文を持つ場合のみ送る（100 文字超は切り詰め）
+  pressOffsets: string           // その問題の開始から何秒後にボタンを押したかの履歴（秒・小数1桁）を
+                                 // '|' 連結した文字列（例 "2.4|5.1"。未押下は空文字。100 文字超は切り詰め）
 }
 
 export interface QuizSessionCompletedEvent {
@@ -78,6 +80,16 @@ export function createAnalyticsService(): AnalyticsService
   - `result`: `skipped → 'skipped'` / `isCorrect → 'correct'` / それ以外で `userAnswers.length === 0 → 'unanswered'` / 残り → `'incorrect'`
   - `attemptsUsed = userAnswers.length` / `answers = userAnswers.join('|')`（100 文字超は切り詰め）
   - `questionText = quizData.questions[questionIndex].questionText`（未定義なら送らない。100 文字超は切り詰め）
+  - `pressOffsets = result.pressOffsets.map(v => v.toFixed(1)).join('|')`（100 文字超は切り詰め）
+- **前提整備（押下タイミングの記録）**: 現状、押下時刻は未記録のため以下を追加する:
+  - gameStore: `pendingPressOffsets = ref<number[]>([])` と action `recordButtonPress(offsetSec: number)` を新設。
+    `pendingUserAnswers` と同じライフサイクルでクリア（initializeForQuestion / シーク離脱 / recordResult 時）
+  - `QuestionResult`（src/types/result.ts）に `pressOffsets: number[]` を追加し、`recordResult` 内で
+    `[...pendingPressOffsets.value]` を取り込む（呼び出し側のシグネチャは変えない）
+  - gameManager の早押し処理（QUESTIONING の同期分岐、pauseVideo の直後）で
+    `Math.max(0, playerControl.getCurrentTime() - 現在の問題.startTime)` を小数 1 桁に丸めて recordButtonPress する
+  - 既存テストへの影響: QuestionResult 生成箇所に `pressOffsets` が加わる。期待値オブジェクトを
+    toMatchObject 比較にするか `pressOffsets: []` を追記して対応（値の変更はしない）
 - **前提整備**: `questionText` は RawQuizData には存在するが変換時に捨てられているため、
   `QuizQuestion` 型（src/types/quizData.ts）に `questionText?: string` を追加し、
   quizDataLoader の convert で引き継ぐ（存在時のみ。validate は string 型チェックを任意項目として追加）
