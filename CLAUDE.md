@@ -103,3 +103,4 @@ src/
 | 詳細設計（状態遷移・時間管理等） | [docs/design.md](docs/design.md) |
 | 要件定義 | [docs/requirements.md](docs/requirements.md) |
 | ワイヤーフレーム | [docs/assets/wireframe.html](docs/assets/wireframe.html) |
+| デプロイ手順 | [docs/deployment.md](docs/deployment.md) |
