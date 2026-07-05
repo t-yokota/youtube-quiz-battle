@@ -39,7 +39,7 @@ export interface QuestionAnsweredEvent {
                                  // GA4 のイベントパラメータは配列不可・値 100 文字上限のため、
                                  // 連結後 100 文字を超える場合は末尾を切り詰める
   questionText?: string          // データが問題文を持つ場合のみ送る（100 文字超は切り詰め）
-  pressOffsets: string           // その問題の開始から何秒後にボタンを押したかの履歴（秒・小数1桁）を
+  timesUntilPress: string        // その問題の開始から何秒後にボタンを押したかの履歴（秒・小数1桁）を
                                  // '|' 連結した文字列（例 "2.4|5.1"。未押下は空文字。100 文字超は切り詰め）
 }
 
@@ -50,7 +50,7 @@ export interface AnswerSubmittedEvent {
   attemptIndex: number           // 1-origin（何回目の試行か）
   answer: string                 // この試行の解答文字列（100 文字超は切り詰め）
   isCorrect: boolean
-  pressOffset: number            // この試行で解答権を得た（ボタンを押した）タイミング（問題開始からの秒・小数1桁）
+  timeUntilPress: number         // この試行で解答権を得る（ボタンを押す）までの時間（問題開始からの秒・小数1桁）
 }
 
 export interface QuizSessionCompletedEvent {
@@ -87,7 +87,7 @@ export function createAnalyticsService(): AnalyticsService
      **length を監視**して増分のみ送る。送信済み件数を `lastSentCount` ref（number）で保持し、
      `results[lastSentCount..length-1]` を logQuestionAnswered して更新する（Set は不要）
   3. 増分の各 QuestionResult について、`userAnswers` の各要素を logAnswerSubmitted で個別送信する。
-     attemptIndex は 1-origin、`pressOffset = pressOffsets[attemptIndex - 1]`。
+     attemptIndex は 1-origin、`timeUntilPress = pressOffsets[attemptIndex - 1]`（内部の記録名は pressOffsets のまま）。
      押下（解答権の獲得）と解答は 1:1 対応する（時間切れでもその時点の入力内容が解答として記録されるため）。
      その後サマリの logQuestionAnswered を 1 件送る（パイプ連結フィールドは分析の利便用に維持）
   4. FINISHED 遷移で logQuizSessionCompleted（集計は `results` から算出）
@@ -95,7 +95,7 @@ export function createAnalyticsService(): AnalyticsService
   - `result`: `skipped → 'skipped'` / `isCorrect → 'correct'` / それ以外で `userAnswers.length === 0 → 'unanswered'` / 残り → `'incorrect'`
   - `attemptsUsed = userAnswers.length` / `answers = userAnswers.join('|')`（100 文字超は切り詰め）
   - `questionText = quizData.questions[questionIndex].questionText`（未定義なら送らない。100 文字超は切り詰め）
-  - `pressOffsets = result.pressOffsets.map(v => v.toFixed(1)).join('|')`（100 文字超は切り詰め）
+  - `timesUntilPress = result.pressOffsets.map(v => v.toFixed(1)).join('|')`（100 文字超は切り詰め）
 - **前提整備（押下タイミングの記録）**: 現状、押下時刻は未記録のため以下を追加する:
   - gameStore: `pendingPressOffsets = ref<number[]>([])` と action `recordButtonPress(offsetSec: number)` を新設。
     `pendingUserAnswers` と同じライフサイクルでクリア（initializeForQuestion / シーク離脱 / recordResult 時）
