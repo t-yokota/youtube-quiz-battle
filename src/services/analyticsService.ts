@@ -155,11 +155,14 @@ class AnalyticsService {
 
     try {
       // gtag スタブの設置（公式スニペット相当）
+      // 注意: gtag.js は dataLayer 内の Arguments オブジェクトのみをコマンドとして
+      // 処理するため、rest 引数の配列ではなく arguments をそのまま push する必要がある
       window.dataLayer = window.dataLayer ?? []
       window.gtag =
         window.gtag ??
-        function gtag(...args: unknown[]) {
-          window.dataLayer!.push(args)
+        function gtag() {
+          // eslint-disable-next-line prefer-rest-params
+          window.dataLayer!.push(arguments)
         }
       window.gtag('js', new Date())
       window.gtag('config', this.measurementId)
