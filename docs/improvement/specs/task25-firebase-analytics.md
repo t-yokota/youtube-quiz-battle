@@ -50,7 +50,7 @@ export interface AnswerSubmittedEvent {
   attemptIndex: number           // 1-origin（何回目の試行か）
   answer: string                 // この試行の解答文字列（100 文字超は切り詰め）
   isCorrect: boolean
-  pressOffset: number | null     // この試行の押下タイミング（問題開始からの秒・小数1桁）。対応が取れない場合 null
+  pressOffset: number            // この試行で解答権を得た（ボタンを押した）タイミング（問題開始からの秒・小数1桁）
 }
 
 export interface QuizSessionCompletedEvent {
@@ -86,9 +86,9 @@ export function createAnalyticsService(): AnalyticsService
   2. `watch(() => gameStore.results.length)`: `results` は `ref<QuestionResult[]>` に **push で追記**される（参照は変わらない）ため、
      **length を監視**して増分のみ送る。送信済み件数を `lastSentCount` ref（number）で保持し、
      `results[lastSentCount..length-1]` を logQuestionAnswered して更新する（Set は不要）
-  3. 増分の各 QuestionResult について、`userAnswers` の各要素を logAnswerSubmitted で個別送信する
-     （attemptIndex は 1-origin。pressOffset は `pressOffsets[attemptIndex-1] ?? null` — 押下と解答は
-     通常 1:1 だが、タイムアウト確定などでズレた場合は null 側に倒す）。
+  3. 増分の各 QuestionResult について、`userAnswers` の各要素を logAnswerSubmitted で個別送信する。
+     attemptIndex は 1-origin、`pressOffset = pressOffsets[attemptIndex - 1]`。
+     押下（解答権の獲得）と解答は 1:1 対応する（時間切れでもその時点の入力内容が解答として記録されるため）。
      その後サマリの logQuestionAnswered を 1 件送る（パイプ連結フィールドは分析の利便用に維持）
   4. FINISHED 遷移で logQuizSessionCompleted（集計は `results` から算出）
 - `QuestionResult`（isCorrect / skipped / userAnswers を持つ）からのイベント値の導出規則:
