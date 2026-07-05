@@ -128,6 +128,8 @@ watch(
   justify-content: space-between;
   align-items: center;
   height: 1.625rem;
+  /* 両端の残り回数・タイマーを枠から数 px 内側に寄せる */
+  padding: 0 0.25rem;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
