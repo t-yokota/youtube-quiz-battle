@@ -50,6 +50,45 @@ const initError = ref<{ title: string; message: string } | null>(null)
 const analyticsService = createAnalyticsService()
 const quizSessionId = ref('')
 const videoTitle = ref('')
+
+// セッション進行中（started 送信後〜FINISHED 前）のみ設定変更イベントを送る
+const isSessionActive = computed(
+  () =>
+    quizSessionId.value !== '' &&
+    gameStore.currentState !== GameState.READY &&
+    gameStore.currentState !== GameState.LOADING &&
+    gameStore.currentState !== GameState.FINISHED,
+)
+
+// クイズ中に作用する設定の変更を記録する（READY での変更は次セッションの
+// quiz_session_started スナップショットに反映されるため送らない）
+function logSettingChange(settingName: 'seek_allowed' | 'button_check_enabled', value: boolean) {
+  if (!isSessionActive.value) return
+  analyticsService.logSettingChanged({
+    quizSessionId: quizSessionId.value,
+    quizId: currentQuizId,
+    videoId: quizData.value?.videoId ?? '',
+    settingName,
+    settingValue: value,
+    questionIndex: gameStore.currentQuestionIndex,
+  })
+}
+
+watch(
+  () => settingsStore.disableSeekbarOverride ?? quizData.value?.settings.disableSeekbar ?? true,
+  (disabled, prevDisabled) => {
+    if (disabled === prevDisabled) return
+    logSettingChange('seek_allowed', !disabled)
+  },
+)
+
+watch(
+  () => gameStore.isButtonCheckEnabled,
+  (enabled, prevEnabled) => {
+    if (enabled === prevEnabled) return
+    logSettingChange('button_check_enabled', enabled)
+  },
+)
 // results への送信済み件数（gameStore.results は push 追記のため length を監視する）
 const lastSentResultCount = ref(0)
 

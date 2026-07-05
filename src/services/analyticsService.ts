@@ -61,6 +61,16 @@ export interface AnswerSubmittedEvent {
   questionText?: string
 }
 
+/** セッション進行中の設定変更イベント（setting_changed） */
+export interface SettingChangedEvent {
+  quizSessionId: string
+  quizId: string
+  videoId: string
+  settingName: 'seek_allowed' | 'button_check_enabled'
+  settingValue: boolean
+  questionIndex: number          // 変更時点の問題位置（問題間は直前の問題の index、開始前は -1）
+}
+
 /** セッション完走イベント（quiz_session_completed） */
 export interface QuizSessionCompletedEvent {
   quizSessionId: string
@@ -236,6 +246,18 @@ class AnalyticsService {
       questionText: event.questionText ? sanitizeAndTruncate(event.questionText) : undefined,
     })
     this.dispatch('answer_submitted', params)
+  }
+
+  logSettingChanged(event: SettingChangedEvent): void {
+    const params = buildGaParams({
+      quizSessionId: event.quizSessionId,
+      quizId: event.quizId,
+      videoId: event.videoId,
+      settingName: event.settingName,
+      settingValue: event.settingValue,
+      questionIndex: event.questionIndex,
+    })
+    this.dispatch('setting_changed', params)
   }
 
   logQuizSessionCompleted(event: QuizSessionCompletedEvent): void {

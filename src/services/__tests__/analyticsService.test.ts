@@ -157,6 +157,28 @@ describe('AnalyticsService（gtag.js 送信層）', () => {
       expect(names).toEqual(['question_answered', 'quiz_session_completed'])
     })
 
+    it('logSettingChanged が setting_changed イベントを積む', async () => {
+      const service = createAnalyticsService(TEST_MEASUREMENT_ID)
+      await service.init()
+
+      service.logSettingChanged({
+        quizSessionId: 's1',
+        quizId: 'q1',
+        videoId: 'v1',
+        settingName: 'seek_allowed',
+        settingValue: true,
+        questionIndex: 2,
+      })
+
+      const [entry] = eventEntries()
+      expect(entry[1]).toBe('setting_changed')
+      expect(entry[2]).toMatchObject({
+        setting_name: 'seek_allowed',
+        setting_value: 1,
+        question_index: 2,
+      })
+    })
+
     it('undefined のフィールドはパラメータに含めない', async () => {
       const service = createAnalyticsService(TEST_MEASUREMENT_ID)
       await service.init()

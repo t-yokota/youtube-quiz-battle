@@ -211,6 +211,14 @@ export function createAnalyticsService(): AnalyticsService
   3. FINISHED 遷移で logQuizSessionCompleted（集計は `results` から算出。totalAttempts = attemptsUsed の総和）
 - `analyticsService.init()` は **`App.vue` の `handleGateTap` 内**（ゲート解除直後）に fire-and-forget（`void init()`）で呼ぶ
 
+### setting_changed（2026-07-05 追加）
+
+- セッション進行中（started 送信後〜FINISHED 前）にユーザーが設定を変更したとき送信:
+  `setting_name`（'seek_allowed' | 'button_check_enabled'）/ `setting_value`（1/0）/
+  `question_index`（変更時点の問題位置）+ セッション文脈
+- READY での変更は送らない（次セッションの quiz_session_started スナップショットに反映されるため）
+- シーク許可は進行中セッションのスキップ発生条件を変えるため、成績解釈にこの変化点が必要
+
 ## 25-6. GA4 UI 登録ガイド（手動作業・実装対象外）
 
 - カスタムディメンション（イベントスコープ）: `quiz_id` / `video_id` / `result` / `submission_type` に加え、設定スナップショット系（`button_check_enabled` / `seek_allowed` / `jump_to_reveal_period` / `hide_video_player_during_answer`）も登録可（いずれも低カーディナリティ）
@@ -221,7 +229,7 @@ export function createAnalyticsService(): AnalyticsService
 
 ## 25-7. PrivacyInfo との整合（D-15）
 
-- 送信するのは上記 4 イベントのみ。個人識別子（uid・氏名・連絡先）は送らない + 自由入力は PII マスク
+- 送信するのは上記 5 イベント（setting_changed 含む）のみ。個人識別子（uid・氏名・連絡先）は送らない + 自由入力は PII マスク
 - 解答文字列の送信は PrivacyInfo に既述（「入力した解答内容も統計処理の対象」）— 文言変更不要
 - GA4 の自動収集（page_view 等）はデフォルトのままで良い
 
