@@ -1,6 +1,9 @@
 # Task 25 実行spec: Firebase Analytics 統合
 
 > 作成: 2026-07-05（Fable 5 による設計）。外部レビュー（GA4/BigQuery 観点）を反映済み。
+> **改訂（2026-07-05）**: 送信層を Firebase SDK から **gtag.js 直接**に変更（ユーザーが素の GA4
+> プロパティ + 測定 ID を用意したため。Firebase プロジェクト作成が不要になり、キュー機構も
+> dataLayer のネイティブバッファで代替）。イベント定義・変換・サニタイズ・UI 登録ガイドは有効なまま。
 > 完了条件: `npm run test` / `type-check` / `lint` / `build` パス + 手動確認（DebugView でイベント受信）。
 
 ## 概要

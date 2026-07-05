@@ -1,97 +1,92 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-
-// FIREBASE_CONFIG をテストごとに書き換え可能にするため vi.hoisted で共有オブジェクトを用意する
-const mockConfig = vi.hoisted(() => ({
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
-  measurementId: '',
-}))
-
-vi.mock('@/constants/firebase', () => ({
-  FIREBASE_CONFIG: mockConfig,
-}))
-
-const mockLogEvent = vi.fn()
-const mockGetAnalytics = vi.fn(() => ({}))
-const mockIsSupported = vi.fn(async () => true)
-const mockInitializeApp = vi.fn(() => ({}))
-
-vi.mock('firebase/app', () => ({
-  initializeApp: mockInitializeApp,
-}))
-
-vi.mock('firebase/analytics', () => ({
-  getAnalytics: mockGetAnalytics,
-  isSupported: mockIsSupported,
-  logEvent: mockLogEvent,
-}))
-
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createAnalyticsService, sanitizeAndTruncate } from '../analyticsService'
+import { ANALYTICS_PARAM_MAX_LENGTH } from '@/constants/analytics'
 
-describe('AnalyticsService', () => {
+const TEST_MEASUREMENT_ID = 'G-TEST123'
+
+// dataLayer に積まれた gtag 呼び出しから event エントリのみ抽出する
+function eventEntries(): Array<[string, string, Record<string, unknown>]> {
+  const layer = (window.dataLayer ?? []) as Array<ArrayLike<unknown>>
+  return layer
+    .map((entry) => Array.from(entry))
+    .filter((args): args is [string, string, Record<string, unknown>] => args[0] === 'event')
+}
+
+function makeStartedEvent() {
+  return {
+    quizSessionId: 's1',
+    quizId: 'q1',
+    videoId: 'v1',
+    totalQuestions: 5,
+  }
+}
+
+describe('AnalyticsService（gtag.js 送信層）', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockConfig.measurementId = ''
-    mockIsSupported.mockResolvedValue(true)
-    mockInitializeApp.mockImplementation(() => ({}))
+    delete window.dataLayer
+    delete window.gtag
   })
 
-  describe('measurementId が空（設定なし）', () => {
-    it('init後もlog*がlogEventを呼ばない（no-op）', async () => {
-      const service = createAnalyticsService()
+  afterEach(() => {
+    document.querySelectorAll('script[src*="googletagmanager"]').forEach((el) => el.remove())
+    delete window.dataLayer
+    delete window.gtag
+  })
+
+  describe('measurementId が空（no-op）', () => {
+    it('init しても gtag/dataLayer を設置せず、log* も no-op', async () => {
+      const service = createAnalyticsService('')
       await service.init()
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 5 })
-      service.logAnswerSubmitted({
-        quizSessionId: 's1',
-        quizId: 'q1',
-        videoId: 'v1',
-        questionIndex: 0,
-        attemptIndex: 1,
-        answer: 'answer',
-        isCorrect: true,
-        isFinalAttempt: true,
-        submissionType: 'manual',
-        timeUntilPressSec: 1.0,
-      })
+      service.logQuizSessionStarted(makeStartedEvent())
 
-      expect(mockLogEvent).not.toHaveBeenCalled()
+      expect(window.gtag).toBeUndefined()
+      expect(window.dataLayer).toBeUndefined()
+      expect(document.querySelector('script[src*="googletagmanager"]')).toBeNull()
     })
   })
 
   describe('measurementId が設定済み', () => {
-    it('logQuizSessionStartedがsnake_caseパラメータで呼ばれる', async () => {
-      mockConfig.measurementId = 'G-TEST'
-      const service = createAnalyticsService()
+    it('init で gtag スタブ設置 + config 送信 + gtag.js スクリプトを注入する', async () => {
+      const service = createAnalyticsService(TEST_MEASUREMENT_ID)
       await service.init()
 
-      service.logQuizSessionStarted({
-        quizSessionId: 's1',
-        quizId: 'q1',
-        videoId: 'v1',
-        videoTitle: 'タイトル',
-        totalQuestions: 5,
-      })
+      expect(window.gtag).toBeTypeOf('function')
+      const layer = (window.dataLayer ?? []) as Array<ArrayLike<unknown>>
+      const calls = layer.map((entry) => Array.from(entry))
+      expect(calls.some((c) => c[0] === 'config' && c[1] === TEST_MEASUREMENT_ID)).toBe(true)
 
-      expect(mockLogEvent).toHaveBeenCalledWith(
-        expect.anything(),
-        'quiz_session_started',
-        expect.objectContaining({
-          quiz_session_id: 's1',
-          video_id: 'v1',
-          video_title: 'タイトル',
-          total_questions: 5,
-        }),
-      )
+      const script = document.querySelector<HTMLScriptElement>('script[src*="googletagmanager"]')
+      expect(script?.src).toContain(TEST_MEASUREMENT_ID)
     })
 
-    it('logAnswerSubmittedでbooleanが1/0に変換される', async () => {
-      mockConfig.measurementId = 'G-TEST'
-      const service = createAnalyticsService()
+    it('二重 init でもスクリプトは 1 つだけ注入される', async () => {
+      const service = createAnalyticsService(TEST_MEASUREMENT_ID)
+      await service.init()
+      await service.init()
+
+      expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1)
+    })
+
+    it('logQuizSessionStarted が snake_case パラメータで event を積む', async () => {
+      const service = createAnalyticsService(TEST_MEASUREMENT_ID)
+      await service.init()
+
+      service.logQuizSessionStarted({ ...makeStartedEvent(), videoTitle: 'タイトル' })
+
+      const [entry] = eventEntries()
+      expect(entry[1]).toBe('quiz_session_started')
+      expect(entry[2]).toEqual({
+        quiz_session_id: 's1',
+        quiz_id: 'q1',
+        video_id: 'v1',
+        video_title: 'タイトル',
+        total_questions: 5,
+      })
+    })
+
+    it('logAnswerSubmitted で boolean が 1/0 に変換される', async () => {
+      const service = createAnalyticsService(TEST_MEASUREMENT_ID)
       await service.init()
 
       service.logAnswerSubmitted({
@@ -100,33 +95,25 @@ describe('AnalyticsService', () => {
         videoId: 'v1',
         questionIndex: 0,
         attemptIndex: 1,
-        answer: 'answer',
+        answer: 'とうきょう',
         isCorrect: true,
         isFinalAttempt: false,
         submissionType: 'manual',
         timeUntilPressSec: 2.4,
       })
 
-      expect(mockLogEvent).toHaveBeenCalledWith(
-        expect.anything(),
-        'answer_submitted',
-        expect.objectContaining({
-          quiz_session_id: 's1',
-          video_id: 'v1',
-          question_index: 0,
-          attempt_index: 1,
-          answer: 'answer',
-          is_correct: 1,
-          is_final_attempt: 0,
-          submission_type: 'manual',
-          time_until_press_sec: 2.4,
-        }),
-      )
+      const [entry] = eventEntries()
+      expect(entry[1]).toBe('answer_submitted')
+      expect(entry[2]).toMatchObject({
+        is_correct: 1,
+        is_final_attempt: 0,
+        submission_type: 'manual',
+        time_until_press_sec: 2.4,
+      })
     })
 
-    it('logQuestionAnsweredとlogQuizSessionCompletedも対応するイベント名で呼ばれる', async () => {
-      mockConfig.measurementId = 'G-TEST'
-      const service = createAnalyticsService()
+    it('logQuestionAnswered / logQuizSessionCompleted も対応するイベント名で積まれる', async () => {
+      const service = createAnalyticsService(TEST_MEASUREMENT_ID)
       await service.init()
 
       service.logQuestionAnswered({
@@ -136,176 +123,87 @@ describe('AnalyticsService', () => {
         questionIndex: 0,
         result: 'correct',
         attemptsUsed: 1,
-        answers: '東京',
+        answers: 'とうきょう',
         timesUntilPressSec: '2.4',
-        firstTimeUntilPressSec: 2.4,
       })
       service.logQuizSessionCompleted({
         quizSessionId: 's1',
         quizId: 'q1',
         videoId: 'v1',
-        totalQuestions: 5,
-        correctCount: 3,
-        incorrectCount: 1,
-        skippedCount: 0,
-        unansweredCount: 1,
-        totalAttempts: 4,
+        totalQuestions: 2,
+        correctCount: 1,
+        incorrectCount: 0,
+        skippedCount: 1,
+        unansweredCount: 0,
+        totalAttempts: 1,
       })
 
-      expect(mockLogEvent).toHaveBeenCalledWith(
-        expect.anything(),
-        'question_answered',
-        expect.objectContaining({ result: 'correct', attempts_used: 1 }),
-      )
-      expect(mockLogEvent).toHaveBeenCalledWith(
-        expect.anything(),
-        'quiz_session_completed',
-        expect.objectContaining({ correct_count: 3, total_attempts: 4 }),
-      )
+      const names = eventEntries().map((e) => e[1])
+      expect(names).toEqual(['question_answered', 'quiz_session_completed'])
     })
 
-    it('videoTitle未指定時はvideo_titleパラメータを送らない', async () => {
-      mockConfig.measurementId = 'G-TEST'
-      const service = createAnalyticsService()
+    it('undefined のフィールドはパラメータに含めない', async () => {
+      const service = createAnalyticsService(TEST_MEASUREMENT_ID)
       await service.init()
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 5 })
+      service.logQuizSessionStarted(makeStartedEvent())
 
-      const call = mockLogEvent.mock.calls[0]
-      expect(call[2]).not.toHaveProperty('video_title')
+      const [entry] = eventEntries()
+      expect(entry[2]).not.toHaveProperty('video_title')
     })
 
-    it('debug_mode設定時は全イベントにdebug_mode:1が付与される', async () => {
-      mockConfig.measurementId = 'G-TEST'
-      const service = createAnalyticsService()
+    it('setDebugMode(true) で全イベントに debug_mode: 1 が付く', async () => {
+      const service = createAnalyticsService(TEST_MEASUREMENT_ID)
       await service.init()
       service.setDebugMode(true)
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 5 })
+      service.logQuizSessionStarted(makeStartedEvent())
 
-      expect(mockLogEvent).toHaveBeenCalledWith(
-        expect.anything(),
-        'quiz_session_started',
-        expect.objectContaining({ debug_mode: 1 }),
-      )
+      const [entry] = eventEntries()
+      expect(entry[2]).toMatchObject({ debug_mode: 1 })
     })
 
-    it('debug_mode未設定時はdebug_modeパラメータを送らない', async () => {
-      mockConfig.measurementId = 'G-TEST'
-      const service = createAnalyticsService()
+    it('setDebugMode(false) では debug_mode を付けない', async () => {
+      const service = createAnalyticsService(TEST_MEASUREMENT_ID)
       await service.init()
+      service.setDebugMode(false)
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 5 })
+      service.logQuizSessionStarted(makeStartedEvent())
 
-      const call = mockLogEvent.mock.calls[0]
-      expect(call[2]).not.toHaveProperty('debug_mode')
+      const [entry] = eventEntries()
+      expect(entry[2]).not.toHaveProperty('debug_mode')
+    })
+
+    it('init 前の log* は no-op（イベントを積まない）', async () => {
+      const service = createAnalyticsService(TEST_MEASUREMENT_ID)
+
+      service.logQuizSessionStarted(makeStartedEvent())
+
+      expect(window.dataLayer).toBeUndefined()
     })
   })
+})
 
-  describe('initializing 中のキューイング', () => {
-    it('initializing中のlog*はenabled化後にflushされる', async () => {
-      mockConfig.measurementId = 'G-TEST'
-      let resolveSupported: (value: boolean) => void = () => {}
-      mockIsSupported.mockImplementation(
-        () =>
-          new Promise<boolean>((resolve) => {
-            resolveSupported = resolve
-          }),
-      )
-
-      const service = createAnalyticsService()
-      const initPromise = service.init()
-
-      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 3 })
-      expect(mockLogEvent).not.toHaveBeenCalled()
-
-      // 動的import解決を待ってからisSupportedのresolveを呼ぶ（そうしないと
-      // まだ差し替わっていない初期値のresolveSupportedを呼んでしまいハングする）
-      await vi.waitFor(() => expect(mockIsSupported).toHaveBeenCalled())
-      resolveSupported(true)
-      await initPromise
-
-      expect(mockLogEvent).toHaveBeenCalledWith(
-        expect.anything(),
-        'quiz_session_started',
-        expect.objectContaining({ quiz_session_id: 's1' }),
-      )
-    })
-
-    it('disabled確定でキューが破棄される', async () => {
-      mockConfig.measurementId = 'G-TEST'
-      let resolveSupported: (value: boolean) => void = () => {}
-      mockIsSupported.mockImplementation(
-        () =>
-          new Promise<boolean>((resolve) => {
-            resolveSupported = resolve
-          }),
-      )
-
-      const service = createAnalyticsService()
-      const initPromise = service.init()
-
-      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 3 })
-
-      await vi.waitFor(() => expect(mockIsSupported).toHaveBeenCalled())
-      resolveSupported(false)
-      await initPromise
-
-      service.logQuizSessionStarted({ quizSessionId: 's2', quizId: 'q1', videoId: 'v1', totalQuestions: 3 })
-
-      expect(mockLogEvent).not.toHaveBeenCalled()
-    })
+describe('sanitizeAndTruncate', () => {
+  it('メールアドレスをマスクする', () => {
+    expect(sanitizeAndTruncate('answer test@example.com here')).toBe('answer [masked] here')
   })
 
-  describe('init失敗時の挙動', () => {
-    it('isSupportedがfalseの場合、例外にならずdisabledになる', async () => {
-      mockConfig.measurementId = 'G-TEST'
-      mockIsSupported.mockResolvedValue(false)
-
-      const service = createAnalyticsService()
-      await expect(service.init()).resolves.toBeUndefined()
-
-      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 1 })
-      expect(mockLogEvent).not.toHaveBeenCalled()
-    })
-
-    it('initializeAppが例外を投げても例外が漏れない', async () => {
-      mockConfig.measurementId = 'G-TEST'
-      mockInitializeApp.mockImplementation(() => {
-        throw new Error('boom')
-      })
-
-      const service = createAnalyticsService()
-      await expect(service.init()).resolves.toBeUndefined()
-
-      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 1 })
-      expect(mockLogEvent).not.toHaveBeenCalled()
-    })
+  it('電話番号をマスクする', () => {
+    expect(sanitizeAndTruncate('03-1234-5678')).toBe('[masked]')
+    expect(sanitizeAndTruncate('09012345678')).toBe('[masked]')
   })
 
-  describe('sanitizeAndTruncate', () => {
-    it('メールアドレスをマスクする', () => {
-      expect(sanitizeAndTruncate('contact: foo@example.com です')).toBe('contact: [masked] です')
-    })
+  it('URL をマスクする', () => {
+    expect(sanitizeAndTruncate('see https://example.com/path')).toBe('see [masked]')
+  })
 
-    it('電話番号をマスクする', () => {
-      expect(sanitizeAndTruncate('電話: 090-1234-5678')).toBe('電話: [masked]')
-    })
+  it('100 文字超は切り詰める', () => {
+    const long = 'あ'.repeat(150)
+    expect(sanitizeAndTruncate(long)).toHaveLength(ANALYTICS_PARAM_MAX_LENGTH)
+  })
 
-    it('URLをマスクする', () => {
-      expect(sanitizeAndTruncate('see https://example.com/path?x=1 for details')).toBe(
-        'see [masked] for details',
-      )
-    })
-
-    it('100文字超は切り詰める', () => {
-      const long = 'a'.repeat(150)
-      expect(sanitizeAndTruncate(long)).toBe('a'.repeat(100))
-      expect(sanitizeAndTruncate(long).length).toBe(100)
-    })
-
-    it('100文字以内はそのまま返す', () => {
-      expect(sanitizeAndTruncate('東京')).toBe('東京')
-    })
+  it('通常の解答文字列はそのまま', () => {
+    expect(sanitizeAndTruncate('とうきょう')).toBe('とうきょう')
   })
 })

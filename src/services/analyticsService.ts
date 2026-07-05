@@ -1,10 +1,18 @@
-// Firebase Analytics（GA4）連携サービス
-// 設定が無い環境（measurementId 空）では完全に no-op にする。
-// firebase SDK は動的 import で読み込み、本体バンドルを肥大化させない
-import type { Analytics } from 'firebase/analytics'
-import { FIREBASE_CONFIG } from '@/constants/firebase'
-import { ANALYTICS_QUEUE_MAX_SIZE, ANALYTICS_PARAM_MAX_LENGTH } from '@/constants/analytics'
+// Google Analytics（GA4 / gtag.js）連携サービス
+// 設定が無い環境（GA_MEASUREMENT_ID 空）では完全に no-op にする。
+// gtag.js は init 時に動的注入する（ゲート通過まで外部リクエストを発生させない）。
+// dataLayer スタブがスクリプト読込前のイベントをネイティブにバッファするため、
+// init 後は即座に log* を受け付けられる
+import { GA_MEASUREMENT_ID, ANALYTICS_PARAM_MAX_LENGTH } from '@/constants/analytics'
 import { logger } from '@/utils/logger'
+
+// gtag.js のグローバル定義
+declare global {
+  interface Window {
+    dataLayer?: unknown[]
+    gtag?: (...args: unknown[]) => void
+  }
+}
 
 /** セッション開始イベント（quiz_session_started） */
 export interface QuizSessionStartedEvent {
@@ -61,10 +69,9 @@ export interface QuizSessionCompletedEvent {
 }
 
 // サービスの内部状態
-// disabled: measurementId空 / isSupported=false / 初期化失敗 → 以後すべてno-op
-// initializing: init()のPromise進行中 → log*はキューに積む
-// enabled: logEvent可能
-type AnalyticsState = 'disabled' | 'initializing' | 'enabled'
+// disabled: measurementId 空 → 以後すべて no-op
+// enabled: gtag スタブ設置済み（スクリプト読込前でも dataLayer がバッファする）
+type AnalyticsState = 'disabled' | 'enabled'
 
 // GA送信パラメータ値（変換後）
 type GaParamValue = string | number
@@ -74,10 +81,6 @@ type GaParams = Record<string, GaParamValue>
 type RawParamValue = string | number | boolean | undefined
 type RawParams = Record<string, RawParamValue>
 
-interface QueuedEvent {
-  name: string
-  params: GaParams
-}
 
 // PIIマスク用パターン（軽量な正規表現ベース実装）
 const URL_REGEX = /https?:\/\/[^\s]+/gi
@@ -117,11 +120,12 @@ function buildGaParams(input: RawParams): GaParams {
 
 class AnalyticsService {
   private state: AnalyticsState = 'disabled'
-  private analytics: Analytics | null = null
-  private logEventFn: ((analytics: Analytics, name: string, params?: GaParams) => void) | null =
-    null
-  private queue: QueuedEvent[] = []
   private debugMode = false
+  private readonly measurementId: string
+
+  constructor(measurementId: string = GA_MEASUREMENT_ID) {
+    this.measurementId = measurementId
+  }
 
   /**
    * デバッグモードの有効/無効を設定する
@@ -132,37 +136,43 @@ class AnalyticsService {
   }
 
   /**
-   * Analytics を初期化する。measurementId が空 / isSupported=false / 初期化失敗時は
-   * disabled のまま以後すべて no-op になる。例外は logger.warn に留めアプリを止めない
+   * Analytics を初期化する。measurementId が空なら disabled のまま以後すべて no-op。
+   * gtag スタブと dataLayer を設置し、gtag.js スクリプトを動的注入する。
+   * dataLayer が読込前のイベントをバッファするため、この時点から log* を受け付けられる
    */
   async init(): Promise<void> {
-    if (FIREBASE_CONFIG.measurementId === '') {
+    if (this.measurementId === '') {
       this.state = 'disabled'
       return
     }
 
-    this.state = 'initializing'
-
     try {
-      const [{ initializeApp }, { getAnalytics, isSupported, logEvent }] = await Promise.all([
-        import('firebase/app'),
-        import('firebase/analytics'),
-      ])
+      // gtag スタブの設置（公式スニペット相当）
+      window.dataLayer = window.dataLayer ?? []
+      window.gtag =
+        window.gtag ??
+        function gtag(...args: unknown[]) {
+          window.dataLayer!.push(args)
+        }
+      window.gtag('js', new Date())
+      window.gtag('config', this.measurementId)
 
-      const supported = await isSupported()
-      if (!supported) {
-        this.discardAsDisabled()
-        return
+      // gtag.js を動的注入（多重注入は防ぐ）
+      const src = `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`
+      if (!document.querySelector(`script[src="${src}"]`)) {
+        const script = document.createElement('script')
+        script.async = true
+        script.src = src
+        script.onerror = () => {
+          logger.warn('[AnalyticsService] Failed to load gtag.js')
+        }
+        document.head.appendChild(script)
       }
 
-      const app = initializeApp(FIREBASE_CONFIG)
-      this.analytics = getAnalytics(app)
-      this.logEventFn = logEvent
       this.state = 'enabled'
-      this.flushQueue()
     } catch (error) {
       logger.warn('[AnalyticsService] Failed to initialize:', error)
-      this.discardAsDisabled()
+      this.state = 'disabled'
     }
   }
 
@@ -228,46 +238,17 @@ class AnalyticsService {
     this.dispatch('quiz_session_completed', params)
   }
 
-  // 状態に応じてイベントを送信 / キューへ積む / 破棄する
+  // 状態に応じてイベントを送信 / 破棄する
   private dispatch(name: string, params: GaParams): void {
+    if (this.state !== 'enabled' || !window.gtag) return
+
     const finalParams = this.debugMode ? { ...params, debug_mode: 1 } : params
-
-    if (this.state === 'enabled') {
-      this.sendEvent(name, finalParams)
-      return
-    }
-
-    if (this.state === 'initializing') {
-      if (this.queue.length < ANALYTICS_QUEUE_MAX_SIZE) {
-        this.queue.push({ name, params: finalParams })
-      }
-      return
-    }
-
-    // disabled: no-op（キューも破棄）
-  }
-
-  private sendEvent(name: string, params: GaParams): void {
-    if (!this.analytics || !this.logEventFn) return
-    this.logEventFn(this.analytics, name, params)
-  }
-
-  private flushQueue(): void {
-    const pending = this.queue
-    this.queue = []
-    for (const item of pending) {
-      this.sendEvent(item.name, item.params)
-    }
-  }
-
-  private discardAsDisabled(): void {
-    this.state = 'disabled'
-    this.queue = []
+    window.gtag('event', name, finalParams)
   }
 }
 
 export type { AnalyticsService }
 
-export function createAnalyticsService(): AnalyticsService {
-  return new AnalyticsService()
+export function createAnalyticsService(measurementId?: string): AnalyticsService {
+  return new AnalyticsService(measurementId)
 }
