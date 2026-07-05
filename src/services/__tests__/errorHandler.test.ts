@@ -149,7 +149,7 @@ describe('getErrorInfo', () => {
   it('QUIZ_DATA_NOT_FOUND は専用の見出しを返す', () => {
     const info = getErrorInfo(new Error('QUIZ_DATA_NOT_FOUND'))
     expect(info.title).toBe('クイズが見つかりません')
-    expect(info.message).toContain('quiz パラメータ')
+    expect(info.message).toContain('URLの指定')
   })
 
   it('見出し未定義のコードは既定の見出しを返す', () => {
