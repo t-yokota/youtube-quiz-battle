@@ -38,6 +38,7 @@ export interface QuestionAnsweredEvent {
   answers: string                // 全解答履歴を '|' 連結した文字列（例 "とうきょう|東京"。空可）
                                  // GA4 のイベントパラメータは配列不可・値 100 文字上限のため、
                                  // 連結後 100 文字を超える場合は末尾を切り詰める
+  questionText?: string          // データが問題文を持つ場合のみ送る（100 文字超は切り詰め）
 }
 
 export interface QuizSessionCompletedEvent {
@@ -76,6 +77,10 @@ export function createAnalyticsService(): AnalyticsService
 - `QuestionResult`（isCorrect / skipped / userAnswers を持つ）からのイベント値の導出規則:
   - `result`: `skipped → 'skipped'` / `isCorrect → 'correct'` / それ以外で `userAnswers.length === 0 → 'unanswered'` / 残り → `'incorrect'`
   - `attemptsUsed = userAnswers.length` / `answers = userAnswers.join('|')`（100 文字超は切り詰め）
+  - `questionText = quizData.questions[questionIndex].questionText`（未定義なら送らない。100 文字超は切り詰め）
+- **前提整備**: `questionText` は RawQuizData には存在するが変換時に捨てられているため、
+  `QuizQuestion` 型（src/types/quizData.ts）に `questionText?: string` を追加し、
+  quizDataLoader の convert で引き継ぐ（存在時のみ。validate は string 型チェックを任意項目として追加）
 - `analyticsService.init()` は **`App.vue` の `handleGateTap` 内**（ゲート解除直後）に fire-and-forget（`void init()`）で呼ぶ（初期表示を阻害しない・プレイ意思のあるユーザーのみ計測開始）
 
 ## 25-4. PrivacyInfo との整合（D-15）
