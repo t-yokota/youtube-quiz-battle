@@ -35,27 +35,27 @@ TypeScript の型は camelCase、**GA 送信時のパラメータ名は snake_ca
 
 ```ts
 export interface QuizSessionStartedEvent {
-  sessionId: string              // プレイセッション ID（UUID v4）
+  quizSessionId: string          // プレイセッション ID（UUID v4。GA のセッション概念と区別する命名）
   videoId: string
   totalQuestions: number
 }
 
 /** 1 問の最終結果サマリ */
 export interface QuestionAnsweredEvent {
-  sessionId: string
+  quizSessionId: string
   videoId: string
   questionIndex: number          // 0-origin
   result: 'correct' | 'incorrect' | 'skipped' | 'unanswered'
   attemptsUsed: number
   answers: string                // 全解答履歴を '|' 連結（例 "とうきょう|東京"。空可）
-  timesUntilPress: string        // 各試行で解答権を得るまでの秒（小数1桁）を '|' 連結（例 "2.4|5.1"。未押下は空）
-  firstTimeUntilPress?: number   // 初回押下の秒（未押下なら送らない。メトリクス集計用）
+  timesUntilPressSec: string     // 各試行で解答権を得るまでの秒（小数1桁）を '|' 連結（例 "2.4|5.1"。未押下は空）
+  firstTimeUntilPressSec?: number // 初回押下の秒（未押下なら送らない。メトリクス集計用）
   questionText?: string          // データが問題文を持つ場合のみ
 }
 
 /** 解答 1 試行の明細（1 行 = 1 試行。BigQuery 分析用） */
 export interface AnswerSubmittedEvent {
-  sessionId: string
+  quizSessionId: string
   videoId: string
   questionIndex: number
   attemptIndex: number           // 1-origin
@@ -63,12 +63,12 @@ export interface AnswerSubmittedEvent {
   isCorrect: boolean
   isFinalAttempt: boolean        // この試行で問題結果が確定したか（= attemptIndex === attemptsUsed）
   submissionType: 'manual' | 'timeout'  // 手動送信 / 制限時間切れによる自動確定
-  timeUntilPress: number         // この試行で解答権を得るまでの秒（問題開始から・小数1桁）
+  timeUntilPressSec: number      // この試行で解答権を得るまでの秒（問題開始から・小数1桁）
   questionText?: string
 }
 
 export interface QuizSessionCompletedEvent {
-  sessionId: string
+  quizSessionId: string
   videoId: string
   totalQuestions: number
   correctCount: number
@@ -135,7 +135,8 @@ export function createAnalyticsService(): AnalyticsService
 
 ## 25-4. GA 送信時の変換（analyticsService 内）
 
-- パラメータ名は **snake_case**。`sessionId` は GA 自体のセッション概念と紛らわしいため **`quiz_session_id`** とする
+- パラメータ名は **snake_case**。TS フィールド名は GA パラメータ名と機械的に対応するよう命名済み
+  （camelCase → snake_case の単純変換のみ。`quizSessionId → quiz_session_id` / `timeUntilPressSec → time_until_press_sec`）
 - boolean は **1 / 0 に変換**（BigQuery の int_value で扱いやすくする）
 - 自由入力（`answer` / `answers` / `question_text`）は送信前に **sanitizeAndTruncate** を通す:
   - PII マスク: メールアドレス・電話番号・URL のパターンを `[masked]` に置換（正規表現ベースの軽量実装で良い）
@@ -145,7 +146,7 @@ export function createAnalyticsService(): AnalyticsService
 
 | TS フィールド | GA パラメータ |
 |---|---|
-| sessionId | quiz_session_id |
+| quizSessionId | quiz_session_id |
 | videoId | video_id |
 | questionIndex | question_index |
 | attemptIndex | attempt_index |
@@ -153,10 +154,10 @@ export function createAnalyticsService(): AnalyticsService
 | isCorrect | is_correct（1/0） |
 | isFinalAttempt | is_final_attempt（1/0） |
 | submissionType | submission_type |
-| timeUntilPress | time_until_press_sec |
+| timeUntilPressSec | time_until_press_sec |
 | questionText | question_text（sanitize + truncate） |
 
-他イベントも同じ規則で変換（times_until_press / first_time_until_press_sec / attempts_used / total_questions / correct_count 等）。
+他イベントも同じ規則で変換（times_until_press_sec / first_time_until_press_sec / attempts_used / total_questions / correct_count 等）。
 
 ## 25-5. セッション ID とフック位置（App.vue）
 
@@ -168,10 +169,10 @@ export function createAnalyticsService(): AnalyticsService
   2. `watch(() => gameStore.results.length)`: `results` は push 追記のため **length を監視**。
      送信済み件数 `lastSentCount` ref を持ち、増分の各 QuestionResult について:
      - `userAnswers` の各要素を logAnswerSubmitted（attemptIndex は 1-origin、
-       `timeUntilPress = timesUntilPress[attemptIndex - 1]`、`submissionType = submissionTypes[attemptIndex - 1]`、
+       `timeUntilPressSec = timesUntilPress[attemptIndex - 1]`、`submissionType = submissionTypes[attemptIndex - 1]`、
        `isFinalAttempt = attemptIndex === userAnswers.length`。押下と解答は 1:1 対応する）
      - その後サマリの logQuestionAnswered を 1 件（`answers = userAnswers.join('|')`、
-       `timesUntilPress = 各値.toFixed(1).join('|')`、`firstTimeUntilPress = timesUntilPress[0]`）
+       `timesUntilPressSec = 各値.toFixed(1).join('|')`、`firstTimeUntilPressSec = timesUntilPress[0]`）
   3. FINISHED 遷移で logQuizSessionCompleted（集計は `results` から算出。totalAttempts = attemptsUsed の総和）
 - `analyticsService.init()` は **`App.vue` の `handleGateTap` 内**（ゲート解除直後）に fire-and-forget（`void init()`）で呼ぶ
 
@@ -180,7 +181,7 @@ export function createAnalyticsService(): AnalyticsService
 - カスタムディメンション（イベントスコープ）: `video_id` / `result` / `submission_type` のみ
 - カスタムメトリクス: `question_index` / `attempt_index` / `attempts_used` / `time_until_press_sec` /
   `total_questions` / `correct_count` / `incorrect_count` / `skipped_count` / `unanswered_count` / `total_attempts`
-- **登録しない**（BigQuery 専用）: `quiz_session_id` / `answer` / `answers` / `question_text` / `times_until_press`
+- **登録しない**（BigQuery 専用）: `quiz_session_id` / `answer` / `answers` / `question_text` / `times_until_press_sec`
   （高カーディナリティで (other) 丸めの原因になる。BigQuery export では未登録でも event_params に保持される）
 
 ## 25-7. PrivacyInfo との整合（D-15）
