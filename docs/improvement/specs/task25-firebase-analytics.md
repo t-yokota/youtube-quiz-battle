@@ -87,7 +87,7 @@ export function createAnalyticsService(): AnalyticsService
      **length を監視**して増分のみ送る。送信済み件数を `lastSentCount` ref（number）で保持し、
      `results[lastSentCount..length-1]` を logQuestionAnswered して更新する（Set は不要）
   3. 増分の各 QuestionResult について、`userAnswers` の各要素を logAnswerSubmitted で個別送信する。
-     attemptIndex は 1-origin、`timeUntilPress = pressOffsets[attemptIndex - 1]`（内部の記録名は pressOffsets のまま）。
+     attemptIndex は 1-origin、`timeUntilPress = timesUntilPress[attemptIndex - 1]`。
      押下（解答権の獲得）と解答は 1:1 対応する（時間切れでもその時点の入力内容が解答として記録されるため）。
      その後サマリの logQuestionAnswered を 1 件送る（パイプ連結フィールドは分析の利便用に維持）
   4. FINISHED 遷移で logQuizSessionCompleted（集計は `results` から算出）
@@ -95,16 +95,16 @@ export function createAnalyticsService(): AnalyticsService
   - `result`: `skipped → 'skipped'` / `isCorrect → 'correct'` / それ以外で `userAnswers.length === 0 → 'unanswered'` / 残り → `'incorrect'`
   - `attemptsUsed = userAnswers.length` / `answers = userAnswers.join('|')`（100 文字超は切り詰め）
   - `questionText = quizData.questions[questionIndex].questionText`（未定義なら送らない。100 文字超は切り詰め）
-  - `timesUntilPress = result.pressOffsets.map(v => v.toFixed(1)).join('|')`（100 文字超は切り詰め）
-- **前提整備（押下タイミングの記録）**: 現状、押下時刻は未記録のため以下を追加する:
-  - gameStore: `pendingPressOffsets = ref<number[]>([])` と action `recordButtonPress(offsetSec: number)` を新設。
+  - `timesUntilPress = result.timesUntilPress.map(v => v.toFixed(1)).join('|')`（100 文字超は切り詰め）
+- **前提整備（押下タイミングの記録）**: 現状、押下時刻は未記録のため以下を追加する（命名はイベントと統一）:
+  - gameStore: `pendingTimesUntilPress = ref<number[]>([])` と action `recordButtonPress(timeUntilPress: number)` を新設。
     `pendingUserAnswers` と同じライフサイクルでクリア（initializeForQuestion / シーク離脱 / recordResult 時）
-  - `QuestionResult`（src/types/result.ts）に `pressOffsets: number[]` を追加し、`recordResult` 内で
-    `[...pendingPressOffsets.value]` を取り込む（呼び出し側のシグネチャは変えない）
+  - `QuestionResult`（src/types/result.ts）に `timesUntilPress: number[]` を追加し、`recordResult` 内で
+    `[...pendingTimesUntilPress.value]` を取り込む（呼び出し側のシグネチャは変えない）
   - gameManager の早押し処理（QUESTIONING の同期分岐、pauseVideo の直後）で
     `Math.max(0, playerControl.getCurrentTime() - 現在の問題.startTime)` を小数 1 桁に丸めて recordButtonPress する
-  - 既存テストへの影響: QuestionResult 生成箇所に `pressOffsets` が加わる。期待値オブジェクトを
-    toMatchObject 比較にするか `pressOffsets: []` を追記して対応（値の変更はしない）
+  - 既存テストへの影響: QuestionResult 生成箇所に `timesUntilPress` が加わる。期待値オブジェクトを
+    toMatchObject 比較にするか `timesUntilPress: []` を追記して対応（値の変更はしない）
 - **前提整備**: `questionText` は RawQuizData には存在するが変換時に捨てられているため、
   `QuizQuestion` 型（src/types/quizData.ts）に `questionText?: string` を追加し、
   quizDataLoader の convert で引き継ぐ（存在時のみ。validate は string 型チェックを任意項目として追加）
