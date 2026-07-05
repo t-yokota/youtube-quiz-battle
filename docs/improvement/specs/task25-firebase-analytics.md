@@ -37,6 +37,7 @@ TypeScript の型は camelCase、**GA 送信時のパラメータ名は snake_ca
 export interface QuizSessionStartedEvent {
   quizSessionId: string          // プレイセッション ID（UUID v4。GA のセッション概念と区別する命名）
   videoId: string
+  videoTitle?: string            // プレイヤーから取得した動画タイトル（未取得時は送らない）
   totalQuestions: number
 }
 
@@ -44,6 +45,7 @@ export interface QuizSessionStartedEvent {
 export interface QuestionAnsweredEvent {
   quizSessionId: string
   videoId: string
+  videoTitle?: string
   questionIndex: number          // 0-origin
   result: 'correct' | 'incorrect' | 'skipped' | 'unanswered'
   attemptsUsed: number
@@ -57,6 +59,7 @@ export interface QuestionAnsweredEvent {
 export interface AnswerSubmittedEvent {
   quizSessionId: string
   videoId: string
+  videoTitle?: string
   questionIndex: number
   attemptIndex: number           // 1-origin
   answer: string                 // この試行の解答文字列
@@ -70,6 +73,7 @@ export interface AnswerSubmittedEvent {
 export interface QuizSessionCompletedEvent {
   quizSessionId: string
   videoId: string
+  videoTitle?: string
   totalQuestions: number
   correctCount: number
   incorrectCount: number
@@ -130,6 +134,14 @@ export function createAnalyticsService(): AnalyticsService
 - 手動送信（送信ボタン / Enter）は 'manual'、answerFlowController のカウントダウン満了による確定は 'timeout' を積む
 - `QuestionResult` に `submissionTypes: ('manual' | 'timeout')[]` を追加（timesUntilPress と同様に取り込み・クリア）
 
+### 動画タイトルの取得
+
+- `YouTubePlayerManager`（src/types/youtubePlayer.ts + src/services/youtubePlayer.ts）に
+  `getVideoTitle(): string` を追加（`player.getVideoData().title`。未取得・例外時は空文字）
+- App はセッション開始時（READY → TALKING watcher 内）に一度取得して ref に保持し、各イベントに同梱
+  （空文字なら videoTitle を送らない）
+- テストのプレイヤーモックに getVideoTitle を追加する
+
 ### questionText
 
 - `QuizQuestion` 型（src/types/quizData.ts）に `questionText?: string` を追加し、quizDataLoader の convert で引き継ぐ
@@ -149,7 +161,7 @@ export function createAnalyticsService(): AnalyticsService
   `debug_mode: 1` を付与**する（false のときはパラメータ自体を送らない）。
   これにより ①DebugView にリアルタイム表示される ②本番レポート/BigQuery でデバッグプレイを除外できる。
   実装は analyticsService に `setDebugMode(enabled: boolean)` を持たせ、App がクイズデータ読込時に設定する
-- 自由入力（`answer` / `answers` / `question_text`）は送信前に **sanitizeAndTruncate** を通す:
+- 自由入力・自由文字列（`answer` / `answers` / `question_text` / `video_title`）は送信前に **sanitizeAndTruncate** を通す:
   - PII マスク: メールアドレス・電話番号・URL のパターンを `[masked]` に置換（正規表現ベースの軽量実装で良い）
   - 100 文字超は切り詰め（GA4 のパラメータ値上限）
 
@@ -194,7 +206,7 @@ export function createAnalyticsService(): AnalyticsService
 - カスタムディメンション（イベントスコープ）: `video_id` / `result` / `submission_type` のみ
 - カスタムメトリクス: `question_index` / `attempt_index` / `attempts_used` / `time_until_press_sec` /
   `total_questions` / `correct_count` / `incorrect_count` / `skipped_count` / `unanswered_count` / `total_attempts`
-- **登録しない**（BigQuery 専用）: `quiz_session_id` / `answer` / `answers` / `question_text` / `times_until_press_sec`
+- **登録しない**（BigQuery 専用）: `quiz_session_id` / `answer` / `answers` / `question_text` / `video_title` / `times_until_press_sec`
   （高カーディナリティで (other) 丸めの原因になる。BigQuery export では未登録でも event_params に保持される）
 
 ## 25-7. PrivacyInfo との整合（D-15）
