@@ -153,12 +153,24 @@ watch(
       lastSentResultCount.value = 0
       videoTitle.value = playerManagerRef.value?.getVideoTitle() ?? ''
 
+      // ゲーム開始時点の実効設定（ユーザー上書き・デバッグ上書き適用後）をスナップショット
+      const effective = gameStore.effectiveSettings
       analyticsService.logQuizSessionStarted({
         quizSessionId: quizSessionId.value,
         quizId: currentQuizId,
         videoId: quizData.value?.videoId ?? '',
         videoTitle: videoTitle.value || undefined,
         totalQuestions: gameStore.totalQuestions,
+        buttonCheckEnabled: gameStore.isButtonCheckEnabled,
+        seekAllowed: !(
+          settingsStore.disableSeekbarOverride ??
+          quizData.value?.settings.disableSeekbar ??
+          true
+        ),
+        jumpToRevealPeriod: effective?.jumpToRevealPeriod ?? false,
+        hideVideoPlayerDuringAnswer: effective?.hideVideoPlayerDuringAnswer ?? false,
+        answerTimeLimit: effective?.answerTimeLimit ?? 0,
+        maxAttempts: effective?.maxAttempts ?? 0,
       })
     }
 

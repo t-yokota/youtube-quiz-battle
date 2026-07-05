@@ -42,6 +42,13 @@ export interface QuizSessionStartedEvent {
   videoId: string
   videoTitle?: string            // プレイヤーから取得した動画タイトル（未取得時は送らない）
   totalQuestions: number
+  // ゲーム開始時点の実効設定スナップショット（ユーザー上書き・デバッグ上書き適用後。2026-07-05 追加）
+  buttonCheckEnabled: boolean
+  seekAllowed: boolean
+  jumpToRevealPeriod: boolean
+  hideVideoPlayerDuringAnswer: boolean
+  answerTimeLimit: number
+  maxAttempts: number
 }
 
 /** 1 問の最終結果サマリ */
@@ -206,7 +213,7 @@ export function createAnalyticsService(): AnalyticsService
 
 ## 25-6. GA4 UI 登録ガイド（手動作業・実装対象外）
 
-- カスタムディメンション（イベントスコープ）: `quiz_id` / `video_id` / `result` / `submission_type` のみ（quiz_id は Task 30 で追加。カーディナリティ = クイズ数で低い）
+- カスタムディメンション（イベントスコープ）: `quiz_id` / `video_id` / `result` / `submission_type` に加え、設定スナップショット系（`button_check_enabled` / `seek_allowed` / `jump_to_reveal_period` / `hide_video_player_during_answer`）も登録可（いずれも低カーディナリティ）
 - カスタムメトリクス: `question_index` / `attempt_index` / `attempts_used` / `time_until_press_sec` /
   `total_questions` / `correct_count` / `incorrect_count` / `skipped_count` / `unanswered_count` / `total_attempts`
 - **登録しない**（BigQuery 専用）: `quiz_session_id` / `answer` / `answers` / `question_text` / `video_title` / `times_until_press_sec`

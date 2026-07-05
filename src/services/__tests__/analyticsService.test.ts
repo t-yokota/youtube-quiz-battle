@@ -18,6 +18,12 @@ function makeStartedEvent() {
     quizId: 'q1',
     videoId: 'v1',
     totalQuestions: 5,
+    buttonCheckEnabled: true,
+    seekAllowed: false,
+    jumpToRevealPeriod: false,
+    hideVideoPlayerDuringAnswer: true,
+    answerTimeLimit: 10,
+    maxAttempts: 3,
   }
 }
 
@@ -82,6 +88,13 @@ describe('AnalyticsService（gtag.js 送信層）', () => {
         video_id: 'v1',
         video_title: 'タイトル',
         total_questions: 5,
+        // 実効設定スナップショット（boolean は 1/0）
+        button_check_enabled: 1,
+        seek_allowed: 0,
+        jump_to_reveal_period: 0,
+        hide_video_player_during_answer: 1,
+        answer_time_limit: 10,
+        max_attempts: 3,
         // テスト実行環境は DEV のため debug_mode が強制付与される
         debug_mode: 1,
       })

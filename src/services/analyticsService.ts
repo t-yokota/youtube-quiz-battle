@@ -21,6 +21,13 @@ export interface QuizSessionStartedEvent {
   videoId: string
   videoTitle?: string
   totalQuestions: number
+  // ゲーム開始時点の実効設定スナップショット（ユーザー上書き・デバッグ上書き適用後）
+  buttonCheckEnabled: boolean
+  seekAllowed: boolean
+  jumpToRevealPeriod: boolean
+  hideVideoPlayerDuringAnswer: boolean
+  answerTimeLimit: number
+  maxAttempts: number
 }
 
 /** 1 問の最終結果サマリ（question_answered） */
@@ -183,6 +190,12 @@ class AnalyticsService {
       videoId: event.videoId,
       videoTitle: event.videoTitle ? sanitizeAndTruncate(event.videoTitle) : undefined,
       totalQuestions: event.totalQuestions,
+      buttonCheckEnabled: event.buttonCheckEnabled,
+      seekAllowed: event.seekAllowed,
+      jumpToRevealPeriod: event.jumpToRevealPeriod,
+      hideVideoPlayerDuringAnswer: event.hideVideoPlayerDuringAnswer,
+      answerTimeLimit: event.answerTimeLimit,
+      maxAttempts: event.maxAttempts,
     })
     this.dispatch('quiz_session_started', params)
   }
