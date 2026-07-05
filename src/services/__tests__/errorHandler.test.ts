@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ERROR_MESSAGES } from '@/constants/errorMessages'
 import { RETRY_BACKOFF_MS } from '@/constants/timing'
-import { classifyError, getErrorMessage, isRecoverable, withRetry } from '../errorHandler'
+import { classifyError, getErrorInfo, getErrorMessage, isRecoverable, withRetry } from '../errorHandler'
 import type { ErrorCode } from '../errorHandler'
 
 describe('classifyError', () => {
@@ -142,5 +142,18 @@ describe('withRetry', () => {
 
     await expect(withRetry(fn)).rejects.toBe(error)
     expect(fn).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('getErrorInfo', () => {
+  it('QUIZ_DATA_NOT_FOUND は専用の見出しを返す', () => {
+    const info = getErrorInfo(new Error('QUIZ_DATA_NOT_FOUND'))
+    expect(info.title).toBe('クイズが見つかりません')
+    expect(info.message).toContain('quiz パラメータ')
+  })
+
+  it('見出し未定義のコードは既定の見出しを返す', () => {
+    const info = getErrorInfo(new Error('QUIZ_DATA_INVALID: Missing settings'))
+    expect(info.title).toBe('エラーが発生しました')
   })
 })

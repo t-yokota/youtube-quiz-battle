@@ -20,7 +20,7 @@ import { createGameManager, type GameManager } from './services/gameManager'
 import { createAudioManager } from './services/audioManager'
 import { createAnalyticsService } from './services/analyticsService'
 import { validate } from './services/answerValidator'
-import { getErrorMessage } from './services/errorHandler'
+import { getErrorInfo } from './services/errorHandler'
 import { MAX_VOLUME_LEVEL } from './constants/audio'
 import { useGameLoop } from './composables/useGameLoop'
 import { useOrientationGuard } from './composables/useOrientationGuard'
@@ -43,7 +43,7 @@ const playerManagerRef = ref<YouTubePlayerManager | null>(null)
 const quizData = ref<QuizData | null>(null)
 
 // 初期化エラー
-const initError = ref<string | null>(null)
+const initError = ref<{ title: string; message: string } | null>(null)
 
 // Analytics（App レベルで単一インスタンスを保持。ストア・サービスの純度を保つため
 // 送信フックはこのファイルの watcher に集約する）
@@ -72,7 +72,7 @@ audioManager.setSoundEnabled(settingsStore.soundEnabled)
 audioManager.setVolume(settingsStore.volumeLevel / MAX_VOLUME_LEVEL)
 audioManager.init().catch((error: unknown) => {
   logger.error('[App] Failed to initialize AudioManager:', error)
-  initError.value = getErrorMessage(error)
+  initError.value = getErrorInfo(error)
 })
 
 watch(
@@ -103,7 +103,7 @@ async function initQuizData() {
     logger.log(`[App] Quiz data loaded: ${quizData.value.questions.length} questions`)
   } catch (error) {
     logger.error('[App] Failed to load quiz data:', error)
-    initError.value = getErrorMessage(error)
+    initError.value = getErrorInfo(error)
   }
 }
 
@@ -139,7 +139,7 @@ function handlePlayerReady(playerManager: YouTubePlayerManager) {
 // YOUTUBE_LOAD_FAILED として分類されるようコード接頭辞を付与してから変換する
 function handlePlayerError(message: string) {
   logger.error('[App] VideoPlayer error:', message)
-  initError.value = getErrorMessage(new Error(`YOUTUBE_LOAD_FAILED: ${message}`))
+  initError.value = getErrorInfo(new Error(`YOUTUBE_LOAD_FAILED: ${message}`))
 }
 
 // --- Analytics フック ---
@@ -442,8 +442,8 @@ onUnmounted(() => {
 
     <ErrorDialog
       :is-open="!!initError"
-      title="エラーが発生しました"
-      :message="initError || '問題が発生しました。ページを再読み込みしてください。'"
+      :title="initError?.title ?? 'エラーが発生しました'"
+      :message="initError?.message ?? '問題が発生しました。ページを再読み込みしてください。'"
       :show-close="false"
       @action="handleErrorAction"
     />

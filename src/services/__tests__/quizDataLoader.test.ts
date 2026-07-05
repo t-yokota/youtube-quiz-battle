@@ -218,6 +218,20 @@ describe('loadQuizData: HTTP エラー', () => {
     await expect(loadQuizData('sample')).rejects.toThrow('QUIZ_DATA_NOT_FOUND')
   })
 
+  it('200 でも JSON として読めない応答（SPA フォールバック等）は QUIZ_DATA_NOT_FOUND', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => {
+          throw new SyntaxError('Unexpected token <')
+        },
+      })),
+    )
+    await expect(loadQuizData('zzz')).rejects.toThrow('QUIZ_DATA_NOT_FOUND')
+  })
+
   it('その他のエラーステータスは QUIZ_DATA_LOAD_FAILED を投げる', async () => {
     mockFetchError(500)
     await expect(loadQuizData('sample')).rejects.toThrow('QUIZ_DATA_LOAD_FAILED')

@@ -66,7 +66,14 @@ export async function loadQuizData(quizId: string): Promise<QuizData> {
       return res
     })
 
-    const rawData: RawQuizData = await response.json()
+    // 開発サーバ等の SPA フォールバックは不在パスにも 200 で HTML を返すため、
+    // JSON として読めない応答はデータ不在として扱う
+    let rawData: RawQuizData
+    try {
+      rawData = (await response.json()) as RawQuizData
+    } catch {
+      throw new Error('QUIZ_DATA_NOT_FOUND')
+    }
 
     // データ検証
     validateQuizData(rawData)

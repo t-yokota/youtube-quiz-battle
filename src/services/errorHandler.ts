@@ -1,5 +1,5 @@
 // エラー分類・メッセージ変換・リトライ制御サービス
-import { ERROR_MESSAGES } from '@/constants/errorMessages'
+import { ERROR_MESSAGES, ERROR_TITLES, DEFAULT_ERROR_TITLE } from '@/constants/errorMessages'
 import { RETRY_BACKOFF_MS } from '@/constants/timing'
 
 export type ErrorCode = keyof typeof ERROR_MESSAGES
@@ -37,6 +37,18 @@ export function classifyError(error: unknown): ErrorCode {
  */
 export function getErrorMessage(error: unknown): string {
   return ERROR_MESSAGES[classifyError(error)]
+}
+
+/**
+ * エラーからダイアログ表示用の見出しとメッセージを取得する
+ * 見出しはエラー種別に応じて具体化する（抽象的な見出しだけが目立つのを避ける）
+ */
+export function getErrorInfo(error: unknown): { title: string; message: string } {
+  const code = classifyError(error)
+  return {
+    title: ERROR_TITLES[code] ?? DEFAULT_ERROR_TITLE,
+    message: ERROR_MESSAGES[code],
+  }
 }
 
 /**
