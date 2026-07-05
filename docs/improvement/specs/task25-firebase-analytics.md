@@ -203,7 +203,7 @@ export function createAnalyticsService(): AnalyticsService
 
 ## 25-6. GA4 UI 登録ガイド（手動作業・実装対象外）
 
-- カスタムディメンション（イベントスコープ）: `video_id` / `result` / `submission_type` のみ
+- カスタムディメンション（イベントスコープ）: `quiz_id` / `video_id` / `result` / `submission_type` のみ（quiz_id は Task 30 で追加。カーディナリティ = クイズ数で低い）
 - カスタムメトリクス: `question_index` / `attempt_index` / `attempts_used` / `time_until_press_sec` /
   `total_questions` / `correct_count` / `incorrect_count` / `skipped_count` / `unanswered_count` / `total_attempts`
 - **登録しない**（BigQuery 専用）: `quiz_session_id` / `answer` / `answers` / `question_text` / `video_title` / `times_until_press_sec`

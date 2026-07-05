@@ -30,25 +30,30 @@ interface RawQuizData {
 }
 
 /**
- * URLからvideoIdを抽出
+ * quizId として許可する形式（slug）。任意文字列で fetch URL を組み立てない
  */
-export function extractVideoIdFromUrl(): string | null {
+const QUIZ_ID_PATTERN = /^[a-z0-9-]{1,64}$/
+
+/**
+ * URL から quizId を抽出（?quiz={quizId}。未指定時は 'sample'）
+ */
+export function extractQuizIdFromUrl(): string {
   const urlParams = new URLSearchParams(window.location.search)
-  // ?v={videoId} または ?video={videoId}
-  return urlParams.get('v') || urlParams.get('video')
+  return urlParams.get('quiz') ?? 'sample'
 }
 
 /**
  * クイズデータを読み込み
  */
-export async function loadQuizData(videoId: string): Promise<QuizData> {
+export async function loadQuizData(quizId: string): Promise<QuizData> {
   try {
-    // videoId が "sample" の場合はサンプルデータを読み込む
+    // slug 形式以外は fetch せずに not found 扱い
+    if (!QUIZ_ID_PATTERN.test(quizId)) {
+      throw new Error('QUIZ_DATA_NOT_FOUND')
+    }
+
     // BASE_URL 前置: GitHub Pages のサブパス配信に対応（末尾スラッシュ付き）
-    const dataPath =
-      videoId === 'sample'
-        ? `${import.meta.env.BASE_URL}data/sample/data.json`
-        : `${import.meta.env.BASE_URL}data/${videoId}/data.json`
+    const dataPath = `${import.meta.env.BASE_URL}data/${quizId}/data.json`
 
     const response = await withRetry(async () => {
       const res = await fetch(dataPath)
@@ -64,7 +69,7 @@ export async function loadQuizData(videoId: string): Promise<QuizData> {
     const rawData: RawQuizData = await response.json()
 
     // データ検証
-    validateQuizData(rawData, videoId)
+    validateQuizData(rawData)
 
     // 型定義への変換
     return convertToQuizData(rawData)
@@ -79,7 +84,7 @@ export async function loadQuizData(videoId: string): Promise<QuizData> {
 /**
  * クイズデータを検証
  */
-function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
+function validateQuizData(data: RawQuizData): void {
   // 必須フィールドのチェック
   if (!data.videoId) {
     throw new Error('QUIZ_DATA_INVALID: Missing videoId')
@@ -94,11 +99,6 @@ function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
   }
 
   // 動画ID整合性チェック（sampleの場合はスキップ）
-  if (expectedVideoId !== 'sample' && data.videoId !== expectedVideoId) {
-    throw new Error(
-      `QUIZ_DATA_INVALID: Video ID mismatch (expected: ${expectedVideoId}, got: ${data.videoId})`,
-    )
-  }
 
   // クイズ設定のチェック
   if (!data.settings) {

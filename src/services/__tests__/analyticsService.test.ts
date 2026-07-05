@@ -45,9 +45,10 @@ describe('AnalyticsService', () => {
       const service = createAnalyticsService()
       await service.init()
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', videoId: 'v1', totalQuestions: 5 })
+      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 5 })
       service.logAnswerSubmitted({
         quizSessionId: 's1',
+        quizId: 'q1',
         videoId: 'v1',
         questionIndex: 0,
         attemptIndex: 1,
@@ -70,6 +71,7 @@ describe('AnalyticsService', () => {
 
       service.logQuizSessionStarted({
         quizSessionId: 's1',
+        quizId: 'q1',
         videoId: 'v1',
         videoTitle: 'タイトル',
         totalQuestions: 5,
@@ -94,6 +96,7 @@ describe('AnalyticsService', () => {
 
       service.logAnswerSubmitted({
         quizSessionId: 's1',
+        quizId: 'q1',
         videoId: 'v1',
         questionIndex: 0,
         attemptIndex: 1,
@@ -128,6 +131,7 @@ describe('AnalyticsService', () => {
 
       service.logQuestionAnswered({
         quizSessionId: 's1',
+        quizId: 'q1',
         videoId: 'v1',
         questionIndex: 0,
         result: 'correct',
@@ -138,6 +142,7 @@ describe('AnalyticsService', () => {
       })
       service.logQuizSessionCompleted({
         quizSessionId: 's1',
+        quizId: 'q1',
         videoId: 'v1',
         totalQuestions: 5,
         correctCount: 3,
@@ -164,7 +169,7 @@ describe('AnalyticsService', () => {
       const service = createAnalyticsService()
       await service.init()
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', videoId: 'v1', totalQuestions: 5 })
+      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 5 })
 
       const call = mockLogEvent.mock.calls[0]
       expect(call[2]).not.toHaveProperty('video_title')
@@ -176,7 +181,7 @@ describe('AnalyticsService', () => {
       await service.init()
       service.setDebugMode(true)
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', videoId: 'v1', totalQuestions: 5 })
+      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 5 })
 
       expect(mockLogEvent).toHaveBeenCalledWith(
         expect.anything(),
@@ -190,7 +195,7 @@ describe('AnalyticsService', () => {
       const service = createAnalyticsService()
       await service.init()
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', videoId: 'v1', totalQuestions: 5 })
+      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 5 })
 
       const call = mockLogEvent.mock.calls[0]
       expect(call[2]).not.toHaveProperty('debug_mode')
@@ -211,7 +216,7 @@ describe('AnalyticsService', () => {
       const service = createAnalyticsService()
       const initPromise = service.init()
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', videoId: 'v1', totalQuestions: 3 })
+      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 3 })
       expect(mockLogEvent).not.toHaveBeenCalled()
 
       // 動的import解決を待ってからisSupportedのresolveを呼ぶ（そうしないと
@@ -240,13 +245,13 @@ describe('AnalyticsService', () => {
       const service = createAnalyticsService()
       const initPromise = service.init()
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', videoId: 'v1', totalQuestions: 3 })
+      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 3 })
 
       await vi.waitFor(() => expect(mockIsSupported).toHaveBeenCalled())
       resolveSupported(false)
       await initPromise
 
-      service.logQuizSessionStarted({ quizSessionId: 's2', videoId: 'v1', totalQuestions: 3 })
+      service.logQuizSessionStarted({ quizSessionId: 's2', quizId: 'q1', videoId: 'v1', totalQuestions: 3 })
 
       expect(mockLogEvent).not.toHaveBeenCalled()
     })
@@ -260,7 +265,7 @@ describe('AnalyticsService', () => {
       const service = createAnalyticsService()
       await expect(service.init()).resolves.toBeUndefined()
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', videoId: 'v1', totalQuestions: 1 })
+      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 1 })
       expect(mockLogEvent).not.toHaveBeenCalled()
     })
 
@@ -273,7 +278,7 @@ describe('AnalyticsService', () => {
       const service = createAnalyticsService()
       await expect(service.init()).resolves.toBeUndefined()
 
-      service.logQuizSessionStarted({ quizSessionId: 's1', videoId: 'v1', totalQuestions: 1 })
+      service.logQuizSessionStarted({ quizSessionId: 's1', quizId: 'q1', videoId: 'v1', totalQuestions: 1 })
       expect(mockLogEvent).not.toHaveBeenCalled()
     })
   })

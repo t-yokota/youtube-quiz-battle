@@ -15,7 +15,7 @@ import OrientationDialog from './components/dialogs/OrientationDialog.vue'
 import ErrorDialog from './components/dialogs/ErrorDialog.vue'
 import { useGameStore } from './stores/gameStore'
 import { useSettingsStore } from './stores/settingsStore'
-import { extractVideoIdFromUrl, loadQuizData } from './services/quizDataLoader'
+import { extractQuizIdFromUrl, loadQuizData } from './services/quizDataLoader'
 import { createGameManager, type GameManager } from './services/gameManager'
 import { createAudioManager } from './services/audioManager'
 import { createAnalyticsService } from './services/analyticsService'
@@ -91,12 +91,13 @@ watch(
 
 // --- 初期化 ---
 
-// クイズデータをロード（URL パラメータ優先、未指定時は sample フォールバック）
+// クイズデータをロード（?quiz= で指定、未指定時は sample）
+const currentQuizId = extractQuizIdFromUrl()
+
 async function initQuizData() {
   try {
-    const videoId = extractVideoIdFromUrl() || 'sample'
-    logger.log(`[App] Loading quiz data for videoId: ${videoId}`)
-    quizData.value = await loadQuizData(videoId)
+    logger.log(`[App] Loading quiz data for quizId: ${currentQuizId}`)
+    quizData.value = await loadQuizData(currentQuizId)
     gameStore.setQuizData(quizData.value)
     analyticsService.setDebugMode(quizData.value.settings.debug)
     logger.log(`[App] Quiz data loaded: ${quizData.value.questions.length} questions`)
@@ -154,6 +155,7 @@ watch(
 
       analyticsService.logQuizSessionStarted({
         quizSessionId: quizSessionId.value,
+        quizId: currentQuizId,
         videoId: quizData.value?.videoId ?? '',
         videoTitle: videoTitle.value || undefined,
         totalQuestions: gameStore.totalQuestions,
@@ -170,6 +172,7 @@ watch(
 
       analyticsService.logQuizSessionCompleted({
         quizSessionId: quizSessionId.value,
+        quizId: currentQuizId,
         videoId: quizData.value?.videoId ?? '',
         videoTitle: videoTitle.value || undefined,
         totalQuestions: gameStore.totalQuestions,
@@ -214,6 +217,7 @@ watch(
 
         analyticsService.logAnswerSubmitted({
           quizSessionId: quizSessionId.value,
+        quizId: currentQuizId,
           videoId,
           videoTitle: videoTitle.value || undefined,
           questionIndex,
@@ -237,6 +241,7 @@ watch(
 
       analyticsService.logQuestionAnswered({
         quizSessionId: quizSessionId.value,
+        quizId: currentQuizId,
         videoId,
         videoTitle: videoTitle.value || undefined,
         questionIndex,

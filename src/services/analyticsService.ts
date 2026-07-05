@@ -9,6 +9,7 @@ import { logger } from '@/utils/logger'
 /** セッション開始イベント（quiz_session_started） */
 export interface QuizSessionStartedEvent {
   quizSessionId: string
+  quizId: string
   videoId: string
   videoTitle?: string
   totalQuestions: number
@@ -17,6 +18,7 @@ export interface QuizSessionStartedEvent {
 /** 1 問の最終結果サマリ（question_answered） */
 export interface QuestionAnsweredEvent {
   quizSessionId: string
+  quizId: string
   videoId: string
   videoTitle?: string
   questionIndex: number
@@ -31,6 +33,7 @@ export interface QuestionAnsweredEvent {
 /** 解答 1 試行の明細（answer_submitted。1 行 = 1 試行、BigQuery 分析用） */
 export interface AnswerSubmittedEvent {
   quizSessionId: string
+  quizId: string
   videoId: string
   videoTitle?: string
   questionIndex: number
@@ -46,6 +49,7 @@ export interface AnswerSubmittedEvent {
 /** セッション完走イベント（quiz_session_completed） */
 export interface QuizSessionCompletedEvent {
   quizSessionId: string
+  quizId: string
   videoId: string
   videoTitle?: string
   totalQuestions: number
@@ -165,6 +169,7 @@ class AnalyticsService {
   logQuizSessionStarted(event: QuizSessionStartedEvent): void {
     const params = buildGaParams({
       quizSessionId: event.quizSessionId,
+      quizId: event.quizId,
       videoId: event.videoId,
       videoTitle: event.videoTitle ? sanitizeAndTruncate(event.videoTitle) : undefined,
       totalQuestions: event.totalQuestions,
@@ -175,6 +180,7 @@ class AnalyticsService {
   logQuestionAnswered(event: QuestionAnsweredEvent): void {
     const params = buildGaParams({
       quizSessionId: event.quizSessionId,
+      quizId: event.quizId,
       videoId: event.videoId,
       videoTitle: event.videoTitle ? sanitizeAndTruncate(event.videoTitle) : undefined,
       questionIndex: event.questionIndex,
@@ -191,6 +197,7 @@ class AnalyticsService {
   logAnswerSubmitted(event: AnswerSubmittedEvent): void {
     const params = buildGaParams({
       quizSessionId: event.quizSessionId,
+      quizId: event.quizId,
       videoId: event.videoId,
       videoTitle: event.videoTitle ? sanitizeAndTruncate(event.videoTitle) : undefined,
       questionIndex: event.questionIndex,
@@ -208,6 +215,7 @@ class AnalyticsService {
   logQuizSessionCompleted(event: QuizSessionCompletedEvent): void {
     const params = buildGaParams({
       quizSessionId: event.quizSessionId,
+      quizId: event.quizId,
       videoId: event.videoId,
       videoTitle: event.videoTitle ? sanitizeAndTruncate(event.videoTitle) : undefined,
       totalQuestions: event.totalQuestions,
