@@ -89,8 +89,15 @@ class AnalyticsService {
 export function createAnalyticsService(): AnalyticsService
 ```
 
-- `init()`: `FIREBASE_CONFIG.measurementId === ''` なら即 return。`isSupported()`（firebase/analytics）が false でも return。例外は logger.warn に留めアプリを止めない
-- `log*`: 未初期化なら no-op
+- サービスは 3 状態を持つ: `disabled`（measurementId 空 / isSupported=false / 初期化失敗）/
+  `initializing`（init の Promise 進行中）/ `enabled`（logEvent 可能）
+- `init()`: `FIREBASE_CONFIG.measurementId === ''` なら即 disabled。`isSupported()` が false でも disabled。
+  例外は logger.warn に留めアプリを止めない（disabled へ）
+- `log*` の挙動（**「未初期化なら常に no-op」にはしない**）:
+  - enabled: 即 logEvent
+  - initializing: **小さなキュー（上限 50 件程度）に積み、enabled 化時に flush** する。
+    ゲート解除直後に即ゲーム開始しても quiz_session_started が落ちない（init は fire-and-forget のままで良い）
+  - disabled: no-op（キューも破棄）
 - **quiz_session_started は必須**（開始したが完走しなかったセッション＝離脱率の計測に必要。completed だけでは完走者しか見えない）
 - question_started は今回見送り（必要になったら追加）
 
@@ -174,7 +181,9 @@ export function createAnalyticsService(): AnalyticsService
      送信済み件数 `lastSentCount` ref を持ち、増分の各 QuestionResult について:
      - `userAnswers` の各要素を logAnswerSubmitted（attemptIndex は 1-origin、
        `timeUntilPressSec = timesUntilPress[attemptIndex - 1]`、`submissionType = submissionTypes[attemptIndex - 1]`、
-       `isFinalAttempt = attemptIndex === userAnswers.length`。押下と解答は 1:1 対応する）
+       `isFinalAttempt = attemptIndex === result.userAnswers.length`（その QuestionResult の試行配列の末尾か）。
+       押下と解答は原則 1:1 対応するが、保険として `timesUntilPress[attemptIndex - 1]` が undefined の場合は
+       **その answer_submitted は送らず logger.warn**（0 埋めより分析データの意味が壊れにくい））
      - その後サマリの logQuestionAnswered を 1 件（`answers = userAnswers.join('|')`、
        `timesUntilPressSec = 各値.toFixed(1).join('|')`、`firstTimeUntilPressSec = timesUntilPress[0]`）
   3. FINISHED 遷移で logQuizSessionCompleted（集計は `results` から算出。totalAttempts = attemptsUsed の総和）
@@ -199,6 +208,7 @@ export function createAnalyticsService(): AnalyticsService
 - `src/services/__tests__/analyticsService.test.ts`（新規）:
   - measurementId 空 → init 後も log* が logEvent を呼ばない（`vi.mock('firebase/app')` / `vi.mock('firebase/analytics')`）
   - 設定あり → 各 log* が対応するイベント名 + snake_case パラメータで logEvent を呼ぶ（boolean が 1/0 になること）
+  - initializing 中に log* した分が enabled 化後に flush される / disabled 確定で破棄される
   - sanitizeAndTruncate: メール/電話/URL がマスクされる・100 文字で切れる
   - init 失敗（isSupported=false / initializeApp throw）でも例外が漏れない
 - gameStore: recordButtonPress / submissionTypes の記録・クリアのテストを追補
