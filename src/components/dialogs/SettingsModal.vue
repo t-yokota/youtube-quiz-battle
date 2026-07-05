@@ -176,7 +176,7 @@ const handleOverlayClick = (event: MouseEvent) => {
             <!-- Audio Settings -->
             <section class="settings-section">
               <div class="setting-row">
-                <span class="setting-label">効果音の音量を調整する</span>
+                <span class="setting-label">効果音の音量</span>
                 <div class="volume-slider">
                   <!-- Volume Icon SVG -->
                   <svg
