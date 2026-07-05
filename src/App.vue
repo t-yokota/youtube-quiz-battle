@@ -18,7 +18,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { extractQuizIdFromUrl, loadQuizData } from './services/quizDataLoader'
 import { createGameManager, type GameManager } from './services/gameManager'
 import { createAudioManager } from './services/audioManager'
-import { createAnalyticsService } from './services/analyticsService'
+import { createAnalyticsService, type ChangeableSettingName } from './services/analyticsService'
 import { validate } from './services/answerValidator'
 import { getErrorInfo } from './services/errorHandler'
 import { MAX_VOLUME_LEVEL } from './constants/audio'
@@ -62,7 +62,7 @@ const isSessionActive = computed(
 
 // クイズ中に作用する設定の変更を記録する（READY での変更は次セッションの
 // quiz_session_started スナップショットに反映されるため送らない）
-function logSettingChange(settingName: 'seek_allowed' | 'button_check_enabled', value: boolean) {
+function logSettingChange(settingName: ChangeableSettingName, value: boolean | number) {
   if (!isSessionActive.value) return
   analyticsService.logSettingChanged({
     quizSessionId: quizSessionId.value,
@@ -87,6 +87,39 @@ watch(
   (enabled, prevEnabled) => {
     if (enabled === prevEnabled) return
     logSettingChange('button_check_enabled', enabled)
+  },
+)
+
+// デバッグ上書きで変わる実効設定の変更も記録する（debug データ中のみ変化し得る）
+watch(
+  () => gameStore.effectiveSettings?.jumpToRevealPeriod,
+  (value, prev) => {
+    if (value === undefined || prev === undefined || value === prev) return
+    logSettingChange('jump_to_reveal_period', value)
+  },
+)
+
+watch(
+  () => gameStore.effectiveSettings?.hideVideoPlayerDuringAnswer,
+  (value, prev) => {
+    if (value === undefined || prev === undefined || value === prev) return
+    logSettingChange('hide_video_player_during_answer', value)
+  },
+)
+
+watch(
+  () => gameStore.effectiveSettings?.answerTimeLimit,
+  (value, prev) => {
+    if (value === undefined || prev === undefined || value === prev) return
+    logSettingChange('answer_time_limit', value)
+  },
+)
+
+watch(
+  () => gameStore.effectiveSettings?.maxAttempts,
+  (value, prev) => {
+    if (value === undefined || prev === undefined || value === prev) return
+    logSettingChange('max_attempts', value)
   },
 )
 // results への送信済み件数（gameStore.results は push 追記のため length を監視する）

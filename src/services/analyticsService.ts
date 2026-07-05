@@ -62,12 +62,20 @@ export interface AnswerSubmittedEvent {
 }
 
 /** セッション進行中の設定変更イベント（setting_changed） */
+export type ChangeableSettingName =
+  | 'seek_allowed'
+  | 'button_check_enabled'
+  | 'jump_to_reveal_period'
+  | 'hide_video_player_during_answer'
+  | 'answer_time_limit'
+  | 'max_attempts'
+
 export interface SettingChangedEvent {
   quizSessionId: string
   quizId: string
   videoId: string
-  settingName: 'seek_allowed' | 'button_check_enabled'
-  settingValue: boolean
+  settingName: ChangeableSettingName
+  settingValue: boolean | number // boolean は 1/0 に変換して送信される
   questionIndex: number          // 変更時点の問題位置（問題間は直前の問題の index、開始前は -1）
 }
 

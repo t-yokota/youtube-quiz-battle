@@ -214,8 +214,11 @@ export function createAnalyticsService(): AnalyticsService
 ### setting_changed（2026-07-05 追加）
 
 - セッション進行中（started 送信後〜FINISHED 前）にユーザーが設定を変更したとき送信:
-  `setting_name`（'seek_allowed' | 'button_check_enabled'）/ `setting_value`（1/0）/
+  `setting_name`（seek_allowed / button_check_enabled / jump_to_reveal_period /
+  hide_video_player_during_answer / answer_time_limit / max_attempts）/
+  `setting_value`（boolean は 1/0、数値はそのまま）/
   `question_index`（変更時点の問題位置）+ セッション文脈
+- デバッグ上書き系 4 項目は debug データ中しか変化し得ない（実効値 watcher で検知）
 - READY での変更は送らない（次セッションの quiz_session_started スナップショットに反映されるため）
 - シーク許可は進行中セッションのスキップ発生条件を変えるため、成績解釈にこの変化点が必要
 
