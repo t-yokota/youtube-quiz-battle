@@ -43,6 +43,16 @@ export interface QuestionAnsweredEvent {
                                  // '|' 連結した文字列（例 "2.4|5.1"。未押下は空文字。100 文字超は切り詰め）
 }
 
+/** 解答 1 試行ごとに送る（分析で 1 行 = 1 試行にするため。サマリの question_answered と併送） */
+export interface AnswerSubmittedEvent {
+  sessionId: string
+  questionIndex: number
+  attemptIndex: number           // 1-origin（何回目の試行か）
+  answer: string                 // この試行の解答文字列（100 文字超は切り詰め）
+  isCorrect: boolean
+  pressOffset: number | null     // この試行の押下タイミング（問題開始からの秒・小数1桁）。対応が取れない場合 null
+}
+
 export interface QuizSessionCompletedEvent {
   sessionId: string
   videoId: string
@@ -57,6 +67,7 @@ class AnalyticsService {
   /** measurementId が空 / 初期化失敗時は isEnabled=false のまま以後すべて no-op */
   async init(): Promise<void>
   logQuestionAnswered(event: QuestionAnsweredEvent): void
+  logAnswerSubmitted(event: AnswerSubmittedEvent): void
   logQuizSessionCompleted(event: QuizSessionCompletedEvent): void
 }
 export function createAnalyticsService(): AnalyticsService
@@ -75,7 +86,11 @@ export function createAnalyticsService(): AnalyticsService
   2. `watch(() => gameStore.results.length)`: `results` は `ref<QuestionResult[]>` に **push で追記**される（参照は変わらない）ため、
      **length を監視**して増分のみ送る。送信済み件数を `lastSentCount` ref（number）で保持し、
      `results[lastSentCount..length-1]` を logQuestionAnswered して更新する（Set は不要）
-  3. FINISHED 遷移で logQuizSessionCompleted（集計は `results` から算出）
+  3. 増分の各 QuestionResult について、`userAnswers` の各要素を logAnswerSubmitted で個別送信する
+     （attemptIndex は 1-origin。pressOffset は `pressOffsets[attemptIndex-1] ?? null` — 押下と解答は
+     通常 1:1 だが、タイムアウト確定などでズレた場合は null 側に倒す）。
+     その後サマリの logQuestionAnswered を 1 件送る（パイプ連結フィールドは分析の利便用に維持）
+  4. FINISHED 遷移で logQuizSessionCompleted（集計は `results` から算出）
 - `QuestionResult`（isCorrect / skipped / userAnswers を持つ）からのイベント値の導出規則:
   - `result`: `skipped → 'skipped'` / `isCorrect → 'correct'` / それ以外で `userAnswers.length === 0 → 'unanswered'` / 残り → `'incorrect'`
   - `attemptsUsed = userAnswers.length` / `answers = userAnswers.join('|')`（100 文字超は切り詰め）
@@ -97,7 +112,7 @@ export function createAnalyticsService(): AnalyticsService
 
 ## 25-4. PrivacyInfo との整合（D-15）
 
-- 送信するのは上記 2 イベントのみ。個人識別子（uid・氏名・連絡先）は送らない
+- 送信するのは上記 3 イベント（answer_submitted / question_answered / quiz_session_completed）のみ。個人識別子（uid・氏名・連絡先）は送らない
 - `answers`（解答文字列の履歴）を送ることは PrivacyInfo に既述（「入力した解答内容も統計処理の対象」）— 文言変更不要
 - GA4 の自動収集（page_view 等）はデフォルトのままで良い
 
@@ -105,7 +120,8 @@ export function createAnalyticsService(): AnalyticsService
 
 - `src/services/__tests__/analyticsService.test.ts`（新規）:
   - measurementId 空 → init 後も log* が logEvent を呼ばない（`vi.mock('firebase/app')` / `vi.mock('firebase/analytics')`）
-  - 設定あり → init 後 logQuestionAnswered が logEvent('question_answered', params) を呼ぶ
+  - 設定あり → init 後 logQuestionAnswered / logAnswerSubmitted がそれぞれ
+    logEvent('question_answered' / 'answer_submitted', params) を呼ぶ
   - init 失敗（isSupported=false / initializeApp throw）でも例外が漏れない
 - App のフックは watcher 中心のため単体テスト対象外（Task 26 の E2E ではなく手動確認: Firebase DebugView）
 
