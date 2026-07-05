@@ -242,7 +242,9 @@ class AnalyticsService {
   private dispatch(name: string, params: GaParams): void {
     if (this.state !== 'enabled' || !window.gtag) return
 
-    const finalParams = this.debugMode ? { ...params, debug_mode: 1 } : params
+    // 開発ビルド（ローカル実行）では常に debug_mode を付与し、本番レポートを汚さない
+    const isDebug = this.debugMode || import.meta.env.DEV
+    const finalParams = isDebug ? { ...params, debug_mode: 1 } : params
     window.gtag('event', name, finalParams)
   }
 }

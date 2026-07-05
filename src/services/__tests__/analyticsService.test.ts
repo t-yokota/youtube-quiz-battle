@@ -82,6 +82,8 @@ describe('AnalyticsService（gtag.js 送信層）', () => {
         video_id: 'v1',
         video_title: 'タイトル',
         total_questions: 5,
+        // テスト実行環境は DEV のため debug_mode が強制付与される
+        debug_mode: 1,
       })
     })
 
@@ -163,7 +165,7 @@ describe('AnalyticsService（gtag.js 送信層）', () => {
       expect(entry[2]).toMatchObject({ debug_mode: 1 })
     })
 
-    it('setDebugMode(false) では debug_mode を付けない', async () => {
+    it('DEV 環境では setDebugMode(false) でも debug_mode が強制付与される（ローカル実行の混入防止）', async () => {
       const service = createAnalyticsService(TEST_MEASUREMENT_ID)
       await service.init()
       service.setDebugMode(false)
@@ -171,7 +173,7 @@ describe('AnalyticsService（gtag.js 送信層）', () => {
       service.logQuizSessionStarted(makeStartedEvent())
 
       const [entry] = eventEntries()
-      expect(entry[2]).not.toHaveProperty('debug_mode')
+      expect(entry[2]).toMatchObject({ debug_mode: 1 })
     })
 
     it('init 前の log* は no-op（イベントを積まない）', async () => {
