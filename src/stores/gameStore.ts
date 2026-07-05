@@ -31,6 +31,8 @@ export const useGameStore = defineStore('game', () => {
   const answerInput = ref('')
   const answerResult = ref<'correct' | 'incorrect' | null>(null)
   const pendingUserAnswers = ref<string[]>([]) // 問題単位の解答履歴
+  const pendingTimesUntilPress = ref<number[]>([]) // 問題単位の押下タイミング（解答権を得るまでの秒。pendingUserAnswersと同じライフサイクル）
+  const pendingSubmissionTypes = ref<('manual' | 'timeout')[]>([]) // 問題単位の送信種別（pendingUserAnswersと同じライフサイクル）
 
   // 結果
   const results = ref<QuestionResult[]>([])
@@ -202,7 +204,17 @@ export const useGameStore = defineStore('game', () => {
       correctAnswer,
       userAnswers,
       skipped,
+      timesUntilPress: [...pendingTimesUntilPress.value],
+      submissionTypes: [...pendingSubmissionTypes.value],
     })
+  }
+
+  /**
+   * ボタン押下タイミングを記録する（解答権を得るまでの秒。Analytics用）
+   * pendingUserAnswersと同じライフサイクルでクリアされる
+   */
+  function recordButtonPress(timeUntilPress: number): void {
+    pendingTimesUntilPress.value.push(timeUntilPress)
   }
 
   /**
@@ -220,7 +232,10 @@ export const useGameStore = defineStore('game', () => {
    * 解答送信処理
    * @returns 判定結果（isCorrect: 正解か, isFinal: この問題の解答が確定したか）。ANSWERING以外ではnull
    */
-  function handleAnswerSubmit(answer: string): { isCorrect: boolean; isFinal: boolean } | null {
+  function handleAnswerSubmit(
+    answer: string,
+    submissionType: 'manual' | 'timeout' = 'manual',
+  ): { isCorrect: boolean; isFinal: boolean } | null {
     if (currentState.value !== GameState.ANSWERING) return null
 
     const question = currentQuestionData.value
@@ -232,6 +247,7 @@ export const useGameStore = defineStore('game', () => {
 
     // 解答履歴に追加
     pendingUserAnswers.value.push(answer)
+    pendingSubmissionTypes.value.push(submissionType)
 
     if (isCorrect) {
       // 正解（answerInput は結果表示中も残し、次の問題の initializeForQuestion でクリアする）
@@ -291,6 +307,8 @@ export const useGameStore = defineStore('game', () => {
     answerInput.value = ''
     answerResult.value = null
     pendingUserAnswers.value = []
+    pendingTimesUntilPress.value = []
+    pendingSubmissionTypes.value = []
   }
 
   /**
@@ -363,6 +381,8 @@ export const useGameStore = defineStore('game', () => {
     answerInput.value = ''
     answerResult.value = null
     pendingUserAnswers.value = []
+    pendingTimesUntilPress.value = []
+    pendingSubmissionTypes.value = []
     results.value = []
   }
 
@@ -379,6 +399,8 @@ export const useGameStore = defineStore('game', () => {
     answerInput,
     answerResult,
     pendingUserAnswers,
+    pendingTimesUntilPress,
+    pendingSubmissionTypes,
     results,
     // Getters
     totalQuestions,
@@ -394,6 +416,7 @@ export const useGameStore = defineStore('game', () => {
     // Actions
     transitionToState,
     recordResult,
+    recordButtonPress,
     removeResult,
     handleAnswerSubmit,
     updateAnswerInput,

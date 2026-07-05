@@ -7,4 +7,6 @@ export interface QuestionResult {
   correctAnswer: string // 正解（answers配列の最初の要素）
   userAnswers: string[] // ユーザーの解答履歴（複数回解答の場合は複数要素）
   skipped: boolean // スキップされた問題かどうか
+  timesUntilPress: number[] // 各試行で解答権を得るまでの秒（Analytics用）
+  submissionTypes: ('manual' | 'timeout')[] // 各試行の送信種別（Analytics用）
 }

@@ -94,8 +94,8 @@ export class AnswerFlowController {
     this.stopAnswerCountdown()
     logger.log('[AnswerFlowController] Answer timeout')
 
-    // 入力途中の内容をそのまま送信して判定する
-    const result = this.gameStore.handleAnswerSubmit(this.gameStore.answerInput)
+    // 入力途中の内容をそのまま送信して判定する（制限時間切れによる自動確定）
+    const result = this.gameStore.handleAnswerSubmit(this.gameStore.answerInput, 'timeout')
     if (result) {
       this.resumeVideoAfterAnswer(result)
     }

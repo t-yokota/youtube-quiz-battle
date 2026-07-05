@@ -31,6 +31,7 @@ export interface YouTubePlayerManager {
   getCurrentTime(): number
   getDuration(): number
   getPlayerState(): YouTubePlayerState
+  getVideoTitle(): string
 
   // イベント処理
   onStateChange(callback: (state: YouTubePlayerState) => void): void

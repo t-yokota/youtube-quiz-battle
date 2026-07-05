@@ -113,7 +113,6 @@ export function createYouTubePlayerManager(
           player.seekTo(time, true)
         },
 
-
         getCurrentTime: () => {
           if (!player) return 0
           return player.getCurrentTime()
@@ -127,6 +126,15 @@ export function createYouTubePlayerManager(
         getPlayerState: () => {
           if (!player) return YouTubePlayerState.UNSTARTED
           return player.getPlayerState() as unknown as YouTubePlayerState
+        },
+
+        getVideoTitle: () => {
+          if (!player) return ''
+          try {
+            return player.getVideoData()?.title ?? ''
+          } catch {
+            return ''
+          }
         },
 
         onStateChange: (callback: (state: YouTubePlayerState) => void) => {

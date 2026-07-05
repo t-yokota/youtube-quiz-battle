@@ -18,6 +18,8 @@ import { useSettingsStore } from './stores/settingsStore'
 import { extractVideoIdFromUrl, loadQuizData } from './services/quizDataLoader'
 import { createGameManager, type GameManager } from './services/gameManager'
 import { createAudioManager } from './services/audioManager'
+import { createAnalyticsService } from './services/analyticsService'
+import { validate } from './services/answerValidator'
 import { getErrorMessage } from './services/errorHandler'
 import { MAX_VOLUME_LEVEL } from './constants/audio'
 import { useGameLoop } from './composables/useGameLoop'
@@ -42,6 +44,14 @@ const quizData = ref<QuizData | null>(null)
 
 // 初期化エラー
 const initError = ref<string | null>(null)
+
+// Analytics（App レベルで単一インスタンスを保持。ストア・サービスの純度を保つため
+// 送信フックはこのファイルの watcher に集約する）
+const analyticsService = createAnalyticsService()
+const quizSessionId = ref('')
+const videoTitle = ref('')
+// results への送信済み件数（gameStore.results は push 追記のため length を監視する）
+const lastSentResultCount = ref(0)
 
 // モーダル・ダイアログの表示状態
 const isSettingsOpen = ref(false)
@@ -88,6 +98,7 @@ async function initQuizData() {
     logger.log(`[App] Loading quiz data for videoId: ${videoId}`)
     quizData.value = await loadQuizData(videoId)
     gameStore.setQuizData(quizData.value)
+    analyticsService.setDebugMode(quizData.value.settings.debug)
     logger.log(`[App] Quiz data loaded: ${quizData.value.questions.length} questions`)
   } catch (error) {
     logger.error('[App] Failed to load quiz data:', error)
@@ -130,6 +141,118 @@ function handlePlayerError(message: string) {
   initError.value = getErrorMessage(new Error(`YOUTUBE_LOAD_FAILED: ${message}`))
 }
 
+// --- Analytics フック ---
+
+// READY -> TALKING でセッション開始（リプレイは別セッションとして新規発行する）
+watch(
+  () => gameStore.currentState,
+  (next, prev) => {
+    if (prev === GameState.READY && next === GameState.TALKING) {
+      quizSessionId.value = crypto.randomUUID()
+      lastSentResultCount.value = 0
+      videoTitle.value = playerManagerRef.value?.getVideoTitle() ?? ''
+
+      analyticsService.logQuizSessionStarted({
+        quizSessionId: quizSessionId.value,
+        videoId: quizData.value?.videoId ?? '',
+        videoTitle: videoTitle.value || undefined,
+        totalQuestions: gameStore.totalQuestions,
+      })
+    }
+
+    if (next === GameState.FINISHED) {
+      const results = gameStore.results
+      const skippedCount = results.filter((r) => r.skipped).length
+      const unansweredCount = results.filter(
+        (r) => !r.skipped && !r.isCorrect && r.userAnswers.length === 0,
+      ).length
+      const totalAttempts = results.reduce((sum, r) => sum + r.userAnswers.length, 0)
+
+      analyticsService.logQuizSessionCompleted({
+        quizSessionId: quizSessionId.value,
+        videoId: quizData.value?.videoId ?? '',
+        videoTitle: videoTitle.value || undefined,
+        totalQuestions: gameStore.totalQuestions,
+        correctCount: gameStore.correctCount,
+        incorrectCount: gameStore.incorrectCount,
+        skippedCount,
+        unansweredCount,
+        totalAttempts,
+      })
+    }
+  },
+)
+
+// results は push 追記のため length を監視し、増分の各 QuestionResult を送信する
+watch(
+  () => gameStore.results.length,
+  (length) => {
+    const results = gameStore.results
+    const videoId = quizData.value?.videoId ?? ''
+
+    for (let i = lastSentResultCount.value; i < length; i++) {
+      const result = results[i]
+      const questionIndex = result.questionNumber - 1
+      const question = quizData.value?.questions[questionIndex]
+      const questionText = question?.questionText
+
+      result.userAnswers.forEach((answer, idx) => {
+        const attemptIndex = idx + 1
+        const timeUntilPress = result.timesUntilPress[idx]
+
+        // 押下と解答は原則1:1対応するが、保険として欠損時はその試行を送らず警告する
+        // （0埋めより分析データの意味が壊れにくい）
+        if (timeUntilPress === undefined) {
+          logger.warn(
+            `[App] timesUntilPress missing for question ${result.questionNumber} attempt ${attemptIndex}`,
+          )
+          return
+        }
+
+        const submissionType = result.submissionTypes[idx] ?? 'manual'
+        const isCorrect = question ? validate(answer, question.answers) : false
+
+        analyticsService.logAnswerSubmitted({
+          quizSessionId: quizSessionId.value,
+          videoId,
+          videoTitle: videoTitle.value || undefined,
+          questionIndex,
+          attemptIndex,
+          answer,
+          isCorrect,
+          isFinalAttempt: attemptIndex === result.userAnswers.length,
+          submissionType,
+          timeUntilPressSec: timeUntilPress,
+          questionText,
+        })
+      })
+
+      const resultLabel: 'correct' | 'incorrect' | 'skipped' | 'unanswered' = result.skipped
+        ? 'skipped'
+        : result.isCorrect
+          ? 'correct'
+          : result.userAnswers.length === 0
+            ? 'unanswered'
+            : 'incorrect'
+
+      analyticsService.logQuestionAnswered({
+        quizSessionId: quizSessionId.value,
+        videoId,
+        videoTitle: videoTitle.value || undefined,
+        questionIndex,
+        result: resultLabel,
+        attemptsUsed: result.userAnswers.length,
+        answers: result.userAnswers.join('|'),
+        timesUntilPressSec: result.timesUntilPress.map((t) => t.toFixed(1)).join('|'),
+        firstTimeUntilPressSec: result.timesUntilPress[0],
+        questionText,
+      })
+    }
+
+    lastSentResultCount.value = length
+  },
+)
+
 // --- イベントハンドラ ---
 
 // QuizButton 押下 → GameManager に委譲
@@ -164,6 +287,9 @@ function handleGateTap() {
   gameManager.value?.warmupVideoPlayback()
   audioManager.unlock()
   isGateDismissed.value = true
+
+  // Analytics 初期化（ゲート解除直後。fire-and-forget）
+  void analyticsService.init()
 }
 
 onMounted(() => {

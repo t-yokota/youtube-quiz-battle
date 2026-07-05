@@ -257,6 +257,8 @@ describe('handleAnswerSubmit: 結果記録', () => {
       correctAnswer: '東京',
       userAnswers: ['東京'],
       skipped: false,
+      timesUntilPress: [],
+      submissionTypes: ['manual'],
     })
   })
 
@@ -275,6 +277,8 @@ describe('handleAnswerSubmit: 結果記録', () => {
       correctAnswer: '東京',
       userAnswers: ['間違い'],
       skipped: false,
+      timesUntilPress: [],
+      submissionTypes: ['manual'],
     })
   })
 
@@ -527,5 +531,69 @@ describe('effectiveSettings', () => {
 
     expect(store.remainingAttempts).toBe(1)
     expect(store.answerTimeRemaining).toBe(3)
+  })
+})
+
+describe('recordButtonPress / submissionTypes（Analytics用記録）', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('recordButtonPressで積んだ値がrecordResult時にQuestionResultへ取り込まれる', () => {
+    const store = useGameStore()
+    store.setQuizData(makeQuizData(3))
+    store.currentQuestionIndex = 0
+    store.transitionToState(GameState.ANSWERING)
+
+    store.recordButtonPress(2.4)
+    store.handleAnswerSubmit('間違い')
+    store.recordButtonPress(5.1)
+    store.handleAnswerSubmit('東京')
+
+    expect(store.results).toHaveLength(1)
+    expect(store.results[0].timesUntilPress).toEqual([2.4, 5.1])
+    expect(store.results[0].submissionTypes).toEqual(['manual', 'manual'])
+  })
+
+  it('submissionType指定でtimeoutが記録される', () => {
+    const store = useGameStore()
+    store.setQuizData(makeQuizData(1))
+    store.currentQuestionIndex = 0
+    store.transitionToState(GameState.ANSWERING)
+
+    store.recordButtonPress(3.0)
+    store.handleAnswerSubmit('', 'timeout')
+
+    expect(store.results[0].submissionTypes).toEqual(['timeout'])
+  })
+
+  it('initializeForQuestionでpendingTimesUntilPress/pendingSubmissionTypesがクリアされる', () => {
+    const store = useGameStore()
+    store.setQuizData(makeQuizData(3))
+    store.currentQuestionIndex = 0
+    store.transitionToState(GameState.ANSWERING)
+
+    store.recordButtonPress(1.0)
+    store.handleAnswerSubmit('間違い')
+
+    store.initializeForQuestion()
+
+    expect(store.pendingTimesUntilPress).toEqual([])
+    expect(store.pendingSubmissionTypes).toEqual([])
+  })
+
+  it('resetGameでpendingTimesUntilPress/pendingSubmissionTypesがクリアされる', () => {
+    const store = useGameStore()
+    store.setQuizData(makeQuizData(3))
+    store.currentQuestionIndex = 0
+    store.transitionToState(GameState.ANSWERING)
+
+    store.recordButtonPress(1.0)
+    store.handleAnswerSubmit('間違い')
+
+    store.resetGame()
+
+    expect(store.pendingTimesUntilPress).toEqual([])
+    expect(store.pendingSubmissionTypes).toEqual([])
   })
 })

@@ -8,6 +8,7 @@ export interface QuizQuestion {
   endTime: number // 正解発表区間の終了時間（秒）
   answers: string[] // 正解パターンのリスト
   othersAnsweringPeriods?: OthersAnsweringPeriod[] // 動画内プレイヤーの解答区間
+  questionText?: string // 問題文（Analytics送信用。データが持つ場合のみ）
 }
 
 // 動画内プレイヤーの解答区間

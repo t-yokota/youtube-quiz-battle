@@ -196,6 +196,15 @@ export class GameManager {
     //   旧版と同じく「先に動画を止めてから鳴らす」順序にする）
     if (stateAtPress === GameState.QUESTIONING) {
       this.playerControl.pauseVideo()
+
+      // 押下タイミングを記録（Analytics用。問題開始からの経過秒を小数1桁に丸める）
+      const question = this.gameStore.currentQuestionData
+      if (question) {
+        const timeUntilPress =
+          Math.round(Math.max(0, this.playerControl.getCurrentTime() - question.startTime) * 10) /
+          10
+        this.gameStore.recordButtonPress(timeUntilPress)
+      }
     }
 
     // ボタン押下音（QUESTIONING は直前で動画停止済み）

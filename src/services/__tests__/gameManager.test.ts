@@ -92,6 +92,7 @@ function makePlayerMock(): YouTubePlayerManager {
     getCurrentTime: vi.fn(() => 0),
     getDuration: vi.fn(() => 60),
     getPlayerState: vi.fn(() => YouTubePlayerState.PLAYING),
+    getVideoTitle: vi.fn(() => ''),
     onStateChange: vi.fn(),
     destroy: vi.fn(),
   }
@@ -1757,7 +1758,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
         jumpToRevealPeriod: false,
         hideVideoPlayerDuringAnswer: false,
         buttonCheckEnabled: true,
-      debug: false,
+        debug: false,
       },
     }
   }

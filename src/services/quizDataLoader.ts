@@ -135,6 +135,11 @@ function validateQuizData(data: RawQuizData, expectedVideoId: string): void {
       throw new Error(`QUIZ_DATA_INVALID: Question ${index + 1} has empty answer`)
     }
 
+    // questionTextの妥当性チェック（任意項目）
+    if (q.questionText !== undefined && typeof q.questionText !== 'string') {
+      throw new Error(`QUIZ_DATA_INVALID: Question ${index + 1} has invalid questionText`)
+    }
+
     // 時間データの妥当性チェック
     if (typeof q.startTime !== 'number' || q.startTime < 0) {
       throw new Error(`QUIZ_DATA_INVALID: Question ${index + 1} has invalid startTime`)
@@ -232,6 +237,7 @@ function convertToQuizData(rawData: RawQuizData): QuizData {
       endTime: q.endTime,
       answers: q.answers,
       othersAnsweringPeriods: q.othersAnsweringPeriods,
+      questionText: q.questionText,
     }
   })
 
