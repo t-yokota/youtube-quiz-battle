@@ -35,7 +35,9 @@ export interface QuestionAnsweredEvent {
   questionIndex: number          // 0-origin
   result: 'correct' | 'incorrect' | 'skipped' | 'unanswered'
   attemptsUsed: number           // 使用した解答回数（skipped/unanswered は 0 もあり得る）
-  finalAnswer: string            // 最後に入力された解答文字列（空可。PrivacyInfo と整合）
+  answers: string                // 全解答履歴を '|' 連結した文字列（例 "とうきょう|東京"。空可）
+                                 // GA4 のイベントパラメータは配列不可・値 100 文字上限のため、
+                                 // 連結後 100 文字を超える場合は末尾を切り詰める
 }
 
 export interface QuizSessionCompletedEvent {
@@ -73,13 +75,13 @@ export function createAnalyticsService(): AnalyticsService
   3. FINISHED 遷移で logQuizSessionCompleted（集計は `results` から算出）
 - `QuestionResult`（isCorrect / skipped / userAnswers を持つ）からのイベント値の導出規則:
   - `result`: `skipped → 'skipped'` / `isCorrect → 'correct'` / それ以外で `userAnswers.length === 0 → 'unanswered'` / 残り → `'incorrect'`
-  - `attemptsUsed = userAnswers.length` / `finalAnswer = userAnswers.at(-1) ?? ''`
+  - `attemptsUsed = userAnswers.length` / `answers = userAnswers.join('|')`（100 文字超は切り詰め）
 - `analyticsService.init()` は **`App.vue` の `handleGateTap` 内**（ゲート解除直後）に fire-and-forget（`void init()`）で呼ぶ（初期表示を阻害しない・プレイ意思のあるユーザーのみ計測開始）
 
 ## 25-4. PrivacyInfo との整合（D-15）
 
 - 送信するのは上記 2 イベントのみ。個人識別子（uid・氏名・連絡先）は送らない
-- `finalAnswer`（解答文字列）を送ることは PrivacyInfo に既述（「入力した解答内容も統計処理の対象」）— 文言変更不要
+- `answers`（解答文字列の履歴）を送ることは PrivacyInfo に既述（「入力した解答内容も統計処理の対象」）— 文言変更不要
 - GA4 の自動収集（page_view 等）はデフォルトのままで良い
 
 ## 25-5. テスト
