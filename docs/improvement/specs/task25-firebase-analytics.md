@@ -138,6 +138,10 @@ export function createAnalyticsService(): AnalyticsService
 - パラメータ名は **snake_case**。TS フィールド名は GA パラメータ名と機械的に対応するよう命名済み
   （camelCase → snake_case の単純変換のみ。`quizSessionId → quiz_session_id` / `timeUntilPressSec → time_until_press_sec`）
 - boolean は **1 / 0 に変換**（BigQuery の int_value で扱いやすくする）
+- **デバッグデータの識別**: クイズデータが `settings.debug === true` の場合、**全イベントに GA4 標準の
+  `debug_mode: 1` を付与**する（false のときはパラメータ自体を送らない）。
+  これにより ①DebugView にリアルタイム表示される ②本番レポート/BigQuery でデバッグプレイを除外できる。
+  実装は analyticsService に `setDebugMode(enabled: boolean)` を持たせ、App がクイズデータ読込時に設定する
 - 自由入力（`answer` / `answers` / `question_text`）は送信前に **sanitizeAndTruncate** を通す:
   - PII マスク: メールアドレス・電話番号・URL のパターンを `[masked]` に置換（正規表現ベースの軽量実装で良い）
   - 100 文字超は切り詰め（GA4 のパラメータ値上限）
@@ -203,8 +207,9 @@ export function createAnalyticsService(): AnalyticsService
 ## 手動確認
 
 - [ ] 設定なし（空 config）で従来どおり動作し、ネットワークに gtag 系リクエストが出ない
-- [ ] 設定ありで 1 ゲーム通しプレイ → DebugView に quiz_session_started × 1、answer_submitted × 試行数、
-      question_answered × 問題数、quiz_session_completed × 1
+- [ ] 設定あり + debug データで 1 ゲーム通しプレイ → DebugView に quiz_session_started × 1、
+      answer_submitted × 試行数、question_answered × 問題数、quiz_session_completed × 1（debug_mode 付き）
+- [ ] debug でないデータのイベントに debug_mode が付かない
 - [ ] 途中離脱（リロード）で started のみ記録される
 - [ ] リプレイで quiz_session_id が変わる
 
