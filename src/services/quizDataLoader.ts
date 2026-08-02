@@ -105,7 +105,6 @@ function validateQuizData(data: RawQuizData): void {
     throw new Error('QUIZ_DATA_INVALID: Questions array is empty')
   }
 
-  // 動画ID整合性チェック（sampleの場合はスキップ）
 
   // クイズ設定のチェック
   if (!data.settings) {

@@ -20,7 +20,7 @@ interface WindowWithWebkitAudioContext extends Window {
 /**
  * 効果音管理クラス
  * - Web Audio API（AudioContext + decodeAudioData + AudioBufferSourceNode + GainNode）を優先使用
- * - AudioContext 未定義環境では HTML Audio（new Audio() + currentTime シーク + setTimeout 停止）にフォールバック
+ * - AudioContext 未定義環境では HTML Audio（音種別の個別ファイルを頭から再生）にフォールバック
  * - 新規再生時は再生中の効果音を停止してから再生する
  */
 export class AudioManager {

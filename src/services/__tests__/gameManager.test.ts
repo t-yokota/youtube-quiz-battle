@@ -1912,7 +1912,7 @@ describe('監査 2026-07-07: B-1/B-2 の回帰テスト', () => {
     store.setQuizData(quiz)
 
     const playerControl = new InternalPlayerControl(player)
-    const timeManager = new TimeManager(quiz.questions)
+    const timeManager = new TimeManager()
     const thresholdEngine = new ThresholdEngine(quiz, store)
     const answerFlow = createAnswerFlowController(
       playerControl,

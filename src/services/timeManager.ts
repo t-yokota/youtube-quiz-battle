@@ -10,7 +10,7 @@ export class TimeManager {
   private currentVideoTime: number = 0
   private previousVideoTime: number = 0
 
-  constructor(private questions: QuizQuestion[]) {}
+
 
   /**
    * 現在の動画時間を取得
@@ -78,6 +78,6 @@ export class TimeManager {
 /**
  * TimeManagerインスタンスを作成
  */
-export function createTimeManager(questions: QuizQuestion[]): TimeManager {
-  return new TimeManager(questions)
+export function createTimeManager(): TimeManager {
+  return new TimeManager()
 }

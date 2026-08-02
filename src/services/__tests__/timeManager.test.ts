@@ -27,7 +27,7 @@ describe('TimeManager', () => {
   let tm: TimeManager
 
   beforeEach(() => {
-    tm = createTimeManager(makeQuestions())
+    tm = createTimeManager()
   })
 
   // ============================================================================

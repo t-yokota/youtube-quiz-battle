@@ -106,7 +106,7 @@ watch(
         @input="handleInput"
         @keydown.enter="handleSubmit"
       />
-      <button class="submit-button" :disabled="isSubmitDisabled()" @click="handleSubmit">
+      <button type="button" class="submit-button" :disabled="isSubmitDisabled()" @click="handleSubmit">
         送信
       </button>
     </div>
@@ -274,6 +274,7 @@ watch(
 
 .submit-button {
   height: max(44px, 2.75rem);
+  min-width: max(44px, 2.75rem);
   padding: 0 1rem;
   font-size: 0.9375rem;
   font-weight: 800;

@@ -49,7 +49,7 @@ export class GameManager {
     this.gameStore = gameStore
     this.audioManager = audioManager
     this.settingsStore = settingsStore
-    this.timeManager = createTimeManager(quizData.questions)
+    this.timeManager = createTimeManager()
     this.playerControl = createInternalPlayerControl(playerManager)
     this.thresholdEngine = createThresholdEngine(quizData, gameStore)
     this.answerFlow = createAnswerFlowController(
