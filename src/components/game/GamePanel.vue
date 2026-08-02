@@ -39,11 +39,11 @@ const handleSubmit = (answer: string) => {
 </template>
 
 <style scoped>
-/* Answer Area（ステージ調カード） */
+/* Answer Area（テーマトークン化: 面・境界・ソフトシャドウ） */
 .answer-area {
   flex-shrink: 0;
-  background: var(--color-stage-800);
-  border: 1px solid var(--color-line);
+  background: var(--surface-panel);
+  border: var(--panel-border);
   border-radius: var(--radius-lg);
   padding: 0.75rem 0.875rem;
   height: 6.875rem;
@@ -51,19 +51,20 @@ const handleSubmit = (answer: string) => {
   align-items: stretch;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--panel-shadow);
   transition:
     border-color var(--duration-base),
     box-shadow var(--duration-base);
 }
 
-/* 正解/不正解時にエリア全体を縁取りフラッシュ */
+/* 正解/不正解時にエリア全体を縁取りフラッシュ（テーマの基本影と重ねる） */
 .answer-area.flash-correct {
-  border-color: var(--color-ok-400);
-  box-shadow: 0 0 1.125rem rgba(61, 220, 132, 0.25);
+  border-color: var(--color-ok);
+  box-shadow: var(--panel-shadow), var(--flash-ok-glow);
 }
 
 .answer-area.flash-incorrect {
-  border-color: var(--color-signal-500);
-  box-shadow: 0 0 1.125rem rgba(230, 64, 46, 0.25);
+  border-color: var(--color-danger);
+  box-shadow: var(--panel-shadow), var(--flash-ng-glow);
 }
 </style>

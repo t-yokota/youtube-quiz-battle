@@ -136,7 +136,7 @@ watch(
 }
 
 .attempts-counter {
-  color: var(--color-info-400);
+  color: var(--color-info);
   font-weight: 700;
 }
 
@@ -168,8 +168,8 @@ watch(
   height: 1.375rem;
   border-radius: 50%;
   background: conic-gradient(
-    var(--color-stage-700) calc((1 - var(--timer-progress)) * 360deg),
-    var(--color-gold-400) 0deg
+    var(--timer-track) calc((1 - var(--timer-progress)) * 360deg),
+    var(--color-accent) 0deg
   );
   display: grid;
   place-items: center;
@@ -180,18 +180,18 @@ watch(
   width: 0.875rem;
   height: 0.875rem;
   border-radius: 50%;
-  background: var(--color-stage-800);
+  background: var(--timer-hole);
 }
 
 .answer-timer.urgent {
-  color: var(--color-signal-500);
+  color: var(--color-danger);
   animation: throb 0.5s ease-in-out infinite;
 }
 
 .answer-timer.urgent .timer-ring {
   background: conic-gradient(
-    var(--color-stage-700) calc((1 - var(--timer-progress)) * 360deg),
-    var(--color-signal-500) 0deg
+    var(--timer-track) calc((1 - var(--timer-progress)) * 360deg),
+    var(--color-danger) 0deg
   );
 }
 
@@ -228,15 +228,15 @@ watch(
 }
 
 .answer-result.correct {
-  background: rgba(61, 220, 132, 0.15);
-  color: var(--color-ok-400);
-  border: 1px solid var(--color-ok-400);
+  background: var(--banner-ok-bg);
+  color: var(--color-ok);
+  border: 1px solid var(--color-ok);
 }
 
 .answer-result.incorrect {
-  background: rgba(230, 64, 46, 0.15);
-  color: var(--color-signal-500);
-  border: 1px solid var(--color-signal-500);
+  background: var(--banner-ng-bg);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
 }
 
 /* Answer Input Container */
@@ -252,20 +252,23 @@ watch(
   padding: 0 0.875rem;
   font-size: max(16px, 1rem); /* iOSズーム防止（実 px 16 を下回らない） */
   color: var(--color-text-main);
-  background: var(--color-stage-900);
-  border: 2px solid var(--color-line);
+  background: var(--input-bg);
+  border: 2px solid var(--input-border-color);
   border-radius: var(--radius-md);
+  box-shadow: var(--input-shadow);
   outline: none;
-  transition: border-color var(--duration-fast);
+  transition:
+    border-color var(--duration-fast),
+    box-shadow var(--duration-fast);
 }
 
 .answer-input::placeholder {
-  color: #5a6a8e;
+  color: var(--color-placeholder);
 }
 
 .answer-input:focus-visible {
-  border-color: var(--color-info-400);
-  box-shadow: 0 0 0 0.1875rem rgba(79, 140, 255, 0.25);
+  border-color: var(--input-focus-border-color);
+  box-shadow: var(--input-focus-shadow);
 }
 
 .answer-input:disabled {
@@ -278,10 +281,11 @@ watch(
   padding: 0 1rem;
   font-size: 0.9375rem;
   font-weight: 800;
-  color: var(--color-stage-900);
-  background: var(--color-gold-400);
+  color: var(--btn-primary-text);
+  background: var(--btn-primary-bg);
   border: none;
   border-radius: var(--radius-md);
+  box-shadow: var(--btn-primary-shadow);
   cursor: pointer;
   flex-shrink: 0;
   transition:
@@ -290,7 +294,7 @@ watch(
 }
 
 .submit-button:hover:not(:disabled) {
-  background: #ffd566;
+  background: var(--btn-primary-bg-hover);
 }
 
 .submit-button:active:not(:disabled) {
@@ -298,8 +302,9 @@ watch(
 }
 
 .submit-button:disabled {
-  background: var(--color-stage-700);
+  background: var(--surface-raised);
   color: var(--color-text-dim);
+  box-shadow: none;
   cursor: not-allowed;
 }
 </style>

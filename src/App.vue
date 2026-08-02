@@ -13,6 +13,8 @@ import SettingsModal from './components/dialogs/SettingsModal.vue'
 import LoadingDialog from './components/dialogs/LoadingDialog.vue'
 import OrientationDialog from './components/dialogs/OrientationDialog.vue'
 import ErrorDialog from './components/dialogs/ErrorDialog.vue'
+import ThemeSwitcher from './components/theme/ThemeSwitcher.vue'
+import { useTheme } from './composables/useTheme'
 import { useGameStore } from './stores/gameStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { extractQuizIdFromUrl, loadQuizData } from './services/quizDataLoader'
@@ -127,6 +129,16 @@ const lastSentResultCount = ref(0)
 
 // モーダル・ダイアログの表示状態
 const isSettingsOpen = ref(false)
+
+// UI テーマ（起動時に保存済みテーマを適用）
+useTheme()
+const isThemeSwitcherOpen = ref(false)
+
+const handleOpenThemeSwitcher = () => {
+  // 設定モーダルから開くため、先に閉じてから表示する
+  isSettingsOpen.value = false
+  isThemeSwitcherOpen.value = true
+}
 
 // 画面向き検出（横画面時は External Pause で一時停止し、ダイアログを表示）
 const { isLandscape: isOrientationOpen, stop: stopOrientationGuard } = useOrientationGuard(
@@ -515,7 +527,10 @@ onUnmounted(() => {
       :volume-level="settingsStore.volumeLevel"
       @close="handleCloseSettings"
       @update-volume="handleUpdateVolume"
+      @open-theme-switcher="handleOpenThemeSwitcher"
     />
+
+    <ThemeSwitcher :is-open="isThemeSwitcherOpen" @close="isThemeSwitcherOpen = false" />
 
     <LoadingDialog
       :is-open="gameStore.currentState === GameState.LOADING"
@@ -562,9 +577,7 @@ onUnmounted(() => {
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
   /* ステージ背景: 下部に放射スポットライト + 縦方向グラデーション */
-  background:
-    radial-gradient(140% 60% at 50% 108%, rgba(255, 197, 61, 0.1) 0%, transparent 55%),
-    linear-gradient(180deg, var(--color-stage-900) 0%, #0d1226 60%, #0a0e1d 100%);
+  background: var(--surface-app);
   color: var(--color-text-main);
   overflow: hidden;
 }
@@ -583,9 +596,7 @@ onUnmounted(() => {
   border: none;
   cursor: pointer;
   color: var(--color-text-main);
-  background:
-    radial-gradient(80% 55% at 50% 60%, rgba(255, 197, 61, 0.1) 0%, transparent 65%),
-    linear-gradient(180deg, var(--color-stage-900) 0%, #0d1226 60%, #0a0e1d 100%);
+  background: var(--gate-bg);
 }
 
 .start-gate-title {
@@ -596,13 +607,13 @@ onUnmounted(() => {
 
 .start-gate-title em {
   font-style: normal;
-  color: var(--color-gold-400);
+  color: var(--color-accent);
 }
 
 .start-gate-action {
   font-size: 0.9375rem;
   font-weight: 700;
-  color: var(--color-gold-400);
+  color: var(--color-accent);
   animation: gate-blink 1.6s ease-in-out infinite;
 }
 
@@ -658,9 +669,7 @@ onUnmounted(() => {
   flex-direction: column;
   padding: 1.75rem 1.125rem 1.125rem;
   min-height: 0;
-  background:
-    radial-gradient(120% 50% at 50% 0%, rgba(255, 197, 61, 0.12) 0%, transparent 60%),
-    linear-gradient(180deg, #0d1226 0%, var(--color-stage-900) 100%);
+  background: var(--result-bg);
 }
 
 /* Result Content（タイムライン部分が内部で縦スクロールする） */

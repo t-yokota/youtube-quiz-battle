@@ -1,0 +1,142 @@
+/* ==========================================================================
+   Theme: ニューモーフィズム
+   -----------------------------------------------------------------------
+   淡いグレー(#e3e7f0)の単一マテリアルから「押し出し / 沈み込み」を
+   ソフトシャドウで表現する。罫線・ボーダーはほぼ透明にし、影が構造を担う。
+   早押しボタンは要件どおり赤系統を維持。
+   ========================================================================== */
+[data-theme='neumorphism'] {
+  /* --- メタ情報 --- */
+  --theme-label: 'ニューモーフィズム';
+  --theme-order: 1;
+
+  /* --- テキスト・罫線 --- */
+  --color-text-main: #3d4557;
+  --color-text-dim: #8e97ab;
+  --color-placeholder: #9aa3b5;
+  --color-line: rgba(163, 177, 198, 0.4);
+
+  /* --- セマンティックカラー --- */
+  --color-accent: #6c63ff;
+  --color-accent-hover: #7d75ff;
+  --color-on-accent: #ffffff;
+  --color-info: #5a8dee;
+  --color-ok: #2fbf8f;
+  --color-danger: #e8604c;
+  --color-danger-hover: #ef705e;
+
+  /* --- サーフェス（すべて同一マテリアル） --- */
+  --surface-app: #e3e7f0;
+  --surface-panel: #e3e7f0;
+  --surface-raised: #d3d9e5;
+  --header-bg: transparent;
+  --overlay-bg: rgba(93, 102, 124, 0.4);
+  --gate-bg: #e3e7f0;
+  --result-bg: #e3e7f0;
+
+  /* --- パネル・モーダル（境界線の代わりにソフトシャドウ） --- */
+  --panel-border: 1px solid transparent;
+  --panel-shadow:
+    0.5rem 0.5rem 1rem #c3c9d6,
+    -0.5rem -0.5rem 1rem #ffffff;
+  --row-shadow:
+    0.3125rem 0.3125rem 0.625rem #c9cfdc,
+    -0.3125rem -0.3125rem 0.625rem #ffffff;
+  --modal-shadow:
+    1rem 1rem 2.5rem #b9c0cf,
+    -0.75rem -0.75rem 2rem #ffffff;
+
+  /* --- 入力欄（沈み込み） --- */
+  --input-bg: #e3e7f0;
+  --input-border-color: transparent;
+  --input-shadow:
+    inset 0.25rem 0.25rem 0.5rem #c3c9d6,
+    inset -0.25rem -0.25rem 0.5rem #ffffff;
+  --input-focus-border-color: transparent;
+  --input-focus-shadow:
+    inset 0.25rem 0.25rem 0.5rem #c3c9d6,
+    inset -0.25rem -0.25rem 0.5rem #ffffff,
+    0 0 0 2px rgba(108, 99, 255, 0.35);
+
+  /* --- 汎用ボタン（押し出し） --- */
+  --btn-primary-bg: #6c63ff;
+  --btn-primary-bg-hover: #7d75ff;
+  --btn-primary-text: #ffffff;
+  --btn-primary-shadow:
+    0.25rem 0.25rem 0.625rem #c3c9d6,
+    -0.25rem -0.25rem 0.625rem #ffffff;
+  --btn-danger-bg: #e8604c;
+  --btn-danger-bg-hover: #ef705e;
+  --btn-danger-text: #ffffff;
+  --btn-danger-shadow:
+    0.375rem 0.375rem 0.875rem #c3c9d6,
+    -0.375rem -0.375rem 0.875rem #ffffff;
+  --btn-muted-bg: #dde2ec;
+  --btn-muted-text: #3d4557;
+
+  /* --- 早押しボタン（赤を維持・台座は沈み込みの皿） --- */
+  --quiz-btn-face: radial-gradient(circle at 35% 30%, #ff8a72 0%, #e8604c 60%, #d94f3d 100%);
+  --quiz-btn-text: #ffffff;
+  --quiz-btn-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  --quiz-btn-shadow:
+    0.625rem 0.625rem 1.25rem #c3c9d6,
+    -0.625rem -0.625rem 1.25rem #ffffff,
+    inset 0 -0.375rem 0.625rem rgba(0, 0, 0, 0.14),
+    inset 0 0.375rem 0.625rem rgba(255, 255, 255, 0.28);
+  --quiz-btn-shadow-pressed:
+    0.25rem 0.25rem 0.625rem #c3c9d6,
+    -0.25rem -0.25rem 0.625rem #ffffff,
+    inset 0.375rem 0.375rem 0.75rem rgba(0, 0, 0, 0.22),
+    inset -0.25rem -0.25rem 0.625rem rgba(255, 255, 255, 0.2);
+  --quiz-btn-shadow-released:
+    0.5rem 0.5rem 1rem #c3c9d6,
+    -0.5rem -0.5rem 1rem #ffffff,
+    0 0 1.75rem 0.375rem rgba(232, 96, 76, 0.45),
+    inset 0 -0.25rem 0.5rem rgba(0, 0, 0, 0.12);
+  --quiz-btn-shadow-disabled:
+    inset 0.375rem 0.375rem 0.75rem #c3c9d6,
+    inset -0.375rem -0.375rem 0.75rem #ffffff;
+  --quiz-btn-disabled-filter: grayscale(1) brightness(1.6) opacity(0.85);
+  --pedestal-bg: #e3e7f0;
+  --pedestal-border: 1px solid transparent;
+  --pedestal-shadow:
+    inset 0.375rem 0.375rem 0.75rem #c3c9d6,
+    inset -0.375rem -0.375rem 0.75rem #ffffff;
+  --pulse-color: rgba(232, 96, 76, 0.55);
+  --spotlight-glow: radial-gradient(60% 55% at 50% 58%, rgba(108, 99, 255, 0.08) 0%, transparent 70%);
+
+  /* --- 戦績チップ --- */
+  --chip-bg: #dde2ec;
+  --chip-ok-bg: rgba(47, 191, 143, 0.16);
+  --chip-ng-bg: rgba(232, 96, 76, 0.14);
+  --chip-current-glow: 0 0 0.375rem rgba(108, 99, 255, 0.5);
+
+  /* --- トグル・スライダー --- */
+  --toggle-track: #e3e7f0;
+  --toggle-track-border: transparent;
+  --toggle-track-shadow:
+    inset 2px 2px 5px #c3c9d6,
+    inset -2px -2px 5px #ffffff;
+  --toggle-on-track: rgba(108, 99, 255, 0.22);
+  --toggle-on-border: transparent;
+  --toggle-knob: #b4bccd;
+  --toggle-on-knob: #6c63ff;
+  --slider-track: #d3d9e5;
+  --slider-thumb: #6c63ff;
+  --slider-thumb-shadow:
+    3px 3px 6px #c3c9d6,
+    -3px -3px 6px #ffffff;
+
+  /* --- タイマー・リザルト演出 --- */
+  --timer-track: #cdd3e0;
+  --timer-hole: #e3e7f0;
+  --banner-ok-bg: rgba(47, 191, 143, 0.15);
+  --banner-ng-bg: rgba(232, 96, 76, 0.15);
+  --flash-ok-glow: 0 0 1.125rem rgba(47, 191, 143, 0.35);
+  --flash-ng-glow: 0 0 1.125rem rgba(232, 96, 76, 0.35);
+
+  /* --- 形状（丸みを強める） --- */
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.375rem;
+}

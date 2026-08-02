@@ -38,7 +38,7 @@ withDefaults(defineProps<Props>(), {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(5, 8, 18, 0.72);
+  background-color: var(--overlay-bg);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
@@ -46,10 +46,10 @@ withDefaults(defineProps<Props>(), {
   z-index: 2000;
 }
 
-/* Dialog Container（ステージ調） */
+/* Dialog Container（テーマトークン化） */
 .dialog-container {
-  background-color: var(--color-stage-800);
-  border: 1px solid var(--color-line);
+  background-color: var(--surface-panel);
+  border: var(--panel-border);
   border-radius: var(--radius-lg);
   padding: 1.625rem 1.375rem;
   display: flex;
@@ -57,15 +57,15 @@ withDefaults(defineProps<Props>(), {
   align-items: center;
   gap: 1rem;
   min-width: 17.5rem;
-  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.6);
+  box-shadow: var(--modal-shadow);
 }
 
 /* Loading Spinner */
 .spinner {
   width: 2.75rem;
   height: 2.75rem;
-  border: 0.25rem solid var(--color-stage-700);
-  border-top-color: var(--color-gold-400);
+  border: 0.25rem solid var(--timer-track);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

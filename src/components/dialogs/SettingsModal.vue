@@ -107,6 +107,7 @@ const handleButtonCheckToggle = () => {
 const emit = defineEmits<{
   close: []
   updateVolume: [level: number]
+  openThemeSwitcher: []
 }>()
 
 const handleClose = () => {
@@ -173,6 +174,17 @@ const handleOverlayClick = (event: MouseEvent) => {
 
           <!-- Modal Content -->
           <div class="modal-content">
+            <!-- UI Theme -->
+            <section class="settings-section">
+              <div class="setting-row">
+                <span class="setting-label">UIテーマ</span>
+                <button type="button" class="theme-button" @click="emit('openThemeSwitcher')">
+                  えらぶ
+                </button>
+              </div>
+              <p class="seek-description">アプリ全体の見た目を切り替えます。</p>
+            </section>
+
             <!-- Audio Settings -->
             <section class="settings-section">
               <div class="setting-row">
@@ -247,7 +259,7 @@ const handleOverlayClick = (event: MouseEvent) => {
                     max="4"
                     :value="volumeLevel"
                     :style="{
-                      background: `linear-gradient(to right, var(--color-gold-400) 0%, var(--color-gold-400) ${(volumeLevel / 4) * 100}%, #3a4569 ${(volumeLevel / 4) * 100}%, #3a4569 100%)`,
+                      background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${(volumeLevel / 4) * 100}%, var(--slider-track) ${(volumeLevel / 4) * 100}%, var(--slider-track) 100%)`,
                     }"
                     class="slider"
                     @input="handleVolumeChange(($event.target as HTMLInputElement).valueAsNumber)"
@@ -403,7 +415,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(5, 8, 18, 0.72);
+  background-color: var(--overlay-bg);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
@@ -415,8 +427,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 /* Modal Container */
 .modal-container {
-  background-color: var(--color-stage-800);
-  border: 1px solid var(--color-line);
+  background-color: var(--surface-panel);
+  border: var(--panel-border);
   border-radius: var(--radius-lg);
   max-width: 440px;
   width: 100%;
@@ -424,7 +436,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--modal-shadow);
 }
 
 /* Modal Header */
@@ -499,7 +511,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .debug-menu-toggle--active,
 .debug-menu-toggle--active:hover {
-  color: var(--color-gold-400);
+  color: var(--color-accent);
 }
 
 .debug-menu-icon {
@@ -544,6 +556,19 @@ const handleOverlayClick = (event: MouseEvent) => {
   min-height: 44px;
 }
 
+.theme-button {
+  min-height: 44px;
+  padding: 0 20px;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--btn-primary-shadow);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .setting-label {
   font-size: 16px;
   font-weight: 700;
@@ -579,8 +604,9 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 44px;
   height: 26px;
   border-radius: 999px;
-  background: var(--color-stage-700);
-  border: 1px solid var(--color-line);
+  background: var(--toggle-track);
+  border: 1px solid var(--toggle-track-border);
+  box-shadow: var(--toggle-track-shadow);
   flex-shrink: 0;
   transition:
     background var(--duration-base),
@@ -588,8 +614,8 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .ui-switch-track.on {
-  background: rgba(255, 197, 61, 0.22);
-  border-color: var(--color-gold-400);
+  background: var(--toggle-on-track);
+  border-color: var(--toggle-on-border);
 }
 
 
@@ -601,7 +627,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-text-dim);
+  background: var(--toggle-knob);
   transition:
     left var(--duration-base) var(--ease-brand),
     background var(--duration-base);
@@ -609,7 +635,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 .ui-switch-track.on .ui-switch-knob {
   left: calc(100% - 20px - 3px);
-  background: var(--color-gold-400);
+  background: var(--toggle-on-knob);
 }
 
 .volume-slider {
@@ -622,7 +648,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
-  color: var(--color-gold-400);
+  color: var(--color-accent);
   transition: color 0.2s;
 }
 
@@ -631,7 +657,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .volume-icon .mute-x {
-  stroke: var(--color-signal-500);
+  stroke: var(--color-danger);
 }
 
 /* Range Slider */
@@ -664,7 +690,8 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-gold-400);
+  background: var(--slider-thumb);
+  box-shadow: var(--slider-thumb-shadow);
   cursor: pointer;
   transition: transform 0.2s;
 }
@@ -673,7 +700,8 @@ const handleOverlayClick = (event: MouseEvent) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-gold-400);
+  background: var(--slider-thumb);
+  box-shadow: var(--slider-thumb-shadow);
   border: none;
   cursor: pointer;
   transition: transform 0.2s;
@@ -697,7 +725,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 
 /* Debug Section（Task 29-4） */
 .debug-section-title {
-  color: var(--color-gold-400);
+  color: var(--color-accent);
 }
 
 .debug-row {
@@ -715,7 +743,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   padding: 0 8px;
   font-size: 14px;
   color: var(--color-text-main);
-  background: var(--color-stage-900);
+  background: var(--input-bg);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
   text-align: right;
@@ -736,7 +764,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   font-size: 14px;
   font-weight: 700;
   color: var(--color-text-main);
-  background: var(--color-stage-900);
+  background: var(--input-bg);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -744,7 +772,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .debug-reset-button:hover {
-  border-color: var(--color-gold-400);
+  border-color: var(--color-accent);
 }
 
 /* Privacy Text */
@@ -780,9 +808,10 @@ const handleOverlayClick = (event: MouseEvent) => {
 .primary-button {
   padding: 10px 24px;
   min-height: 44px;
-  background-color: var(--color-gold-400);
-  color: var(--color-stage-900);
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   border: none;
+  box-shadow: var(--btn-primary-shadow);
   border-radius: var(--radius-md);
   font-size: 16px;
   font-weight: 800;
@@ -793,7 +822,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .primary-button:hover {
-  background-color: #ffd566;
+  background-color: var(--btn-primary-bg-hover);
 }
 
 /* Modal Transition */

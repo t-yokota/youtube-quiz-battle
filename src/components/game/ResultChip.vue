@@ -7,7 +7,7 @@ export type ChipVariant = 'correct' | 'incorrect' | 'skipped' | 'noanswer' | 'em
 
 defineProps<{
   variant: ChipVariant
-  /** 現在の問題カーソル（金リング + グロー）。variant のマーク表示と併用できる */
+  /** 現在の問題カーソル（アクセントリング + グロー）。variant のマーク表示と併用できる */
   current?: boolean
 }>()
 </script>
@@ -39,41 +39,42 @@ defineProps<{
 </template>
 
 <style scoped>
+/* ローカル変数（--_ 接頭辞）にテーマトークンを束ね、variant で差し替える */
 .chip {
   width: 1rem;
   height: 1rem;
   display: block;
   color: var(--color-text-dim);
-  --chip-bg: var(--color-stage-700);
-  --chip-line: var(--color-line);
+  --_chip-bg: var(--chip-bg);
+  --_chip-line: var(--color-line);
 }
 
 .chip.correct {
-  color: var(--color-ok-400);
-  --chip-bg: rgba(61, 220, 132, 0.16);
-  --chip-line: var(--color-ok-400);
+  color: var(--color-ok);
+  --_chip-bg: var(--chip-ok-bg);
+  --_chip-line: var(--color-ok);
 }
 
 .chip.incorrect {
-  color: var(--color-signal-500);
-  --chip-bg: rgba(230, 64, 46, 0.14);
-  --chip-line: var(--color-signal-500);
+  color: var(--color-danger);
+  --_chip-bg: var(--chip-ng-bg);
+  --_chip-line: var(--color-danger);
 }
 
-/* 現在の問題カーソル: 金のグローのみ重ねる（枠線色は正誤の variant に従う） */
+/* 現在の問題カーソル: アクセントのグローのみ重ねる（枠線色は正誤の variant に従う） */
 .chip.current {
   border-radius: 50%;
-  box-shadow: 0 0 0.375rem rgba(255, 197, 61, 0.5);
+  box-shadow: var(--chip-current-glow);
 }
 
-/* 未確定（empty）の現在問題のみ枠線も金にする */
+/* 未確定（empty）の現在問題のみ枠線もアクセントにする */
 .chip.empty.current {
-  --chip-line: var(--color-gold-400);
+  --_chip-line: var(--color-accent);
 }
 
 .ring {
-  fill: var(--chip-bg);
-  stroke: var(--chip-line);
+  fill: var(--_chip-bg);
+  stroke: var(--_chip-line);
 }
 
 .mark {

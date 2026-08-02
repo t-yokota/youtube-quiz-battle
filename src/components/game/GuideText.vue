@@ -46,7 +46,7 @@ const showDownCue = computed(() => gameStore.currentState === GameState.READY)
   top: calc(50% + 1rem);
   transform: translateX(-50%);
   font-size: 0.875rem;
-  color: var(--color-gold-400);
+  color: var(--color-accent);
   animation: bob 1.2s ease-in-out infinite;
 }
 

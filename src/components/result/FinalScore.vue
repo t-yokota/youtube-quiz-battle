@@ -41,7 +41,7 @@ const percentage = computed(() => {
   text-align: center;
   font-size: 0.8125rem;
   letter-spacing: 0.3em;
-  color: var(--color-gold-400);
+  color: var(--color-accent);
   font-weight: 800;
 }
 
@@ -72,7 +72,7 @@ const percentage = computed(() => {
 }
 
 .final-rate .pct {
-  color: var(--color-gold-400);
+  color: var(--color-accent);
   font-weight: 800;
 }
 </style>

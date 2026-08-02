@@ -66,7 +66,7 @@ function yoursText(result: QuestionResult): string {
 }
 
 .result-list::-webkit-scrollbar-thumb {
-  background: var(--color-stage-700);
+  background: var(--surface-raised);
   border-radius: 4px;
 }
 
@@ -84,7 +84,7 @@ function yoursText(result: QuestionResult): string {
 @supports not selector(::-webkit-scrollbar) {
   .result-list {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-stage-700) transparent;
+    scrollbar-color: var(--surface-raised) transparent;
   }
 }
 
@@ -92,9 +92,10 @@ function yoursText(result: QuestionResult): string {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  background: var(--color-stage-800);
-  border: 1px solid var(--color-line);
+  background: var(--surface-panel);
+  border: var(--panel-border);
   border-radius: var(--radius-md);
+  box-shadow: var(--row-shadow);
   padding: 0.5625rem 0.75rem;
   font-size: 0.75rem;
   color: var(--color-text-main);

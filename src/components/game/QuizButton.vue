@@ -169,16 +169,17 @@ const handleButtonCheckToggle = () => {
   width: 2.75rem;
   height: 1.25rem;
   border-radius: 62.4375rem;
-  background: var(--color-stage-700);
-  border: 1px solid var(--color-line);
+  background: var(--toggle-track);
+  border: 1px solid var(--toggle-track-border);
+  box-shadow: var(--toggle-track-shadow);
   transition:
     background var(--duration-base),
     border-color var(--duration-base);
 }
 
 .check-toggle-track.on {
-  background: rgba(255, 197, 61, 0.22);
-  border-color: var(--color-gold-400);
+  background: var(--toggle-on-track);
+  border-color: var(--toggle-on-border);
 }
 
 .check-toggle-state {
@@ -197,7 +198,7 @@ const handleButtonCheckToggle = () => {
 }
 
 .check-toggle-track.on .check-toggle-state {
-  color: var(--color-gold-400);
+  color: var(--color-accent);
   /* ON: ノブが右なので文言は左側 */
   right: auto;
   left: 0.3125rem;
@@ -211,7 +212,7 @@ const handleButtonCheckToggle = () => {
   width: 0.9375rem;
   height: 0.9375rem;
   border-radius: 50%;
-  background: var(--color-text-dim);
+  background: var(--toggle-knob);
   transition:
     left var(--duration-base) var(--ease-brand),
     background var(--duration-base);
@@ -219,7 +220,7 @@ const handleButtonCheckToggle = () => {
 
 .check-toggle-track.on .check-toggle-knob {
   left: calc(100% - 0.9375rem - 0.125rem);
-  background: var(--color-gold-400);
+  background: var(--toggle-on-knob);
 }
 
 /* ボタンチェック中の 2 行ラベル */
@@ -263,7 +264,7 @@ const handleButtonCheckToggle = () => {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(60% 55% at 50% 58%, rgba(255, 197, 61, 0.14) 0%, transparent 70%);
+  background: var(--spotlight-glow);
   opacity: 0;
   transition: opacity 400ms;
   pointer-events: none;
@@ -289,8 +290,9 @@ const handleButtonCheckToggle = () => {
   height: 12.25rem;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle, #0e1428 58%, var(--color-stage-700) 78%, #0b1020 100%);
-  border: 1px solid var(--color-line);
+  background: var(--pedestal-bg);
+  border: var(--pedestal-border);
+  box-shadow: var(--pedestal-shadow);
   z-index: 0;
 }
 
@@ -300,7 +302,7 @@ const handleButtonCheckToggle = () => {
   width: 10rem;
   height: 10rem;
   border-radius: 50%;
-  border: 2px solid var(--color-gold-400);
+  border: 2px solid var(--pulse-color);
   opacity: 0;
   z-index: 1;
   pointer-events: none;
@@ -321,7 +323,7 @@ const handleButtonCheckToggle = () => {
   }
 }
 
-/* 真上から見たドーム型キャップ。沈み込みは縮小＋内側影＋減光で表現 */
+/* 真上から見たドーム型キャップ。沈み込みは縮小＋影トークン＋減光で表現 */
 .quiz-button {
   position: relative;
   z-index: 2;
@@ -337,19 +339,10 @@ const handleButtonCheckToggle = () => {
   font-size: 1.1875rem;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  background:
-    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
-    radial-gradient(
-      circle,
-      var(--color-signal-500) 55%,
-      var(--color-signal-600) 80%,
-      var(--color-signal-700) 100%
-    );
-  box-shadow:
-    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
-    /* ソケットの隙間 */ 0 0.5rem 1.375rem rgba(0, 0, 0, 0.55); /* 浮き上がりの柔らかい影 */
+  color: var(--quiz-btn-text);
+  text-shadow: var(--quiz-btn-text-shadow);
+  background: var(--quiz-btn-face);
+  box-shadow: var(--quiz-btn-shadow);
   transition:
     transform var(--duration-fast),
     box-shadow var(--duration-fast),
@@ -364,20 +357,13 @@ const handleButtonCheckToggle = () => {
 .quiz-button.pushed {
   transform: scale(0.93);
   filter: brightness(0.88);
-  box-shadow:
-    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
-    0 2px 0.375rem rgba(0, 0, 0, 0.4),
-    inset 0 0 1.375rem rgba(0, 0, 0, 0.45);
+  box-shadow: var(--quiz-btn-shadow-pressed);
 }
 
 /* RELEASED: LEDグロー点灯（解答権取得）。太い実線リングは付けずグローのみ */
 .quiz-button.released {
   transform: scale(0.96);
-  box-shadow:
-    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
-    0 0.1875rem 0.625rem rgba(0, 0, 0, 0.45),
-    inset 0 0 0.875rem rgba(0, 0, 0, 0.3),
-    0 0 1.75rem 0.625rem rgba(230, 64, 46, 0.55);
+  box-shadow: var(--quiz-btn-shadow-released);
   animation: led-breathe 1.2s ease-in-out infinite;
 }
 
@@ -391,14 +377,12 @@ const handleButtonCheckToggle = () => {
   }
 }
 
-/* DISABLED: 暗転して沈んだまま */
+/* DISABLED: 沈み込んだまま消灯（減光量はテーマのフィルタトークンに従う） */
 .quiz-button.disabled,
 .quiz-button:disabled {
   cursor: not-allowed;
   transform: scale(0.93);
-  filter: grayscale(0.85) brightness(0.55);
-  box-shadow:
-    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
-    inset 0 0 1.375rem rgba(0, 0, 0, 0.5);
+  filter: var(--quiz-btn-disabled-filter);
+  box-shadow: var(--quiz-btn-shadow-disabled);
 }
 </style>

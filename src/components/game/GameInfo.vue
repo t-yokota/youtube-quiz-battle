@@ -72,7 +72,7 @@ const chips = computed<ChipItem[]>(() => {
     // REVEALING 開始時 / スキップ = シーク消費時。
     // 未来の問題番号（前方シークで飛ばした問題）でも記録があれば表示する
     const variant: ChipVariant = resultMap.value.get(q) ?? 'empty'
-    // 金グローはマーク表示に関わらず現在の問題に重ね、REVEAL 終了で消灯
+    // グローはマーク表示に関わらず現在の問題に重ね、REVEAL 終了で消灯
     items.push({ q, variant, isCurrent: q === current.value && isQuestionActive.value })
   }
   return items
@@ -129,14 +129,14 @@ function moveChips(delta: number) {
 </template>
 
 <style scoped>
-/* スコアボード */
+/* スコアボード（テーマトークン化: パネル面） */
 .game-info {
   flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.625rem 0.875rem;
-  background: var(--color-stage-800);
+  background: var(--surface-panel);
   border-bottom: 1px solid var(--color-line);
 }
 
@@ -151,7 +151,7 @@ function moveChips(delta: number) {
 
 .progress .q-label {
   font-size: 0.9375rem;
-  color: var(--color-gold-400);
+  color: var(--color-accent);
   letter-spacing: 0.2em;
   margin-right: 0.2rem;
   vertical-align: 1px;

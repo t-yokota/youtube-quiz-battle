@@ -49,12 +49,12 @@ const handleSettingsClick = () => {
 </template>
 
 <style scoped>
-/* Header（ステージ調） */
+/* Header（テーマトークン化: 背景・アクセント・ホバー面） */
 .header {
   flex-shrink: 0;
   padding: 0.625rem 0.75rem 0.5rem;
   border-bottom: 1px solid var(--color-line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent);
+  background: var(--header-bg);
 }
 
 .header-content {
@@ -74,7 +74,7 @@ const handleSettingsClick = () => {
 }
 
 .wordmark .accent {
-  color: var(--color-gold-400);
+  color: var(--color-accent);
 }
 
 .settings-button {
@@ -98,7 +98,7 @@ const handleSettingsClick = () => {
 
 .settings-button:hover {
   color: var(--color-text-main);
-  background-color: var(--color-stage-700);
+  background-color: var(--surface-raised);
 }
 
 .settings-icon {

@@ -55,7 +55,7 @@ withDefaults(defineProps<Props>(), {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(5, 8, 18, 0.72);
+  background-color: var(--overlay-bg);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
@@ -64,10 +64,10 @@ withDefaults(defineProps<Props>(), {
   padding: 1rem;
 }
 
-/* Dialog Container（ステージ調） */
+/* Dialog Container（テーマトークン化） */
 .dialog-container {
-  background-color: var(--color-stage-800);
-  border: 1px solid var(--color-line);
+  background-color: var(--surface-panel);
+  border: var(--panel-border);
   border-radius: var(--radius-lg);
   padding: 1.625rem 1.375rem;
   display: flex;
@@ -76,14 +76,14 @@ withDefaults(defineProps<Props>(), {
   gap: 1rem;
   max-width: 25rem;
   text-align: center;
-  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.6);
+  box-shadow: var(--modal-shadow);
 }
 
 /* Rotation Icon */
 .rotation-icon {
   width: 4rem;
   height: 4rem;
-  color: var(--color-gold-400);
+  color: var(--color-accent);
   animation: rotate 2s ease-in-out infinite;
 }
 
