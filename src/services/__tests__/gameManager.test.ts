@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { GameManager, createGameManager } from '../gameManager'
+import { InternalPlayerControl } from '../internalPlayerControl'
+import { ThresholdEngine } from '../thresholdEngine'
+import { TimeManager } from '../timeManager'
+import { createAnswerFlowController } from '../answerFlowController'
 import { useGameStore } from '@/stores/gameStore'
 import { useDebugStore } from '@/stores/debugStore'
 import { GameState, ButtonState } from '@/types'
@@ -1859,5 +1863,75 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
     // 正答済み結果が維持されていることを確認
     expect(store.results.find((r) => r.questionNumber === 1)?.isCorrect).toBe(true)
     expect(store.correctCount).toBe(1)
+  })
+})
+
+describe('監査 2026-07-07: B-1/B-2 の回帰テスト', () => {
+  it('B-2: シーク消費（スキップ）済み問題の期間境界では状態を上書きしない', () => {
+    // Q2: start=30, reveal=40, end=45, othersAnsweringPeriods: 32-35
+    const { gm, store } = makeGameManager(makeQuizData({ disableSeekbar: false }))
+
+    // TALKING 帯（5s）から 31s へ前方シーク → Q1/Q2 とも消費（スキップ）
+    simulatePlayback(gm, 5, 0)
+    gm.updateVideoTime(31.0)
+    expect(store.results).toHaveLength(2)
+    expect(store.results.every((r) => r.skipped)).toBe(true)
+    expect(store.currentState).toBe(GameState.TALKING)
+
+    // 消費済み Q2 の期間開始（32）・終了（35）を通過しても状態は変わらない
+    simulatePlayback(gm, 33, 31)
+    expect(store.currentState).toBe(GameState.TALKING)
+    simulatePlayback(gm, 36, 33)
+    expect(store.currentState).toBe(GameState.TALKING)
+    // ボタンも押下可能に戻らない
+    expect(store.buttonState).toBe(ButtonState.DISABLED)
+  })
+
+  it('B-2 派生: ANSWERING 中に期間開始境界を通過しても状態を壊さない', () => {
+    vi.useFakeTimers()
+    const { gm, store } = makeGameManager(makeQuizData())
+
+    // Q2 開始（30）を通過 → QUESTIONING → 31.5 で早押し → ANSWERING
+    simulatePlayback(gm, 31.5, 0)
+    expect(store.currentState).toBe(GameState.QUESTIONING)
+    gm.handleButtonPress()
+    vi.advanceTimersByTime(100)
+    expect(store.currentState).toBe(GameState.ANSWERING)
+
+    // 停止遅延を模した小さな時間前進で期間開始（32）を跨ぐ → ANSWERING を維持
+    gm.updateVideoTime(32.2)
+    expect(store.currentState).toBe(GameState.ANSWERING)
+    vi.useRealTimers()
+  })
+
+  it('B-1: jumpToRevealPeriod 有効時、revealTime 以降の確定はシーク無しで REVEALING に入り再生する', () => {
+    // AnswerFlowController を直接構築して revealTime 以降の分岐を検証する
+    const player = makePlayerMock()
+    const store = useGameStore()
+    const quiz = makeQuizData({ jumpToRevealPeriod: true })
+    store.setQuizData(quiz)
+
+    const playerControl = new InternalPlayerControl(player)
+    const timeManager = new TimeManager(quiz.questions)
+    const thresholdEngine = new ThresholdEngine(quiz, store)
+    const answerFlow = createAnswerFlowController(
+      playerControl,
+      quiz,
+      store,
+      timeManager,
+      thresholdEngine,
+    )
+
+    // Q1 (start=10, reveal=20) の reveal を過ぎた位置で解答が確定した状況
+    timeManager.updateCurrentVideoTime(20.5)
+    store.transitionToState(GameState.ANSWERING)
+
+    const jumped = answerFlow.jumpToRevealIfConfigured(0, true)
+
+    expect(jumped).toBe(true)
+    expect(store.currentState).toBe(GameState.REVEALING)
+    // シークはせず、その場で再生再開する
+    expect(player.seekTo).not.toHaveBeenCalled()
+    expect(player.playVideo).toHaveBeenCalledTimes(1)
   })
 })

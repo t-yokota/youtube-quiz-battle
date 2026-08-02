@@ -190,12 +190,22 @@ export class ThresholdEngine {
     }
 
     // othersAnsweringPeriods 閾値（問題区間内の動画内プレイヤー解答期間）
+    // スキップ（シーク消費）済み・結果確定済みの問題では期間境界で状態を上書きしない
+    // （消費済み問題の再通過で QUESTIONING に復帰し押下可能になる事故を防ぐ。
+    //   監査 2026-07-07 B-2）。さらに遷移は期間遷移の前提状態（QUESTIONING⇄WAITING）
+    // と一致するときのみ行い、ANSWERING 等の状態を壊さない
     if (question.othersAnsweringPeriods) {
+      const isSettled =
+        (c.start && c.reveal && c.end) ||
+        this.gameStore.results.some((r) => r.questionNumber === question.index + 1)
       for (const period of question.othersAnsweringPeriods) {
+        if (isSettled) break
+
         // 期間開始閾値
         if (
           prev + TIME_EPSILON_SEC < period.startTime &&
-          curr + TIME_EPSILON_SEC >= period.startTime
+          curr + TIME_EPSILON_SEC >= period.startTime &&
+          this.gameStore.currentState === GameState.QUESTIONING
         ) {
           // WAITING 状態へ遷移（動画内プレイヤーの解答中）
           this.gameStore.transitionToState(GameState.WAITING)
@@ -208,7 +218,11 @@ export class ThresholdEngine {
         }
 
         // 期間終了閾値
-        if (prev + TIME_EPSILON_SEC < period.endTime && curr + TIME_EPSILON_SEC >= period.endTime) {
+        if (
+          prev + TIME_EPSILON_SEC < period.endTime &&
+          curr + TIME_EPSILON_SEC >= period.endTime &&
+          this.gameStore.currentState === GameState.WAITING
+        ) {
           // QUESTIONING 状態へ復帰
           this.gameStore.transitionToState(GameState.QUESTIONING)
           logger.log(

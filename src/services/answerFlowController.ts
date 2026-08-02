@@ -179,7 +179,15 @@ export class AnswerFlowController {
       return true
     }
 
-    return false
+    // 既に revealTime 以降で解答が確定した場合: シーク不要でそのまま REVEALING へ。
+    // false を返して WAITING に落とすと、reveal 閾値は再通過できないため
+    // 動画停止のまま WAITING に取り残される（監査 2026-07-07 B-1）
+    this.thresholdEngine.markRevealConsumed(questionIndex)
+    this.playerControl.playVideo()
+    this.gameStore.transitionToState(GameState.REVEALING)
+
+    logger.log('[AnswerFlowController] Already past revealTime, entering REVEALING in place')
+    return true
   }
 }
 
