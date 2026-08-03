@@ -384,5 +384,11 @@ const handleButtonCheckToggle = () => {
   transform: scale(0.93);
   filter: var(--quiz-btn-disabled-filter);
   box-shadow: var(--quiz-btn-shadow-disabled);
+  /* テーマが disabled 専用の面・文字色を持つ場合は差し替え（未定義なら通常値）。
+     filter だけでは「素材に沈むフラットな無効表示」（ニューモーフィズム等）を
+     表現できないため */
+  background: var(--quiz-btn-face-disabled, var(--quiz-btn-face));
+  color: var(--quiz-btn-text-disabled, var(--quiz-btn-text));
+  text-shadow: var(--quiz-btn-text-shadow-disabled, var(--quiz-btn-text-shadow));
 }
 </style>
