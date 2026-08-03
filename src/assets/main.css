@@ -60,13 +60,8 @@ body {
   padding: 0;
   width: 100%;
   height: 100%;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  /* フォントはテーマトークンから解決（テーマ切替でフォントも切替可能） */
+  font-family: var(--font-body);
 }
 
 #app {

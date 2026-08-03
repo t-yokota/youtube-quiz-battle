@@ -16,6 +16,18 @@ html,
   --theme-label: 'ステージ';
   --theme-order: 0;
 
+  /* --- フォント --- */
+  /* テーマ固有フォントを使う場合: テーマ CSS に @font-face を書き、ここを差し替える。
+     @font-face は参照時に初めてダウンロードされる（遅延ロード）ため、
+     全テーマ分が先読みされることはない */
+  --font-body:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+
   /* --- テキスト・罫線 --- */
   --color-text-main: #eef2fa;
   --color-text-dim: #8fa0c2;
