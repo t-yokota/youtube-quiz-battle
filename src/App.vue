@@ -602,7 +602,7 @@ onUnmounted(() => {
 .start-gate-title {
   font-size: 1.125rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
 }
 
 .start-gate-title em {
