@@ -39,9 +39,10 @@
   --panel-shadow:
     0.5rem 0.5rem 1rem #c3c9d6,
     -0.5rem -0.5rem 1rem #ffffff;
+  /* リスト行用: 行間 gap（0.375rem）に収まる小さめの影（オフセット+ぼかし ≒ 6px） */
   --row-shadow:
-    0.3125rem 0.3125rem 0.625rem #c9cfdc,
-    -0.3125rem -0.3125rem 0.625rem #ffffff;
+    0.125rem 0.125rem 0.375rem #c3c9d6,
+    -0.125rem -0.125rem 0.375rem #ffffff;
   /* モーダルは外周シャドウを出さない（オーバーレイ上で白影が滲み境界が消えるため）。
      1px のリングで境界をはっきりさせる */
   --modal-shadow: 0 0 0 1px rgba(163, 177, 198, 0.55);
