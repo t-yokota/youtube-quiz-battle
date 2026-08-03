@@ -42,9 +42,9 @@
   --row-shadow:
     0.3125rem 0.3125rem 0.625rem #c9cfdc,
     -0.3125rem -0.3125rem 0.625rem #ffffff;
-  --modal-shadow:
-    1rem 1rem 2.5rem #b9c0cf,
-    -0.75rem -0.75rem 2rem #ffffff;
+  /* モーダルは外周シャドウを出さない（オーバーレイ上で白影が滲み境界が消えるため）。
+     1px のリングで境界をはっきりさせる */
+  --modal-shadow: 0 0 0 1px rgba(163, 177, 198, 0.55);
 
   /* --- 入力欄（沈み込み） --- */
   --input-bg: #e3e7f0;
