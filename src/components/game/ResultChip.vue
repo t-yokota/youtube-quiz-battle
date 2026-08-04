@@ -7,7 +7,7 @@ export type ChipVariant = 'correct' | 'incorrect' | 'skipped' | 'noanswer' | 'em
 
 defineProps<{
   variant: ChipVariant
-  /** 現在の問題カーソル（アクセントリング + グロー）。variant のマーク表示と併用できる */
+  /** 現在の問題カーソル（結果色またはアクセントのリング + グロー）。variant と併用できる */
   current?: boolean
 }>()
 </script>
@@ -47,24 +47,27 @@ defineProps<{
   color: var(--color-text-dim);
   --_chip-bg: var(--chip-bg);
   --_chip-line: var(--color-line);
+  --_chip-current-glow: var(--chip-current-glow);
 }
 
 .chip.correct {
   color: var(--color-answer-correct);
   --_chip-bg: var(--chip-correct-bg);
   --_chip-line: var(--color-answer-correct);
+  --_chip-current-glow: var(--chip-current-correct-glow);
 }
 
 .chip.incorrect {
   color: var(--color-answer-wrong);
   --_chip-bg: var(--chip-wrong-bg);
   --_chip-line: var(--color-answer-wrong);
+  --_chip-current-glow: var(--chip-current-wrong-glow);
 }
 
-/* 現在の問題カーソル: アクセントのグローのみ重ねる（枠線色は正誤の variant に従う） */
+/* 現在の問題カーソル: 正誤確定時は各結果色、それ以外はアクセントのグローを重ねる */
 .chip.current {
   border-radius: 50%;
-  box-shadow: var(--chip-current-glow);
+  box-shadow: var(--_chip-current-glow);
 }
 
 /* 未確定（empty）の現在問題のみ枠線もアクセントにする */
