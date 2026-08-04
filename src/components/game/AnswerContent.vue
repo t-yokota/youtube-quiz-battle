@@ -184,14 +184,14 @@ watch(
 }
 
 .answer-timer.urgent {
-  color: var(--color-danger);
+  color: var(--color-urgent);
   animation: throb 0.5s ease-in-out infinite;
 }
 
 .answer-timer.urgent .timer-ring {
   background: conic-gradient(
     var(--timer-track) calc((1 - var(--timer-progress)) * 360deg),
-    var(--color-danger) 0deg
+    var(--color-urgent) 0deg
   );
 }
 
@@ -228,15 +228,15 @@ watch(
 }
 
 .answer-result.correct {
-  background: var(--banner-ok-bg);
-  color: var(--color-ok);
-  border: 1px solid var(--color-ok);
+  background: var(--banner-correct-bg);
+  color: var(--color-answer-correct);
+  border: 1px solid var(--color-answer-correct);
 }
 
 .answer-result.incorrect {
-  background: var(--banner-ng-bg);
-  color: var(--color-danger);
-  border: 1px solid var(--color-danger);
+  background: var(--banner-wrong-bg);
+  color: var(--color-answer-wrong);
+  border: 1px solid var(--color-answer-wrong);
 }
 
 /* Answer Input Container */

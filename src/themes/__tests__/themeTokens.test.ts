@@ -1,0 +1,96 @@
+/// <reference types="node" />
+
+import { readdirSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+const themesDirectory = resolve(process.cwd(), 'src/themes')
+const sourceDirectory = resolve(process.cwd(), 'src')
+
+const themeFiles = Object.fromEntries(
+  readdirSync(themesDirectory)
+    .filter((file) => file.endsWith('.theme.css'))
+    .map((file) => [file, readFileSync(`${themesDirectory}/${file}`, 'utf8')]),
+)
+
+const REQUIRED_TOKENS = [
+  '--color-answer-correct',
+  '--color-answer-wrong',
+  '--color-error',
+  '--color-urgent',
+  '--btn-replay-bg',
+  '--btn-replay-bg-hover',
+  '--btn-replay-text',
+  '--btn-replay-shadow',
+  '--chip-correct-bg',
+  '--chip-wrong-bg',
+  '--banner-correct-bg',
+  '--banner-wrong-bg',
+  '--flash-correct-glow',
+  '--flash-wrong-glow',
+] as const
+
+const DEPRECATED_TOKENS = [
+  '--color-ok',
+  '--color-danger',
+  '--color-danger-hover',
+  '--btn-danger-bg',
+  '--btn-danger-bg-hover',
+  '--btn-danger-text',
+  '--btn-danger-shadow',
+  '--chip-ok-bg',
+  '--chip-ng-bg',
+  '--banner-ok-bg',
+  '--banner-ng-bg',
+  '--flash-ok-glow',
+  '--flash-ng-glow',
+] as const
+
+function tokenValue(css: string, token: string): string | null {
+  const value = css.match(new RegExp(`${token}:\\s*([^;]+);`))?.[1]
+  return value?.replace(/\s+/g, ' ').trim() ?? null
+}
+
+function sourceFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = `${directory}/${entry.name}`
+
+    if (entry.isDirectory()) {
+      return entry.name === '__tests__' ? [] : sourceFiles(path)
+    }
+
+    return entry.name.endsWith('.vue') || entry.name.endsWith('.css') ? [path] : []
+  })
+}
+
+function stripCssComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
+describe('theme token contract', () => {
+  it('テーマファイルを検出する', () => {
+    expect(Object.keys(themeFiles).length).toBeGreaterThan(0)
+  })
+
+  it.each(Object.entries(themeFiles))('%s が用途別のカラートークンをすべて定義する', (_, css) => {
+    for (const token of REQUIRED_TOKENS) {
+      expect(tokenValue(css, token), `${token} should be defined`).not.toBeNull()
+    }
+  })
+
+  it.each(Object.entries(themeFiles))('%s に旧トークンを残さない', (_, css) => {
+    for (const token of DEPRECATED_TOKENS) {
+      expect(tokenValue(css, token), `${token} should be removed`).toBeNull()
+    }
+  })
+
+  it('本番スタイルが旧トークンを参照しない', () => {
+    for (const file of sourceFiles(sourceDirectory)) {
+      const uncommentedSource = stripCssComments(readFileSync(file, 'utf8'))
+
+      for (const token of DEPRECATED_TOKENS) {
+        expect(uncommentedSource, `${file} should not use ${token}`).not.toContain(token)
+      }
+    }
+  })
+
+})

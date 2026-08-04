@@ -30,9 +30,9 @@ const handleReplay = () => {
   height: max(44px, 3rem);
   border: none;
   border-radius: var(--radius-md);
-  background: var(--btn-danger-bg);
-  color: var(--btn-danger-text);
-  box-shadow: var(--btn-danger-shadow);
+  background: var(--btn-replay-bg);
+  color: var(--btn-replay-text);
+  box-shadow: var(--btn-replay-shadow);
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -40,7 +40,7 @@ const handleReplay = () => {
 }
 
 .replay-button:hover {
-  background: var(--btn-danger-bg-hover);
+  background: var(--btn-replay-bg-hover);
 }
 
 .replay-button:active {

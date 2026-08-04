@@ -50,15 +50,15 @@ defineProps<{
 }
 
 .chip.correct {
-  color: var(--color-ok);
-  --_chip-bg: var(--chip-ok-bg);
-  --_chip-line: var(--color-ok);
+  color: var(--color-answer-correct);
+  --_chip-bg: var(--chip-correct-bg);
+  --_chip-line: var(--color-answer-correct);
 }
 
 .chip.incorrect {
-  color: var(--color-danger);
-  --_chip-bg: var(--chip-ng-bg);
-  --_chip-line: var(--color-danger);
+  color: var(--color-answer-wrong);
+  --_chip-bg: var(--chip-wrong-bg);
+  --_chip-line: var(--color-answer-wrong);
 }
 
 /* 現在の問題カーソル: アクセントのグローのみ重ねる（枠線色は正誤の variant に従う） */

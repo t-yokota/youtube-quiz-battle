@@ -59,12 +59,12 @@ const handleSubmit = (answer: string) => {
 
 /* 正解/不正解時にエリア全体を縁取りフラッシュ（テーマの基本影と重ねる） */
 .answer-area.flash-correct {
-  border-color: var(--color-ok);
-  box-shadow: var(--panel-shadow), var(--flash-ok-glow);
+  border-color: var(--color-answer-correct);
+  box-shadow: var(--panel-shadow), var(--flash-correct-glow);
 }
 
 .answer-area.flash-incorrect {
-  border-color: var(--color-danger);
-  box-shadow: var(--panel-shadow), var(--flash-ng-glow);
+  border-color: var(--color-answer-wrong);
+  box-shadow: var(--panel-shadow), var(--flash-wrong-glow);
 }
 </style>

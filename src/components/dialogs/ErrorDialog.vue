@@ -116,7 +116,7 @@ const handleClose = () => {
 .error-icon {
   width: 4rem;
   height: 4rem;
-  color: var(--color-danger);
+  color: var(--color-error);
 }
 
 .icon {

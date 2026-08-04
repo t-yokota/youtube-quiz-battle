@@ -657,7 +657,7 @@ const handleOverlayClick = (event: MouseEvent) => {
 }
 
 .volume-icon .mute-x {
-  stroke: var(--color-danger);
+  stroke: var(--color-text-dim);
 }
 
 /* Range Slider */

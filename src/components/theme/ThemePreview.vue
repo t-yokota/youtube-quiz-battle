@@ -181,22 +181,22 @@ import SettingsIcon from '@/components/common/SettingsIcon.vue'
 }
 
 .p-chip.ok .ring {
-  fill: var(--chip-ok-bg);
-  stroke: var(--color-ok);
+  fill: var(--chip-correct-bg);
+  stroke: var(--color-answer-correct);
 }
 
 .p-chip.ok .mk {
-  stroke: var(--color-ok);
+  stroke: var(--color-answer-correct);
   stroke-width: 1.4;
 }
 
 .p-chip.ng .ring {
-  fill: var(--chip-ng-bg);
-  stroke: var(--color-danger);
+  fill: var(--chip-wrong-bg);
+  stroke: var(--color-answer-wrong);
 }
 
 .p-chip.ng .mk {
-  stroke: var(--color-danger);
+  stroke: var(--color-answer-wrong);
   stroke-width: 1.4;
 }
 

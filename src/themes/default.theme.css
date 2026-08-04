@@ -39,9 +39,10 @@ html,
   --color-accent-hover: #ffd566;
   --color-on-accent: #0b1020;
   --color-info: #4f8cff;
-  --color-ok: #3ddc84;
-  --color-danger: #e6402e;
-  --color-danger-hover: #f0523f;
+  --color-answer-correct: #3ddc84;
+  --color-answer-wrong: #e6402e;
+  --color-error: #e6402e;
+  --color-urgent: #e6402e;
 
   /* --- サーフェス --- */
   --surface-app:
@@ -76,10 +77,10 @@ html,
   --btn-primary-bg-hover: var(--color-accent-hover);
   --btn-primary-text: var(--color-on-accent);
   --btn-primary-shadow: none;
-  --btn-danger-bg: var(--color-danger);
-  --btn-danger-bg-hover: var(--color-danger-hover);
-  --btn-danger-text: #ffffff;
-  --btn-danger-shadow: none;
+  --btn-replay-bg: #e6402e;
+  --btn-replay-bg-hover: #f0523f;
+  --btn-replay-text: #ffffff;
+  --btn-replay-shadow: none;
   --btn-muted-bg: var(--surface-raised);
   --btn-muted-text: var(--color-text-main);
 
@@ -113,8 +114,8 @@ html,
 
   /* --- 戦績チップ --- */
   --chip-bg: var(--surface-raised);
-  --chip-ok-bg: rgba(61, 220, 132, 0.16);
-  --chip-ng-bg: rgba(230, 64, 46, 0.14);
+  --chip-correct-bg: rgba(61, 220, 132, 0.16);
+  --chip-wrong-bg: rgba(230, 64, 46, 0.14);
   --chip-current-glow: 0 0 0.375rem rgba(255, 197, 61, 0.5);
 
   /* --- トグル・スライダー --- */
@@ -132,8 +133,8 @@ html,
   /* --- タイマー・リザルト演出 --- */
   --timer-track: var(--surface-raised);
   --timer-hole: var(--surface-panel);
-  --banner-ok-bg: rgba(61, 220, 132, 0.15);
-  --banner-ng-bg: rgba(230, 64, 46, 0.15);
-  --flash-ok-glow: 0 0 1.125rem rgba(61, 220, 132, 0.25);
-  --flash-ng-glow: 0 0 1.125rem rgba(230, 64, 46, 0.25);
+  --banner-correct-bg: rgba(61, 220, 132, 0.15);
+  --banner-wrong-bg: rgba(230, 64, 46, 0.15);
+  --flash-correct-glow: 0 0 1.125rem rgba(61, 220, 132, 0.25);
+  --flash-wrong-glow: 0 0 1.125rem rgba(230, 64, 46, 0.25);
 }
