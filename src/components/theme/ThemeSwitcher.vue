@@ -93,9 +93,11 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 <template>
   <Teleport to="body">
     <Transition name="switcher-fade">
-      <div v-if="isOpen" class="switcher-overlay" @click.self="emit('close')">
-        <p class="switcher-title">UIをえらぶ</p>
-        <p class="switcher-hint">横にスクロール · タップで適用</p>
+      <div v-if="isOpen" class="switcher-overlay" @click="emit('close')">
+        <div class="switcher-heading">
+          <p class="switcher-title">UIをえらぶ</p>
+          <p class="switcher-hint">横にスクロール · タップで適用</p>
+        </div>
 
         <div ref="railRef" class="rail">
           <button
@@ -105,7 +107,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
             type="button"
             class="card"
             :class="{ current: t.id === currentThemeId }"
-            @click="pick(t, $event)"
+            @click.stop="pick(t, $event)"
           >
             <span
               class="card-shell"
@@ -141,10 +143,23 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
+  /* 絶対配置へ移した見出しの旧フロー領域を保ち、カードの縦位置を維持する */
+  padding-top: 3.5625rem;
+}
+
+.switcher-heading {
+  position: absolute;
+  top: clamp(3.5rem, 12dvh, 6.5rem);
+  left: 0;
+  right: 0;
+  z-index: 1;
+  text-align: center;
+  pointer-events: none;
 }
 
 .switcher-title {
-  margin: 1.5rem 0 0;
+  margin: 0;
   color: rgba(255, 255, 255, 0.92);
   font-size: 0.8125rem;
   font-weight: 800;

@@ -79,6 +79,7 @@ import SettingsIcon from '@/components/common/SettingsIcon.vue'
   overflow: hidden;
   user-select: none;
   pointer-events: none;
+  text-align: left;
 }
 
 /* ヘッダー */

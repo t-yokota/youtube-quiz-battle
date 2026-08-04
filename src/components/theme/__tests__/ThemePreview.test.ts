@@ -1,8 +1,15 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { renderToString } from '@vue/server-renderer'
 import { createSSRApp } from 'vue'
 
 import AppHeader from '@/components/common/AppHeader.vue'
 import ThemePreview from '@/components/theme/ThemePreview.vue'
+
+const themePreviewSource = readFileSync(
+  resolve(process.cwd(), 'src/components/theme/ThemePreview.vue'),
+  'utf8',
+)
 
 const DRAWING_ATTRIBUTES = [
   'd',
@@ -49,5 +56,9 @@ describe('ThemePreview', () => {
 
     expect(themePreviewIcon.shapes.length).toBeGreaterThan(0)
     expect(themePreviewIcon).toEqual(appHeaderIcon)
+  })
+
+  it('残り回数をボタンの中央揃えから切り離して左寄せにする', () => {
+    expect(themePreviewSource).toMatch(/\.preview\s*{[^}]*text-align:\s*left;/s)
   })
 })
