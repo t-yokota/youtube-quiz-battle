@@ -108,12 +108,12 @@
     0 0 1.75rem 0.375rem rgba(232, 96, 76, 0.45),
     inset 0 -0.25rem 0.5rem rgba(0, 0, 0, 0.12);
   --quiz-btn-shadow-disabled:
-    inset 0.5rem 0.5rem 1rem #c3c9d6,
-    inset -0.5rem -0.5rem 1rem #ffffff;
+    inset 0.5rem 0.5rem 1rem #c34d3d,
+    inset -0.5rem -0.5rem 1rem #ff7b66;
   --quiz-btn-disabled-filter: none;
-  /* 無効時は赤いボタンが素材に沈み込む（面は背景と同じマテリアル・影は inset） */
-  --quiz-btn-face-disabled: #e0e4ee;
-  --quiz-btn-text-disabled: #a3adc2;
+  /* 無効時はフラットな赤い面に赤系の inset 影を重ね、沈み込んだ状態を表現する */
+  --quiz-btn-face-disabled: #e8604c;
+  --quiz-btn-text-disabled: #ffffff;
   --quiz-btn-text-shadow-disabled: none;
   --pedestal-bg: #e3e7f0;
   --pedestal-border: 1px solid transparent;
