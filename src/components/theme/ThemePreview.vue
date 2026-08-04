@@ -6,6 +6,7 @@
 // 新テーマ追加時にこのファイルの変更は不要。
 //
 // 設計スペース: 315×700 固定（px）。親側で transform: scale して使う。
+import SettingsIcon from '@/components/common/SettingsIcon.vue'
 </script>
 
 <template>
@@ -13,13 +14,7 @@
     <!-- ヘッダー -->
     <div class="p-header">
       <span class="p-wordmark">YouTube <span class="p-accent">Quiz Battle</span></span>
-      <svg class="p-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <circle cx="12" cy="12" r="3" />
-        <path
-          d="M12 2.5v3M12 18.5v3M4.2 6.7l2.1 2.1M17.7 15.2l2.1 2.1M2.5 12h3M18.5 12h3M4.2 17.3l2.1-2.1M17.7 8.8l2.1-2.1"
-          stroke-linecap="round"
-        />
-      </svg>
+      <SettingsIcon class="p-gear" />
     </div>
 
     <!-- 動画プレイヤー（プレースホルダ） -->
