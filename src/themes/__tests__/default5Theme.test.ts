@@ -126,10 +126,10 @@ describe('default-5 theme', () => {
     )
   })
 
-  it('開始アクションと問題数のQをdefault-3のアクセントに揃える', () => {
+  it('開始アクション・問題数のQ・Result正解率をdefault-3のアクセントに揃える', () => {
     expectTokensFrom(
       default5,
-      "[data-theme='default-5'] :is(.start-gate-action, .q-label, .p-q)",
+      "[data-theme='default-5'] :is(.start-gate-action, .q-label, .p-q, .final-rate .pct)",
       default5Tokens,
       default3Tokens,
       ACCENT_LABEL_TOKENS,

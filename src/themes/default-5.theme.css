@@ -2,8 +2,8 @@
    Theme: 鉛と朱と芥子
    -----------------------------------------------------------------------
    default-4「鉛と朱」を土台に、指定した UI だけ default-3「鉛と芥子」へ切り替える。
-   開始アクション・問題数の Q・score-chips・Result画面の○×・answer-area・check-toggle・
-   モーダル系では芥子を操作色、朱を不正解・エラー・時間切迫の色として使う。
+   開始アクション・問題数の Q・score-chips・Result画面の○×と正解率・answer-area・
+   check-toggle・モーダル系では芥子を操作色、朱を不正解・エラー・時間切迫の色として使う。
    それ以外の UI は default-4 を維持する。
    寸法・形状トークンは変更しない。
    セレクタは [data-theme='default-5']（default のみ html を併記するため、こちらは付けない）。
@@ -137,8 +137,8 @@
   --flash-wrong-glow: 0 0 1.125rem rgba(139, 124, 255, 0.3);
 }
 
-/* --- 芥子: 開始アクション・問題数の Q（実画面・テーマプレビュー） --- */
-[data-theme='default-5'] :is(.start-gate-action, .q-label, .p-q) {
+/* --- 芥子: 開始アクション・問題数の Q・Result正解率 --- */
+[data-theme='default-5'] :is(.start-gate-action, .q-label, .p-q, .final-rate .pct) {
   --color-accent: #e8b032;
 }
 
