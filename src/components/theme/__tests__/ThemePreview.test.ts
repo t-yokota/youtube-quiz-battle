@@ -61,4 +61,22 @@ describe('ThemePreview', () => {
   it('残り回数をボタンの中央揃えから切り離して左寄せにする', () => {
     expect(themePreviewSource).toMatch(/\.preview\s*{[^}]*text-align:\s*left;/s)
   })
+
+  it('指定されたviewport寸法でレイアウトする', async () => {
+    const markup = await renderToString(
+      createSSRApp(ThemePreview, { previewWidth: 390, previewHeight: 667 }),
+    )
+    const container = document.createElement('div')
+    container.innerHTML = markup
+    const preview = container.querySelector<HTMLElement>('.preview')
+
+    expect(preview?.style.width).toBe('390px')
+    expect(preview?.style.height).toBe('667px')
+  })
+
+  it('短い画面では早押しボタンを利用可能領域内へ縮小する', () => {
+    expect(themePreviewSource).toMatch(/\.p-button-area\s*{[^}]*container-type:\s*size;/s)
+    expect(themePreviewSource).toMatch(/\.p-pedestal\s*{[^}]*100cqmin/s)
+    expect(themePreviewSource).toMatch(/\.p-quiz-button\s*{[^}]*cqmin/s)
+  })
 })

@@ -19,14 +19,15 @@ describe('calculateCardGeometry', () => {
     expect(geometry.height).toBe(240)
   })
 
-  it('内部previewをカード全体へcover表示する縮尺を返す', () => {
+  it('内部previewをviewportと同じ座標系のままカードへ均等縮小する', () => {
     const geometry = calculateCardGeometry({ viewportWidth: 390, viewportHeight: 667 })
-    const viewportCoverScale = Math.max(390 / 315, 667 / 700)
     const cardScale = geometry.width / 390
 
-    expect(geometry.previewScale).toBeCloseTo(geometry.width / 315)
-    expect(700 * geometry.previewScale).toBeGreaterThanOrEqual(geometry.height)
-    expect(geometry.previewScale).toBeCloseTo(viewportCoverScale * cardScale)
+    expect(geometry.previewWidth).toBe(390)
+    expect(geometry.previewHeight).toBe(667)
+    expect(geometry.previewScale).toBeCloseTo(cardScale)
+    expect(geometry.previewWidth * geometry.previewScale).toBeCloseTo(geometry.width)
+    expect(geometry.previewHeight * geometry.previewScale).toBeCloseTo(geometry.height)
   })
 })
 

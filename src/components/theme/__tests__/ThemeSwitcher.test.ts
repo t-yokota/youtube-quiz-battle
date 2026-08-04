@@ -119,8 +119,17 @@ describe('ThemeSwitcher', () => {
     if (!cardShell) throw new Error('Could not find theme card shell')
     const initialWidth = Number.parseFloat(cardShell.style.width)
     const initialHeight = Number.parseFloat(cardShell.style.height)
+    const cardScale = cardShell.querySelector<HTMLElement>('.card-scale')
+    const preview = cardShell.querySelector<HTMLElement>('.preview')
 
     expect(initialWidth / initialHeight).toBeCloseTo(overlayWidth / overlayHeight)
+    expect(cardScale?.style.width).toBe(`${overlayWidth}px`)
+    expect(cardScale?.style.height).toBe(`${overlayHeight}px`)
+    expect(preview?.style.width).toBe(`${overlayWidth}px`)
+    expect(preview?.style.height).toBe(`${overlayHeight}px`)
+    expect(
+      Number.parseFloat(cardScale?.style.getPropertyValue('--card-preview-scale') ?? ''),
+    ).toBeCloseTo(initialWidth / overlayWidth)
 
     overlayWidth = 320
     overlayHeight = 568
@@ -133,6 +142,10 @@ describe('ThemeSwitcher', () => {
 
     expect(resizedWidth).toBeLessThan(initialWidth)
     expect(resizedWidth / resizedHeight).toBeCloseTo(overlayWidth / overlayHeight)
+    expect(cardScale?.style.width).toBe(`${overlayWidth}px`)
+    expect(cardScale?.style.height).toBe(`${overlayHeight}px`)
+    expect(preview?.style.width).toBe(`${overlayWidth}px`)
+    expect(preview?.style.height).toBe(`${overlayHeight}px`)
   })
 
   it('カードのタップは背景タップと分離し、演出後にテーマを適用して閉じる', async () => {
@@ -157,19 +170,20 @@ describe('ThemeSwitcher', () => {
 
     expect(close).not.toHaveBeenCalled()
     const zoomLayer = document.querySelector<HTMLElement>('.zoom-layer')
+    const zoomPreview = zoomLayer?.querySelector<HTMLElement>('.preview')
     const cardShell = document.querySelector<HTMLElement>('.card-shell')
     const cardScale = document.querySelector<HTMLElement>('.card-scale')
     const initialScale = Number.parseFloat(cardShell?.style.width ?? '') / overlayWidth
-    const coverScale = Math.max(overlayWidth / 315, overlayHeight / 700)
     expect(zoomLayer?.style.transform).toBe(
       `translate(${cardLeft - overlayLeft}px, ${cardTop - overlayTop}px) scale(${initialScale})`,
     )
-    expect(Number.parseFloat(zoomLayer?.style.getPropertyValue('--cover-scale') ?? '')).toBeCloseTo(
-      coverScale,
-    )
+    expect(Number.parseFloat(zoomLayer?.style.borderRadius ?? '') * initialScale).toBeCloseTo(16)
+    expect(zoomLayer?.style.getPropertyValue('--cover-scale')).toBe('')
+    expect(zoomPreview?.style.width).toBe(`${overlayWidth}px`)
+    expect(zoomPreview?.style.height).toBe(`${overlayHeight}px`)
     expect(
       Number.parseFloat(cardScale?.style.getPropertyValue('--card-preview-scale') ?? ''),
-    ).toBeCloseTo(coverScale * initialScale)
+    ).toBeCloseTo(initialScale)
 
     animationFrames.shift()?.(0)
     animationFrames.shift()?.(0)

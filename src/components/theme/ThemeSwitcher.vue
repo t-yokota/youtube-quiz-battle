@@ -26,9 +26,12 @@ const isHeadingVisible = ref(false)
 
 const HEADING_CARD_GAP = 12
 const HEADING_SAFE_PADDING = 8
+const CARD_BORDER_RADIUS = 16
 const cardWidth = ref(148)
 const cardHeight = ref(329)
 const cardPreviewScale = ref(148 / 315)
+const previewWidth = ref(315)
+const previewHeight = ref(700)
 let activeVisualViewport: VisualViewport | null = null
 let hasViewportListeners = false
 
@@ -36,10 +39,6 @@ let hasViewportListeners = false
 const zoomThemeId = ref<string | null>(null)
 const zoomStyle = ref<Record<string, string>>({})
 let zoomTimer: number | null = null
-
-// プレビューの設計スペース（ThemePreview と一致させる）
-const PREVIEW_W = 315
-const PREVIEW_H = 700
 
 function updateCardGeometry() {
   const overlayRect = overlayRef.value?.getBoundingClientRect()
@@ -55,6 +54,8 @@ function updateCardGeometry() {
   })
   cardWidth.value = geometry.width
   cardHeight.value = geometry.height
+  previewWidth.value = geometry.previewWidth
+  previewHeight.value = geometry.previewHeight
   cardPreviewScale.value = geometry.previewScale
 }
 
@@ -145,20 +146,15 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 
   const rect = shell.getBoundingClientRect()
   const overlayRect = overlayRef.value?.getBoundingClientRect()
-  const vw = overlayRect && overlayRect.width > 0 ? overlayRect.width : window.innerWidth
-  const vh = overlayRect && overlayRect.height > 0 ? overlayRect.height : window.innerHeight
   const viewportLeft = overlayRect?.left ?? 0
   const viewportTop = overlayRect?.top ?? 0
-  // 全画面レイヤー内のプレビューを画面いっぱいに敷くカバースケール
-  const coverScale = Math.max(vw / PREVIEW_W, vh / PREVIEW_H)
-
+  const initialScale = rect.width / previewWidth.value
   // 1) レイヤーをカード位置・カードサイズに縮めて出現させる
   zoomThemeId.value = theme.id
   zoomStyle.value = {
-    '--cover-scale': String(coverScale),
     transformOrigin: 'top left',
-    transform: `translate(${rect.left - viewportLeft}px, ${rect.top - viewportTop}px) scale(${rect.width / vw})`,
-    borderRadius: '16px',
+    transform: `translate(${rect.left - viewportLeft}px, ${rect.top - viewportTop}px) scale(${initialScale})`,
+    borderRadius: `${CARD_BORDER_RADIUS / initialScale}px`,
     transition: 'none',
   }
 
@@ -223,8 +219,15 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
               :data-theme="t.id"
               :style="{ width: cardWidth + 'px', height: cardHeight + 'px' }"
             >
-              <span class="card-scale" :style="{ '--card-preview-scale': cardPreviewScale }">
-                <ThemePreview />
+              <span
+                class="card-scale"
+                :style="{
+                  width: previewWidth + 'px',
+                  height: previewHeight + 'px',
+                  '--card-preview-scale': cardPreviewScale,
+                }"
+              >
+                <ThemePreview :preview-width="previewWidth" :preview-height="previewHeight" />
               </span>
             </span>
             <span class="card-label">{{ t.label }}</span>
@@ -239,7 +242,9 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   <!-- ズーム演出レイヤー（選択カード → 全画面） -->
   <Teleport to="body">
     <div v-if="zoomThemeId" class="zoom-layer" :data-theme="zoomThemeId" :style="zoomStyle">
-      <div class="zoom-fit"><ThemePreview /></div>
+      <div class="zoom-fit" :style="{ width: previewWidth + 'px', height: previewHeight + 'px' }">
+        <ThemePreview :preview-width="previewWidth" :preview-height="previewHeight" />
+      </div>
     </div>
   </Teleport>
 </template>
@@ -342,16 +347,14 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   outline: 2.5px solid rgba(255, 255, 255, 0.9);
 }
 
-/* プレビュー実DOM（315×700）をカードサイズへ縮小 */
+/* viewport寸法で再レイアウトしたプレビューをカードサイズへ均等縮小 */
 .card-scale {
   position: absolute;
-  left: 50%;
-  top: 50%;
+  left: 0;
+  top: 0;
   display: block;
-  width: 315px;
-  height: 700px;
-  transform: translate(-50%, -50%) scale(var(--card-preview-scale));
-  transform-origin: center;
+  transform: scale(var(--card-preview-scale));
+  transform-origin: top left;
 }
 
 .card-label {
@@ -393,10 +396,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 
 .zoom-fit {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 315px;
-  height: 700px;
-  transform: translate(-50%, -50%) scale(var(--cover-scale, 1));
+  left: 0;
+  top: 0;
 }
 </style>

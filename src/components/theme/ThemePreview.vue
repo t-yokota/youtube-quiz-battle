@@ -4,13 +4,25 @@
 // 実ストア・実プレイヤーに依存しない静的マークアップで、
 // スタイルはすべてテーマトークン参照 → 親の [data-theme] だけで任意テーマの見た目になる。
 // 新テーマ追加時にこのファイルの変更は不要。
-//
-// 設計スペース: 315×700 固定（px）。親側で transform: scale して使う。
 import SettingsIcon from '@/components/common/SettingsIcon.vue'
+
+interface Props {
+  previewWidth?: number
+  previewHeight?: number
+}
+
+withDefaults(defineProps<Props>(), {
+  previewWidth: 315,
+  previewHeight: 700,
+})
 </script>
 
 <template>
-  <div class="preview" aria-hidden="true">
+  <div
+    class="preview"
+    :style="{ width: `${previewWidth}px`, height: `${previewHeight}px` }"
+    aria-hidden="true"
+  >
     <!-- ヘッダー -->
     <div class="p-header">
       <span class="p-wordmark">YouTube <span class="p-accent">Quiz Battle</span></span>
@@ -26,9 +38,22 @@ import SettingsIcon from '@/components/common/SettingsIcon.vue'
     <div class="p-scoreboard">
       <span class="p-progress"><span class="p-q">Q</span>03<span class="p-total"> / 05</span></span>
       <span class="p-chips">
-        <svg viewBox="0 0 16 16" class="p-chip ok"><circle cx="8" cy="8" r="7.25" class="ring" /><circle cx="8" cy="8" r="3.4" fill="none" class="mk" /></svg>
-        <svg viewBox="0 0 16 16" class="p-chip ng"><circle cx="8" cy="8" r="7.25" class="ring" /><path d="M5.3 5.3 L10.7 10.7 M10.7 5.3 L5.3 10.7" fill="none" stroke-linecap="round" class="mk" /></svg>
-        <svg viewBox="0 0 16 16" class="p-chip cur"><circle cx="8" cy="8" r="7.25" class="ring" /></svg>
+        <svg viewBox="0 0 16 16" class="p-chip ok">
+          <circle cx="8" cy="8" r="7.25" class="ring" />
+          <circle cx="8" cy="8" r="3.4" fill="none" class="mk" />
+        </svg>
+        <svg viewBox="0 0 16 16" class="p-chip ng">
+          <circle cx="8" cy="8" r="7.25" class="ring" />
+          <path
+            d="M5.3 5.3 L10.7 10.7 M10.7 5.3 L5.3 10.7"
+            fill="none"
+            stroke-linecap="round"
+            class="mk"
+          />
+        </svg>
+        <svg viewBox="0 0 16 16" class="p-chip cur">
+          <circle cx="8" cy="8" r="7.25" class="ring" />
+        </svg>
         <svg viewBox="0 0 16 16" class="p-chip"><circle cx="8" cy="8" r="7.25" class="ring" /></svg>
         <svg viewBox="0 0 16 16" class="p-chip"><circle cx="8" cy="8" r="7.25" class="ring" /></svg>
       </span>
@@ -54,17 +79,17 @@ import SettingsIcon from '@/components/common/SettingsIcon.vue'
       <!-- BUTTON CHECK トグル -->
       <div class="p-toggle-row">
         <span class="p-toggle-label">BUTTON CHECK</span>
-        <span class="p-toggle"><span class="p-toggle-state">ON</span><span class="p-toggle-knob"></span></span>
+        <span class="p-toggle"
+          ><span class="p-toggle-state">ON</span><span class="p-toggle-knob"></span
+        ></span>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* 315×700 の設計スペースに px で固定描画する（親が transform: scale で縮小） */
+/* 親から受けたviewport寸法で実画面と同様にレイアウトし、カード側で均等縮小する */
 .preview {
-  width: 315px;
-  height: 700px;
   display: flex;
   flex-direction: column;
   background: var(--surface-app);
@@ -297,12 +322,16 @@ import SettingsIcon from '@/components/common/SettingsIcon.vue'
   display: grid;
   place-items: center;
   position: relative;
+  container-type: size;
 }
 
 .p-pedestal {
   grid-area: 1 / 1;
   width: 196px;
   height: 196px;
+  width: min(196px, 100cqmin);
+  height: auto;
+  aspect-ratio: 1;
   border-radius: 50%;
   background: var(--pedestal-bg);
   border: var(--pedestal-border);
@@ -313,6 +342,9 @@ import SettingsIcon from '@/components/common/SettingsIcon.vue'
   grid-area: 1 / 1;
   width: 150px;
   height: 150px;
+  width: min(150px, 76.53cqmin);
+  height: auto;
+  aspect-ratio: 1;
   border-radius: 50%;
   display: grid;
   place-items: center;
