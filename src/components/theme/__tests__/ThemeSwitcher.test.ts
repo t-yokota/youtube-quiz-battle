@@ -23,19 +23,26 @@ describe('ThemeSwitcher', () => {
   let host: HTMLDivElement
   let app: ReturnType<typeof createApp>
   let close: ReturnType<typeof vi.fn>
+  let cardLeft: number
   let cardTop: number
+  let overlayLeft: number
+  let overlayTop: number
+  let overlayWidth: number
+  let overlayHeight: number
   let safeAreaTop: number
   let viewportOffsetTop: number
+  let viewportWidth: number
+  let viewportHeight: number
   let visualViewport: EventTarget
 
-  function rect(top: number, width: number, height: number): DOMRect {
+  function rect(top: number, width: number, height: number, left = 0): DOMRect {
     return {
-      x: 0,
+      x: left,
       y: top,
       top,
-      right: width,
+      right: left + width,
       bottom: top + height,
-      left: 0,
+      left,
       width,
       height,
       toJSON: () => ({}),
@@ -43,16 +50,35 @@ describe('ThemeSwitcher', () => {
   }
 
   beforeEach(async () => {
+    cardLeft = 0
     cardTop = 160
+    overlayLeft = 0
+    overlayTop = 0
+    overlayWidth = 390
+    overlayHeight = 844
     safeAreaTop = 0
     viewportOffsetTop = 0
+    viewportWidth = 390
+    viewportHeight = 844
     visualViewport = new EventTarget()
     Object.defineProperty(visualViewport, 'offsetTop', { get: () => viewportOffsetTop })
+    Object.defineProperty(visualViewport, 'width', { get: () => viewportWidth })
+    Object.defineProperty(visualViewport, 'height', { get: () => viewportHeight })
     vi.stubGlobal('visualViewport', visualViewport)
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
       this: HTMLElement,
     ) {
-      if (this.classList.contains('card-shell')) return rect(cardTop, 148, 329)
+      if (this.classList.contains('card-shell')) {
+        return rect(
+          cardTop,
+          Number.parseFloat(this.style.width) || 148,
+          Number.parseFloat(this.style.height) || 329,
+          cardLeft,
+        )
+      }
+      if (this.classList.contains('switcher-overlay')) {
+        return rect(overlayTop, overlayWidth, overlayHeight, overlayLeft)
+      }
       if (this.classList.contains('switcher-heading')) return rect(0, 240, 32)
       if (this.classList.contains('safe-area-probe')) return rect(0, 0, safeAreaTop)
       return rect(0, 0, 0)
@@ -72,7 +98,9 @@ describe('ThemeSwitcher', () => {
     vi.unstubAllGlobals()
     app.unmount()
     host.remove()
-    document.querySelectorAll('.switcher-overlay, .zoom-layer').forEach((element) => element.remove())
+    document
+      .querySelectorAll('.switcher-overlay, .zoom-layer')
+      .forEach((element) => element.remove())
     vi.clearAllMocks()
     vi.restoreAllMocks()
   })
@@ -86,15 +114,41 @@ describe('ThemeSwitcher', () => {
     expect(close).toHaveBeenCalledOnce()
   })
 
+  it('カードをviewportと同じ縦横比で縮小表示する', async () => {
+    const cardShell = document.querySelector<HTMLElement>('.card-shell')
+    if (!cardShell) throw new Error('Could not find theme card shell')
+    const initialWidth = Number.parseFloat(cardShell.style.width)
+    const initialHeight = Number.parseFloat(cardShell.style.height)
+
+    expect(initialWidth / initialHeight).toBeCloseTo(overlayWidth / overlayHeight)
+
+    overlayWidth = 320
+    overlayHeight = 568
+    window.dispatchEvent(new Event('resize'))
+    await nextTick()
+    await nextTick()
+
+    const resizedWidth = Number.parseFloat(cardShell.style.width)
+    const resizedHeight = Number.parseFloat(cardShell.style.height)
+
+    expect(resizedWidth).toBeLessThan(initialWidth)
+    expect(resizedWidth / resizedHeight).toBeCloseTo(overlayWidth / overlayHeight)
+  })
+
   it('カードのタップは背景タップと分離し、演出後にテーマを適用して閉じる', async () => {
     vi.useFakeTimers()
+    const animationFrames: FrameRequestCallback[] = []
     vi.stubGlobal(
       'requestAnimationFrame',
       vi.fn((callback: FrameRequestCallback) => {
-        callback(0)
-        return 1
+        animationFrames.push(callback)
+        return animationFrames.length
       }),
     )
+    overlayLeft = 10
+    overlayTop = 20
+    cardLeft = 50
+    cardTop = 180
     const card = document.querySelector<HTMLElement>('.card')
     if (!card) throw new Error('Could not find theme card')
 
@@ -103,6 +157,24 @@ describe('ThemeSwitcher', () => {
 
     expect(close).not.toHaveBeenCalled()
     const zoomLayer = document.querySelector<HTMLElement>('.zoom-layer')
+    const cardShell = document.querySelector<HTMLElement>('.card-shell')
+    const cardScale = document.querySelector<HTMLElement>('.card-scale')
+    const initialScale = Number.parseFloat(cardShell?.style.width ?? '') / overlayWidth
+    const coverScale = Math.max(overlayWidth / 315, overlayHeight / 700)
+    expect(zoomLayer?.style.transform).toBe(
+      `translate(${cardLeft - overlayLeft}px, ${cardTop - overlayTop}px) scale(${initialScale})`,
+    )
+    expect(Number.parseFloat(zoomLayer?.style.getPropertyValue('--cover-scale') ?? '')).toBeCloseTo(
+      coverScale,
+    )
+    expect(
+      Number.parseFloat(cardScale?.style.getPropertyValue('--card-preview-scale') ?? ''),
+    ).toBeCloseTo(coverScale * initialScale)
+
+    animationFrames.shift()?.(0)
+    animationFrames.shift()?.(0)
+    await nextTick()
+
     expect(zoomLayer?.style.transform).toBe('translate(0px, 0px) scale(1)')
 
     vi.advanceTimersByTime(470)
@@ -124,6 +196,7 @@ describe('ThemeSwitcher', () => {
 
     window.dispatchEvent(new Event('resize'))
     await nextTick()
+    await nextTick()
 
     const heading = document.querySelector<HTMLElement>('.switcher-heading')
     expect(heading?.style.top).toBe('8px')
@@ -135,6 +208,7 @@ describe('ThemeSwitcher', () => {
 
     window.dispatchEvent(new Event('resize'))
     await nextTick()
+    await nextTick()
 
     const heading = document.querySelector<HTMLElement>('.switcher-heading')
     expect(heading?.style.visibility).toBe('hidden')
@@ -144,6 +218,7 @@ describe('ThemeSwitcher', () => {
     safeAreaTop = 70
 
     window.dispatchEvent(new Event('resize'))
+    await nextTick()
     await nextTick()
 
     const heading = document.querySelector<HTMLElement>('.switcher-heading')
@@ -155,6 +230,7 @@ describe('ThemeSwitcher', () => {
     cardTop = 180
 
     visualViewport.dispatchEvent(new Event('resize'))
+    await nextTick()
     await nextTick()
 
     const heading = document.querySelector<HTMLElement>('.switcher-heading')

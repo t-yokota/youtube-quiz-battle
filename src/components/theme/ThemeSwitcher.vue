@@ -6,7 +6,7 @@
 // - タップでカード位置から全画面へズームしながらテーマを適用
 import { nextTick, onUnmounted, ref, watch } from 'vue'
 import { useTheme, type ThemeInfo } from '@/composables/useTheme'
-import { calculateHeadingPlacement } from './themeSwitcherLayout'
+import { calculateCardGeometry, calculateHeadingPlacement } from './themeSwitcherLayout'
 import ThemePreview from './ThemePreview.vue'
 
 const props = defineProps<{ isOpen: boolean }>()
@@ -26,6 +26,9 @@ const isHeadingVisible = ref(false)
 
 const HEADING_CARD_GAP = 12
 const HEADING_SAFE_PADDING = 8
+const cardWidth = ref(148)
+const cardHeight = ref(329)
+const cardPreviewScale = ref(148 / 315)
 let activeVisualViewport: VisualViewport | null = null
 let hasViewportListeners = false
 
@@ -37,9 +40,23 @@ let zoomTimer: number | null = null
 // プレビューの設計スペース（ThemePreview と一致させる）
 const PREVIEW_W = 315
 const PREVIEW_H = 700
-// カード幅（px）。スケールは CSS 側で --card-scale として参照
-const CARD_W = 148
-const CARD_H = Math.round((PREVIEW_H * CARD_W) / PREVIEW_W)
+
+function updateCardGeometry() {
+  const overlayRect = overlayRef.value?.getBoundingClientRect()
+  const geometry = calculateCardGeometry({
+    viewportWidth:
+      overlayRect && overlayRect.width > 0
+        ? overlayRect.width
+        : (window.visualViewport?.width ?? window.innerWidth),
+    viewportHeight:
+      overlayRect && overlayRect.height > 0
+        ? overlayRect.height
+        : (window.visualViewport?.height ?? window.innerHeight),
+  })
+  cardWidth.value = geometry.width
+  cardHeight.value = geometry.height
+  cardPreviewScale.value = geometry.previewScale
+}
 
 function updateHeadingPosition() {
   if (!props.isOpen) return
@@ -72,7 +89,8 @@ function updateHeadingPosition() {
 }
 
 function handleViewportResize() {
-  updateHeadingPosition()
+  updateCardGeometry()
+  void nextTick(updateHeadingPosition)
 }
 
 function addViewportListeners() {
@@ -100,6 +118,10 @@ watch(
       removeViewportListeners()
       return
     }
+    updateCardGeometry()
+    await nextTick()
+    if (!props.isOpen) return
+    updateCardGeometry()
     await nextTick()
     if (!props.isOpen) return
     const rail = railRef.value
@@ -122,8 +144,11 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   if (!shell || zoomThemeId.value !== null) return
 
   const rect = shell.getBoundingClientRect()
-  const vw = window.innerWidth
-  const vh = window.innerHeight
+  const overlayRect = overlayRef.value?.getBoundingClientRect()
+  const vw = overlayRect && overlayRect.width > 0 ? overlayRect.width : window.innerWidth
+  const vh = overlayRect && overlayRect.height > 0 ? overlayRect.height : window.innerHeight
+  const viewportLeft = overlayRect?.left ?? 0
+  const viewportTop = overlayRect?.top ?? 0
   // 全画面レイヤー内のプレビューを画面いっぱいに敷くカバースケール
   const coverScale = Math.max(vw / PREVIEW_W, vh / PREVIEW_H)
 
@@ -132,7 +157,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   zoomStyle.value = {
     '--cover-scale': String(coverScale),
     transformOrigin: 'top left',
-    transform: `translate(${rect.left}px, ${rect.top}px) scale(${rect.width / vw})`,
+    transform: `translate(${rect.left - viewportLeft}px, ${rect.top - viewportTop}px) scale(${rect.width / vw})`,
     borderRadius: '16px',
     transition: 'none',
   }
@@ -166,7 +191,13 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 <template>
   <Teleport to="body">
     <Transition name="switcher-fade">
-      <div ref="overlayRef" v-if="isOpen" class="switcher-overlay" @click="emit('close')">
+      <div
+        v-if="isOpen"
+        ref="overlayRef"
+        class="switcher-overlay"
+        :style="{ '--card-width': cardWidth + 'px' }"
+        @click="emit('close')"
+      >
         <span ref="safeAreaProbeRef" class="safe-area-probe" aria-hidden="true"></span>
         <div
           ref="headingRef"
@@ -190,9 +221,11 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
             <span
               class="card-shell"
               :data-theme="t.id"
-              :style="{ width: CARD_W + 'px', height: CARD_H + 'px', '--card-scale': CARD_W / PREVIEW_W }"
+              :style="{ width: cardWidth + 'px', height: cardHeight + 'px' }"
             >
-              <span class="card-scale"><ThemePreview /></span>
+              <span class="card-scale" :style="{ '--card-preview-scale': cardPreviewScale }">
+                <ThemePreview />
+              </span>
             </span>
             <span class="card-label">{{ t.label }}</span>
           </button>
@@ -272,7 +305,8 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
-  padding: 0 calc(50vw - 74px);
+  box-sizing: border-box;
+  padding: 0 calc(50% - var(--card-width) / 2);
   scrollbar-width: none;
 }
 
@@ -296,6 +330,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 
 .card-shell {
   display: block;
+  position: relative;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 0.875rem 2.125rem rgba(0, 0, 0, 0.55);
@@ -309,11 +344,14 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 
 /* プレビュー実DOM（315×700）をカードサイズへ縮小 */
 .card-scale {
+  position: absolute;
+  left: 50%;
+  top: 50%;
   display: block;
   width: 315px;
   height: 700px;
-  transform: scale(var(--card-scale));
-  transform-origin: top left;
+  transform: translate(-50%, -50%) scale(var(--card-preview-scale));
+  transform-origin: center;
 }
 
 .card-label {
