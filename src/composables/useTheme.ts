@@ -46,6 +46,15 @@ function readThemeMeta(id: string): { label: string; order: number } {
 function apply(id: string): void {
   currentThemeId.value = id
   document.documentElement.dataset.theme = id
+
+  const themeColor = getComputedStyle(document.documentElement)
+    .getPropertyValue('--theme-color')
+    .trim()
+  if (themeColor === '') return
+
+  document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
+    meta.content = themeColor
+  })
 }
 
 let initialized = false

@@ -13,6 +13,7 @@ const themeFiles = Object.fromEntries(
 )
 
 const REQUIRED_TOKENS = [
+  '--theme-color',
   '--color-answer-correct',
   '--color-answer-wrong',
   '--color-error',

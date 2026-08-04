@@ -14,6 +14,7 @@
   /* --- メタ情報（スイッチャーが getComputedStyle で読む） --- */
   --theme-label: '鉛と朱';
   --theme-order: 4;
+  --theme-color: #14171a;
 
   /* --- フォント --- */
   --font-body:

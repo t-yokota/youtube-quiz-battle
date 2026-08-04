@@ -11,6 +11,7 @@
   /* --- メタ情報（スイッチャーが getComputedStyle で読む） --- */
   --theme-label: '鉛と芥子';
   --theme-order: 3;
+  --theme-color: #14171a;
 
   /* --- フォント --- */
   --font-body:
