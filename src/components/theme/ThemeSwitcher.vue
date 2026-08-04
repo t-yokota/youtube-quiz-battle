@@ -4,8 +4,9 @@
 // - useTheme() が検出した全テーマを横スクロールのカードとして表示（自動追加）
 // - カードは ThemePreview の実DOMを [data-theme] スコープで縮小描画（画像不要）
 // - タップでカード位置から全画面へズームしながらテーマを適用
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, onUnmounted, ref, watch } from 'vue'
 import { useTheme, type ThemeInfo } from '@/composables/useTheme'
+import { calculateHeadingPlacement } from './themeSwitcherLayout'
 import ThemePreview from './ThemePreview.vue'
 
 const props = defineProps<{ isOpen: boolean }>()
@@ -16,7 +17,17 @@ const emit = defineEmits<{
 
 const { themes, currentThemeId, setTheme } = useTheme()
 
+const overlayRef = ref<HTMLElement | null>(null)
 const railRef = ref<HTMLElement | null>(null)
+const headingRef = ref<HTMLElement | null>(null)
+const safeAreaProbeRef = ref<HTMLElement | null>(null)
+const headingTop = ref(0)
+const isHeadingVisible = ref(false)
+
+const HEADING_CARD_GAP = 12
+const HEADING_SAFE_PADDING = 8
+let activeVisualViewport: VisualViewport | null = null
+let hasViewportListeners = false
 
 // ズーム演出レイヤーの状態
 const zoomThemeId = ref<string | null>(null)
@@ -30,19 +41,81 @@ const PREVIEW_H = 700
 const CARD_W = 148
 const CARD_H = Math.round((PREVIEW_H * CARD_W) / PREVIEW_W)
 
-// 開いたとき、現在テーマのカードを中央に寄せる
+function updateHeadingPosition() {
+  if (!props.isOpen) return
+
+  const overlay = overlayRef.value
+  const heading = headingRef.value
+  const safeAreaProbe = safeAreaProbeRef.value
+  const rail = railRef.value
+  const card =
+    rail?.querySelector<HTMLElement>(`[data-card='${currentThemeId.value}'] .card-shell`) ??
+    rail?.querySelector<HTMLElement>('.card-shell')
+  if (!overlay || !heading || !safeAreaProbe || !card) return
+
+  const overlayTop = overlay.getBoundingClientRect().top
+  const cardTop = card.getBoundingClientRect().top - overlayTop
+  const headingHeight = heading.getBoundingClientRect().height
+  const safeAreaTop = safeAreaProbe.getBoundingClientRect().height
+  const viewportTop = Math.max(0, (window.visualViewport?.offsetTop ?? 0) - overlayTop)
+  const placement = calculateHeadingPlacement({
+    viewportTop,
+    cardTop,
+    headingHeight,
+    safeAreaTop,
+    viewportPadding: HEADING_SAFE_PADDING,
+    cardGap: HEADING_CARD_GAP,
+  })
+
+  headingTop.value = placement.top
+  isHeadingVisible.value = placement.visible
+}
+
+function handleViewportResize() {
+  updateHeadingPosition()
+}
+
+function addViewportListeners() {
+  if (hasViewportListeners) return
+  hasViewportListeners = true
+  activeVisualViewport = window.visualViewport
+  window.addEventListener('resize', handleViewportResize)
+  activeVisualViewport?.addEventListener('resize', handleViewportResize)
+}
+
+function removeViewportListeners() {
+  if (!hasViewportListeners) return
+  hasViewportListeners = false
+  window.removeEventListener('resize', handleViewportResize)
+  activeVisualViewport?.removeEventListener('resize', handleViewportResize)
+  activeVisualViewport = null
+}
+
+// 開いたとき、現在テーマのカードを中央に寄せて見出し位置を実測する
 watch(
   () => props.isOpen,
   async (open) => {
-    if (!open) return
+    isHeadingVisible.value = false
+    if (!open) {
+      removeViewportListeners()
+      return
+    }
     await nextTick()
+    if (!props.isOpen) return
     const rail = railRef.value
     const cur = rail?.querySelector<HTMLElement>(`[data-card='${currentThemeId.value}']`)
     if (rail && cur) {
       rail.scrollLeft = cur.offsetLeft - (rail.clientWidth - cur.offsetWidth) / 2
     }
+    updateHeadingPosition()
+    addViewportListeners()
   },
+  { immediate: true },
 )
+
+onUnmounted(() => {
+  removeViewportListeners()
+})
 
 function pick(theme: ThemeInfo, event: MouseEvent) {
   const shell = (event.currentTarget as HTMLElement).querySelector<HTMLElement>('.card-shell')
@@ -93,8 +166,13 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 <template>
   <Teleport to="body">
     <Transition name="switcher-fade">
-      <div v-if="isOpen" class="switcher-overlay" @click="emit('close')">
-        <div class="switcher-heading">
+      <div ref="overlayRef" v-if="isOpen" class="switcher-overlay" @click="emit('close')">
+        <span ref="safeAreaProbeRef" class="safe-area-probe" aria-hidden="true"></span>
+        <div
+          ref="headingRef"
+          class="switcher-heading"
+          :style="{ top: headingTop + 'px', visibility: isHeadingVisible ? 'visible' : 'hidden' }"
+        >
           <p class="switcher-title">UIをえらぶ</p>
           <p class="switcher-hint">横にスクロール · タップで適用</p>
         </div>
@@ -148,9 +226,19 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   padding-top: 3.5625rem;
 }
 
+.safe-area-probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: env(safe-area-inset-top, 0px);
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .switcher-heading {
   position: absolute;
-  top: clamp(3.5rem, 12dvh, 6.5rem);
+  top: 0;
   left: 0;
   right: 0;
   z-index: 1;
