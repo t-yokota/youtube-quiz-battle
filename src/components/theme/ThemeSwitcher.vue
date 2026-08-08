@@ -26,7 +26,7 @@ const isHeadingVisible = ref(false)
 
 const HEADING_CARD_GAP = 12
 const HEADING_SAFE_PADDING = 8
-const CARD_BORDER_RADIUS = 16
+const CARD_BORDER_RADIUS = 10
 const cardWidth = ref(148)
 const cardHeight = ref(329)
 const cardPreviewScale = ref(148 / 315)
@@ -217,7 +217,11 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
             <span
               class="card-shell"
               :data-theme="t.id"
-              :style="{ width: cardWidth + 'px', height: cardHeight + 'px' }"
+              :style="{
+                width: cardWidth + 'px',
+                height: cardHeight + 'px',
+                borderRadius: CARD_BORDER_RADIUS + 'px',
+              }"
             >
               <span
                 class="card-scale"
@@ -336,7 +340,6 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 .card-shell {
   display: block;
   position: relative;
-  border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 0.875rem 2.125rem rgba(0, 0, 0, 0.55);
   outline: 2px solid rgba(255, 255, 255, 0.15);

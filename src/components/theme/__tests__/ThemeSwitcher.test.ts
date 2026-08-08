@@ -123,6 +123,7 @@ describe('ThemeSwitcher', () => {
     const preview = cardShell.querySelector<HTMLElement>('.preview')
 
     expect(initialWidth / initialHeight).toBeCloseTo(overlayWidth / overlayHeight)
+    expect(cardShell.style.borderRadius).toBe('10px')
     expect(cardScale?.style.width).toBe(`${overlayWidth}px`)
     expect(cardScale?.style.height).toBe(`${overlayHeight}px`)
     expect(preview?.style.width).toBe(`${overlayWidth}px`)
@@ -177,7 +178,7 @@ describe('ThemeSwitcher', () => {
     expect(zoomLayer?.style.transform).toBe(
       `translate(${cardLeft - overlayLeft}px, ${cardTop - overlayTop}px) scale(${initialScale})`,
     )
-    expect(Number.parseFloat(zoomLayer?.style.borderRadius ?? '') * initialScale).toBeCloseTo(16)
+    expect(Number.parseFloat(zoomLayer?.style.borderRadius ?? '') * initialScale).toBeCloseTo(10)
     expect(zoomLayer?.style.getPropertyValue('--cover-scale')).toBe('')
     expect(zoomPreview?.style.width).toBe(`${overlayWidth}px`)
     expect(zoomPreview?.style.height).toBe(`${overlayHeight}px`)
