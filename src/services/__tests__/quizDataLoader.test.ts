@@ -322,6 +322,11 @@ describe('loadQuizData: バリデーション（必須フィールド・スキ�
     await expect(loadQuizData('sample')).rejects.toThrow(/Invalid answerTimeLimit/)
   })
 
+  it('settings.answerTimeLimit が整数でなければエラー', async () => {
+    mockFetchOk(makeRawData({ settings: { maxAttempts: 3, answerTimeLimit: 9.2 } }))
+    await expect(loadQuizData('sample')).rejects.toThrow(/Invalid answerTimeLimit/)
+  })
+
   it('settings.maxAttempts が数値でなければエラー', async () => {
     mockFetchOk(
       makeRawData({ settings: { maxAttempts: 'x', answerTimeLimit: 10 } as unknown as object }),

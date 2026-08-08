@@ -6,6 +6,12 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { TIMER_URGENT_THRESHOLD_SEC } from '@/constants/timing'
+import {
+  calculateTimerLabelWidthCh,
+  calculateTimerProgress,
+  resolveTimerLabelWidthState,
+  type TimerLabelWidthState,
+} from './answerTimerLayout'
 
 const gameStore = useGameStore()
 
@@ -22,10 +28,26 @@ const isSubmitDisabled = () => gameStore.isInputDisabled || gameStore.answerInpu
 
 // タイマーリング進捗（1 → 0。分母は設定の制限時間）
 const answerTimeLimit = computed(() => gameStore.effectiveSettings?.answerTimeLimit ?? 10)
-const timerProgress = computed(() => {
-  if (answerTimeLimit.value <= 0) return 0
-  return Math.max(0, Math.min(1, gameStore.answerTimeRemaining / answerTimeLimit.value))
-})
+const timerLabelWidthState = ref<TimerLabelWidthState>()
+watch(
+  [() => gameStore.currentQuestionNumber, answerTimeLimit, () => gameStore.answerTimeRemaining],
+  ([questionNumber, timeLimit, timeRemaining]) => {
+    timerLabelWidthState.value = resolveTimerLabelWidthState(
+      timerLabelWidthState.value,
+      questionNumber,
+      timeLimit,
+      timeRemaining,
+    )
+  },
+  { immediate: true },
+)
+const timerLabelWidth = computed(
+  () =>
+    `${timerLabelWidthState.value?.widthCh ?? calculateTimerLabelWidthCh(answerTimeLimit.value)}ch`,
+)
+const timerProgress = computed(() =>
+  calculateTimerProgress(gameStore.answerTimeRemaining, answerTimeLimit.value),
+)
 
 // 残り3秒以下で赤 + 脈動
 const isUrgent = computed(() => gameStore.answerTimeRemaining <= TIMER_URGENT_THRESHOLD_SEC)
@@ -78,11 +100,13 @@ watch(
         v-if="!gameStore.isInputDisabled"
         class="answer-timer"
         :class="{ urgent: isUrgent }"
-        :style="{ '--timer-progress': timerProgress }"
+        :style="{
+          '--timer-progress': timerProgress,
+          '--timer-label-width': timerLabelWidth,
+        }"
       >
         <span class="timer-ring"></span>
-        <span class="sec">{{ gameStore.answerTimeRemaining }}</span
-        >s
+        <span class="sec">{{ gameStore.answerTimeRemaining }}s</span>
       </span>
     </div>
 
@@ -150,23 +174,30 @@ watch(
 .answer-timer {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.375rem;
+  width: calc(1.375rem + 0.375rem + var(--timer-label-width, 3ch));
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.8rem;
   font-weight: 800;
   color: var(--color-text-main);
   /* 1秒刻みの進捗更新を線形補間して連続的に見せる（@property 登録は main.css） */
   transition: --timer-progress 1s linear;
 }
 
-/* 秒数を固定幅にしてリング位置が桁数で動かないようにする */
+/* 制限時間の最大桁幅で固定し、桁が減ったら数字とsの左右に余白を作る */
 .answer-timer .sec {
-  display: inline-block;
-  min-width: 2ch;
-  text-align: right;
+  width: var(--timer-label-width, 3ch);
+  flex-shrink: 0;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .timer-ring {
   width: 1.375rem;
   height: 1.375rem;
+  flex-shrink: 0;
   border-radius: 50%;
   background: conic-gradient(
     var(--timer-track) calc((1 - var(--timer-progress)) * 360deg),

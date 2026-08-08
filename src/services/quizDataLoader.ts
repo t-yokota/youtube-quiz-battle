@@ -111,7 +111,7 @@ function validateQuizData(data: RawQuizData): void {
     throw new Error('QUIZ_DATA_INVALID: Missing settings')
   }
 
-  if (typeof data.settings.answerTimeLimit !== 'number' || data.settings.answerTimeLimit <= 0) {
+  if (!Number.isInteger(data.settings.answerTimeLimit) || data.settings.answerTimeLimit <= 0) {
     throw new Error('QUIZ_DATA_INVALID: Invalid answerTimeLimit')
   }
 
