@@ -62,6 +62,10 @@ describe('ThemePreview', () => {
     expect(themePreviewSource).toMatch(/\.preview\s*{[^}]*text-align:\s*left;/s)
   })
 
+  it('残り回数を実画面と同じ0.8remで表示する', () => {
+    expect(themePreviewSource).toMatch(/\.p-meta\s*{[^}]*font-size:\s*0\.8rem;/s)
+  })
+
   it('指定されたviewport寸法でレイアウトする', async () => {
     const markup = await renderToString(
       createSSRApp(ThemePreview, { previewWidth: 390, previewHeight: 667 }),

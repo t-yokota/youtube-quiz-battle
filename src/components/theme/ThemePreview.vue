@@ -270,7 +270,7 @@ withDefaults(defineProps<Props>(), {
 }
 
 .p-meta {
-  font-size: 12px;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--color-info);
   padding: 0 4px;

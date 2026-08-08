@@ -52,19 +52,15 @@ const handleSubmit = (answer: string) => {
   position: relative;
   overflow: hidden;
   box-shadow: var(--panel-shadow);
-  transition:
-    border-color var(--duration-base),
-    box-shadow var(--duration-base);
+  transition: border-color var(--duration-base);
 }
 
-/* 正解/不正解時にエリア全体を縁取りフラッシュ（テーマの基本影と重ねる） */
+/* 正解/不正解時はエリア全体の枠色だけを切り替える */
 .answer-area.flash-correct {
   border-color: var(--color-answer-correct);
-  box-shadow: var(--panel-shadow), var(--flash-correct-glow);
 }
 
 .answer-area.flash-incorrect {
   border-color: var(--color-answer-wrong);
-  box-shadow: var(--panel-shadow), var(--flash-wrong-glow);
 }
 </style>

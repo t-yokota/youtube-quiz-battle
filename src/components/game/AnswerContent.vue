@@ -138,6 +138,7 @@ watch(
 .attempts-counter {
   color: var(--color-info);
   font-weight: 700;
+  font-size: 0.8rem;
 }
 
 .attempts-counter .dim {
