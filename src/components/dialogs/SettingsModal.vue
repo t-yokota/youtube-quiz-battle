@@ -174,17 +174,6 @@ const handleOverlayClick = (event: MouseEvent) => {
 
           <!-- Modal Content -->
           <div class="modal-content">
-            <!-- UI Theme -->
-            <section class="settings-section">
-              <div class="setting-row">
-                <span class="setting-label">UIテーマ</span>
-                <button type="button" class="theme-button" @click="emit('openThemeSwitcher')">
-                  えらぶ
-                </button>
-              </div>
-              <p class="seek-description">アプリ全体の見た目を切り替えます。</p>
-            </section>
-
             <!-- Audio Settings -->
             <section class="settings-section">
               <div class="setting-row">
@@ -380,6 +369,17 @@ const handleOverlayClick = (event: MouseEvent) => {
               <button type="button" class="debug-reset-button" @click="handleResetOverrides">
                 すべてリセット
               </button>
+            </section>
+
+            <!-- UI Theme -->
+            <section class="settings-section">
+              <div class="setting-row">
+                <span class="setting-label">UIテーマ</span>
+                <button type="button" class="theme-button" @click="emit('openThemeSwitcher')">
+                  えらぶ
+                </button>
+              </div>
+              <p class="seek-description">アプリ全体の見た目を切り替えます。</p>
             </section>
 
             <!-- Privacy Info -->
