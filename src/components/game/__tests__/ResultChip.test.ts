@@ -37,4 +37,10 @@ describe('ResultChip current glow', () => {
   it('現在位置のグローにはvariant別のローカルトークンを使う', () => {
     expect(selectorBlock('.chip.current')).toContain('box-shadow: var(--_chip-current-glow)')
   })
+
+  it('未実施と無解答の現在位置をaccentのリングで囲む', () => {
+    expect(selectorBlock('.chip:is(.empty, .noanswer).current')).toContain(
+      '--_chip-line: var(--color-accent)',
+    )
+  })
 })

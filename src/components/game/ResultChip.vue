@@ -70,8 +70,8 @@ defineProps<{
   box-shadow: var(--_chip-current-glow);
 }
 
-/* 未確定（empty）の現在問題のみ枠線もアクセントにする */
-.chip.empty.current {
+/* 未確定（empty）・無解答（noanswer）の現在問題は枠線もアクセントにする */
+.chip:is(.empty, .noanswer).current {
   --_chip-line: var(--color-accent);
 }
 
