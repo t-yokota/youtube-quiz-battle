@@ -27,14 +27,14 @@ describe('実画面のレスポンシブスケール', () => {
   const finalScore = readSource('src/components/result/FinalScore.vue')
   const resultTable = readSource('src/components/result/ResultTable.vue')
   const resultActions = readSource('src/components/result/ResultActions.vue')
+  const themePreview = readSource('src/components/theme/ThemePreview.vue')
+  const themeSwitcher = readSource('src/components/theme/ThemeSwitcher.vue')
   const resultScreens = [finalScore, resultTable, resultActions]
   const deferredScreens = [
     'src/components/dialogs/SettingsModal.vue',
     'src/components/dialogs/LoadingDialog.vue',
     'src/components/dialogs/ErrorDialog.vue',
     'src/components/dialogs/OrientationDialog.vue',
-    'src/components/theme/ThemePreview.vue',
-    'src/components/theme/ThemeSwitcher.vue',
   ].map(readSource)
 
   it('レイアウトと文字を短辺基準で縮尺し、文字だけ16pxの下限を保つ', () => {
@@ -77,10 +77,94 @@ describe('実画面のレスポンシブスケール', () => {
     )
   })
 
-  it('評価対象外のダイアログ・テーマプレビューには文字unitを適用しない', () => {
+  it('評価対象外のダイアログには文字unitを適用しない', () => {
     for (const source of deferredScreens) {
       expect(source).not.toContain('--ui-font-unit')
     }
+  })
+
+  it('テーマスイッチャーの文字を実画面と同じ文字unitへ移し、見出しの下限を保つ', () => {
+    expect(selectorBlock(themeSwitcher, '.switcher-title')).toContain(
+      'font-size: max(15px, calc(0.8125 * var(--ui-font-unit)))',
+    )
+    expect(selectorBlock(themeSwitcher, '.switcher-hint')).toContain(
+      'font-size: max(12px, calc(0.6875 * var(--ui-font-unit)))',
+    )
+    expect(selectorBlock(themeSwitcher, '.card-label')).toContain(
+      'font-size: calc(0.6875 * var(--ui-font-unit))',
+    )
+    expect(selectorBlock(themeSwitcher, '.switcher-dismiss')).toContain(
+      'font-size: calc(0.625 * var(--ui-font-unit))',
+    )
+  })
+
+  it('テーマプレビューの文字を実画面と同じ文字unitへ移す', () => {
+    const expectedSizes = [
+      ['.p-wordmark', 'calc(0.8125 * var(--ui-font-unit))'],
+      ['.p-progress', 'calc(1.0625 * var(--ui-font-unit))'],
+      ['.p-q', 'calc(0.9375 * var(--ui-font-unit))'],
+      ['.p-total', 'calc(0.75 * var(--ui-font-unit))'],
+      ['.p-meta', 'calc(0.8 * var(--ui-font-unit))'],
+      ['.p-input', 'max(16px, var(--ui-font-unit))'],
+      ['.p-submit', 'calc(0.9375 * var(--ui-font-unit))'],
+      ['.p-quiz-button', 'calc(1.1875 * var(--ui-font-unit))'],
+      ['.p-toggle-label', 'calc(0.625 * var(--ui-font-unit))'],
+      ['.p-toggle-state', 'calc(0.5 * var(--ui-font-unit))'],
+    ] as const
+
+    for (const [selector, size] of expectedSizes) {
+      expect(selectorBlock(themePreview, selector)).toContain(`font-size: ${size}`)
+    }
+  })
+
+  it('テーマプレビューのchip・早押しボタン・トグル寸法を実画面のunitへ揃える', () => {
+    const chips = selectorBlock(themePreview, '.p-chips')
+    const chip = selectorBlock(themePreview, '.p-chip')
+    const pedestal = selectorBlock(themePreview, '.p-pedestal')
+    const quizButton = selectorBlock(themePreview, '.p-quiz-button')
+    const toggleRow = selectorBlock(themePreview, '.p-toggle-row')
+    const toggle = selectorBlock(themePreview, '.p-toggle')
+    const toggleState = selectorBlock(themePreview, '.p-toggle-state')
+    const toggleKnob = selectorBlock(themePreview, '.p-toggle-knob')
+
+    expect(chips).toContain('--preview-chip-unit: var(--ui-width-unit)')
+    expect(chips).toContain('gap: calc(0.3125 * var(--preview-chip-unit))')
+    expect(chip).toContain('width: var(--preview-chip-unit)')
+    expect(chip).toContain('height: var(--preview-chip-unit)')
+    expect(pedestal).toContain('calc(12.25 * var(--ui-layout-unit))')
+    expect(quizButton).toContain('calc(9.375 * var(--ui-layout-unit))')
+    expect(toggleRow).toContain('--preview-toggle-unit: var(--ui-font-unit)')
+    expect(toggle).toContain('width: calc(2.75 * var(--preview-toggle-unit))')
+    expect(toggle).toContain('height: calc(1.25 * var(--preview-toggle-unit))')
+    expect(toggleState).toContain('left: calc(0.3125 * var(--preview-toggle-unit))')
+    expect(toggleKnob).toContain('width: calc(0.9375 * var(--preview-toggle-unit))')
+    expect(toggleKnob).toContain('height: calc(0.9375 * var(--preview-toggle-unit))')
+    expect(toggleKnob).toContain('right: calc(0.125 * var(--preview-toggle-unit))')
+  })
+
+  it('テーマプレビューの主要レイアウト寸法を実画面と同じlayout unitへ揃える', () => {
+    expect(selectorBlock(themePreview, '.p-header')).toContain(
+      'padding: 0.625rem 0.75rem 0.5rem',
+    )
+    expect(selectorBlock(themePreview, '.p-settings-button')).toContain(
+      'width: max(44px, 2.75rem)',
+    )
+    expect(selectorBlock(themePreview, '.p-settings-button')).toContain(
+      'height: max(44px, 2.75rem)',
+    )
+    expect(selectorBlock(themePreview, '.p-settings-button')).toContain(
+      'margin: -0.625rem calc((max(44px, 2.75rem) - 1.5rem) / -2) -0.625rem 0',
+    )
+    expect(selectorBlock(themePreview, '.p-gear')).toContain('width: 1.5rem')
+    expect(selectorBlock(themePreview, '.p-scoreboard')).toContain(
+      'padding: 0.625rem 0.875rem',
+    )
+    expect(selectorBlock(themePreview, '.p-game')).toContain('gap: 0.875rem')
+    expect(selectorBlock(themePreview, '.p-game')).toContain('padding: 0.875rem 0.75rem')
+    expect(selectorBlock(themePreview, '.p-panel')).toContain('height: 6.875rem')
+    expect(selectorBlock(themePreview, '.p-panel')).toContain('padding: 0.75rem 0.875rem')
+    expect(selectorBlock(themePreview, '.p-input')).toContain('height: max(44px, 2.75rem)')
+    expect(selectorBlock(themePreview, '.p-submit')).toContain('height: max(44px, 2.75rem)')
   })
 
   it('リザルト画面の文字全体を独立した文字unitへ移す', () => {

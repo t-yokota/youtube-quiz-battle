@@ -291,7 +291,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 .switcher-title {
   margin: 0;
   color: rgba(255, 255, 255, 0.92);
-  font-size: 0.8125rem;
+  font-size: max(15px, calc(0.8125 * var(--ui-font-unit)));
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -299,7 +299,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 .switcher-hint {
   margin: 0.25rem 0 0;
   color: rgba(255, 255, 255, 0.5);
-  font-size: 0.6875rem;
+  font-size: max(12px, calc(0.6875 * var(--ui-font-unit)));
   letter-spacing: 0.04em;
 }
 
@@ -361,7 +361,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 }
 
 .card-label {
-  font-size: 0.6875rem;
+  font-size: calc(0.6875 * var(--ui-font-unit));
   font-weight: 700;
   color: rgba(255, 255, 255, 0.85);
   letter-spacing: 0.04em;
@@ -373,7 +373,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.6);
-  font-size: 0.625rem;
+  font-size: calc(0.625 * var(--ui-font-unit));
   letter-spacing: 0.06em;
 }
 

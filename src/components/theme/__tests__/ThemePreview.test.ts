@@ -62,8 +62,10 @@ describe('ThemePreview', () => {
     expect(themePreviewSource).toMatch(/\.preview\s*{[^}]*text-align:\s*left;/s)
   })
 
-  it('残り回数を実画面と同じ0.8remで表示する', () => {
-    expect(themePreviewSource).toMatch(/\.p-meta\s*{[^}]*font-size:\s*0\.8rem;/s)
+  it('残り回数を実画面と同じ文字unitで表示する', () => {
+    expect(themePreviewSource).toMatch(
+      /\.p-meta\s*{[^}]*font-size:\s*calc\(0\.8 \* var\(--ui-font-unit\)\);/s,
+    )
   })
 
   it('指定されたviewport寸法でレイアウトする', async () => {

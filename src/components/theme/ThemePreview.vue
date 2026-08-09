@@ -26,7 +26,7 @@ withDefaults(defineProps<Props>(), {
     <!-- ヘッダー -->
     <div class="p-header">
       <span class="p-wordmark">YouTube <span class="p-accent">Quiz Battle</span></span>
-      <SettingsIcon class="p-gear" />
+      <span class="p-settings-button"><SettingsIcon class="p-gear" /></span>
     </div>
 
     <!-- 動画プレイヤー（プレースホルダ） -->
@@ -113,15 +113,15 @@ withDefaults(defineProps<Props>(), {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px 8px;
+  padding: 0.625rem 0.75rem 0.5rem;
   border-bottom: 1px solid var(--color-line);
   background: var(--header-bg);
 }
 
 .p-wordmark {
   font-weight: 800;
-  font-size: 13px;
-  letter-spacing: 0.14em;
+  font-size: calc(0.8125 * var(--ui-font-unit));
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -129,9 +129,19 @@ withDefaults(defineProps<Props>(), {
   color: var(--color-accent);
 }
 
+.p-settings-button {
+  width: max(44px, 2.75rem);
+  height: max(44px, 2.75rem);
+  margin: -0.625rem calc((max(44px, 2.75rem) - 1.5rem) / -2) -0.625rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .p-gear {
-  width: 24px;
-  height: 24px;
+  width: 1.5rem;
+  height: 1.5rem;
   color: var(--color-text-dim);
 }
 
@@ -164,7 +174,7 @@ withDefaults(defineProps<Props>(), {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
+  padding: 0.625rem 0.875rem;
   background: var(--surface-panel);
   border-bottom: 1px solid var(--color-line);
 }
@@ -172,32 +182,33 @@ withDefaults(defineProps<Props>(), {
 .p-progress {
   font-variant-numeric: tabular-nums;
   font-weight: 800;
-  font-size: 17px;
+  font-size: calc(1.0625 * var(--ui-font-unit));
   letter-spacing: 0.04em;
 }
 
 .p-q {
-  font-size: 15px;
+  font-size: calc(0.9375 * var(--ui-font-unit));
   color: var(--color-accent);
   letter-spacing: 0.2em;
-  margin-right: 3px;
+  margin-right: 0.2rem;
 }
 
 .p-total {
   color: var(--color-text-dim);
-  font-size: 12px;
+  font-size: calc(0.75 * var(--ui-font-unit));
   font-weight: 600;
 }
 
 .p-chips {
+  --preview-chip-unit: var(--ui-width-unit);
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: calc(0.3125 * var(--preview-chip-unit));
 }
 
 .p-chip {
-  width: 16px;
-  height: 16px;
+  width: var(--preview-chip-unit);
+  height: var(--preview-chip-unit);
   display: block;
 }
 
@@ -240,8 +251,8 @@ withDefaults(defineProps<Props>(), {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 14px 12px;
+  gap: 0.875rem;
+  padding: 0.875rem 0.75rem;
   min-height: 0;
   position: relative;
 }
@@ -261,8 +272,8 @@ withDefaults(defineProps<Props>(), {
   border: var(--panel-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--panel-shadow);
-  padding: 12px 14px;
-  height: 110px;
+  padding: 0.75rem 0.875rem;
+  height: 6.875rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -270,10 +281,10 @@ withDefaults(defineProps<Props>(), {
 }
 
 .p-meta {
-  font-size: 0.8rem;
+  font-size: calc(0.8 * var(--ui-font-unit));
   font-weight: 700;
   color: var(--color-info);
-  padding: 0 4px;
+  padding: 0 0.25rem;
 }
 
 .p-dim {
@@ -283,15 +294,15 @@ withDefaults(defineProps<Props>(), {
 
 .p-input-row {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .p-input {
   flex: 1;
   min-width: 0;
-  height: 44px;
-  padding: 0 14px;
-  font-size: 16px;
+  height: max(44px, 2.75rem);
+  padding: 0 0.875rem;
+  font-size: max(16px, var(--ui-font-unit));
   color: var(--color-placeholder);
   background: var(--input-bg);
   border: 2px solid var(--input-border-color);
@@ -303,9 +314,10 @@ withDefaults(defineProps<Props>(), {
 }
 
 .p-submit {
-  height: 44px;
-  padding: 0 16px;
-  font-size: 15px;
+  height: max(44px, 2.75rem);
+  min-width: max(44px, 2.75rem);
+  padding: 0 1rem;
+  font-size: calc(0.9375 * var(--ui-font-unit));
   font-weight: 800;
   color: var(--color-text-dim);
   background: var(--surface-raised);
@@ -327,9 +339,7 @@ withDefaults(defineProps<Props>(), {
 
 .p-pedestal {
   grid-area: 1 / 1;
-  width: 196px;
-  height: 196px;
-  width: min(196px, 100cqmin);
+  width: min(calc(12.25 * var(--ui-layout-unit)), 100cqmin);
   height: auto;
   aspect-ratio: 1;
   border-radius: 50%;
@@ -340,15 +350,13 @@ withDefaults(defineProps<Props>(), {
 
 .p-quiz-button {
   grid-area: 1 / 1;
-  width: 150px;
-  height: 150px;
-  width: min(150px, 76.53cqmin);
+  width: min(calc(9.375 * var(--ui-layout-unit)), 76.53cqmin);
   height: auto;
   aspect-ratio: 1;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 19px;
+  font-size: calc(1.1875 * var(--ui-font-unit));
   font-weight: 800;
   letter-spacing: 0.12em;
   color: var(--quiz-btn-text);
@@ -360,15 +368,16 @@ withDefaults(defineProps<Props>(), {
 
 /* BUTTON CHECK トグル */
 .p-toggle-row {
+  --preview-toggle-unit: var(--ui-font-unit);
   flex-shrink: 0;
   align-self: flex-end;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: calc(0.4 * var(--preview-toggle-unit));
 }
 
 .p-toggle-label {
-  font-size: 10px;
+  font-size: calc(0.625 * var(--ui-font-unit));
   font-weight: 700;
   letter-spacing: 0.14em;
   color: var(--color-text-dim);
@@ -376,8 +385,8 @@ withDefaults(defineProps<Props>(), {
 
 .p-toggle {
   position: relative;
-  width: 44px;
-  height: 20px;
+  width: calc(2.75 * var(--preview-toggle-unit));
+  height: calc(1.25 * var(--preview-toggle-unit));
   border-radius: 999px;
   background: var(--toggle-on-track);
   border: 1px solid var(--toggle-on-border);
@@ -386,10 +395,10 @@ withDefaults(defineProps<Props>(), {
 
 .p-toggle-state {
   position: absolute;
-  left: 7px;
+  left: calc(0.3125 * var(--preview-toggle-unit));
   top: 50%;
   transform: translateY(-50%);
-  font-size: 8px;
+  font-size: calc(0.5 * var(--ui-font-unit));
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--color-accent);
@@ -398,10 +407,10 @@ withDefaults(defineProps<Props>(), {
 .p-toggle-knob {
   position: absolute;
   top: 50%;
-  right: 2px;
+  right: calc(0.125 * var(--preview-toggle-unit));
   transform: translateY(-50%);
-  width: 15px;
-  height: 15px;
+  width: calc(0.9375 * var(--preview-toggle-unit));
+  height: calc(0.9375 * var(--preview-toggle-unit));
   border-radius: 50%;
   background: var(--toggle-on-knob);
 }
