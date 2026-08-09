@@ -52,9 +52,19 @@ function apply(id: string): void {
     .trim()
   if (themeColor === '') return
 
-  document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
-    meta.content = themeColor
-  })
+  // アプリ内テーマはOSの配色設定とは独立しているため、mediaなしのmetaを1つだけ置く。
+  // 要素自体を差し替え、動的なcontent変更を反映しないブラウザにも再評価させる。
+  const existingMetas = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')]
+  const nextMeta = document.createElement('meta')
+  nextMeta.name = 'theme-color'
+  nextMeta.content = themeColor
+
+  if (existingMetas[0]) {
+    existingMetas[0].replaceWith(nextMeta)
+    existingMetas.slice(1).forEach((meta) => meta.remove())
+  } else {
+    document.head.appendChild(nextMeta)
+  }
 }
 
 let initialized = false

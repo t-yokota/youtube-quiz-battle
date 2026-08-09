@@ -50,7 +50,8 @@ describe('default theme', () => {
       (match) => match[1],
     )
 
-    expect(themeColors).toEqual(['#14171a', '#14171a'])
+    expect(themeColors).toEqual(['#14171a'])
+    expect(indexHtml).not.toMatch(/<meta name="theme-color"[^>]*\bmedia=/)
   })
 
   it('開始アクションとResult正解率を芥子色にする', () => {

@@ -2,7 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const THEME_COLORS: Record<string, string> = {
   default: '#14171a',
+  'default-flat': '#f3eee7',
   neumorphism: '#e3e7f0',
+}
+
+const THEME_ORDERS: Record<string, string> = {
+  default: '0',
+  'default-flat': '1',
+  neumorphism: '2',
 }
 
 function installComputedStyleMock(): void {
@@ -14,7 +21,7 @@ function installComputedStyleMock(): void {
       return {
         getPropertyValue(property: string) {
           if (property === '--theme-label') return `'${themeId}'`
-          if (property === '--theme-order') return '0'
+          if (property === '--theme-order') return THEME_ORDERS[themeId] ?? ''
           if (property === '--theme-color') return THEME_COLORS[themeId] ?? ''
           return ''
         },
@@ -51,23 +58,38 @@ describe('useTheme', () => {
 
     useTheme()
 
-    expect(themeColorMetaValues()).toEqual(['#e3e7f0', '#e3e7f0'])
+    expect(themeColorMetaValues()).toEqual(['#e3e7f0'])
+    expect(document.querySelector('meta[name="theme-color"]')?.hasAttribute('media')).toBe(false)
   })
 
   it('テーマ切替時にすべてのtheme-color metaを更新する', async () => {
     const { useTheme } = await import('../useTheme')
     const { setTheme } = useTheme()
+    const previousMeta = document.querySelector('meta[name="theme-color"]')
 
-    setTheme('default')
+    setTheme('default-flat')
 
-    expect(themeColorMetaValues()).toEqual(['#14171a', '#14171a'])
+    expect(themeColorMetaValues()).toEqual(['#f3eee7'])
+    expect(document.querySelector('meta[name="theme-color"]')?.hasAttribute('media')).toBe(false)
+    expect(document.querySelector('meta[name="theme-color"]')).not.toBe(previousMeta)
+    expect(previousMeta?.isConnected).toBe(false)
   })
 
-  it('利用可能なテーマをdefaultとneumorphismだけに限定する', async () => {
+  it('theme-color metaがない場合も現在テーマのmetaを追加する', async () => {
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.remove())
+    const { useTheme } = await import('../useTheme')
+
+    useTheme()
+
+    expect(themeColorMetaValues()).toEqual(['#14171a'])
+    expect(document.querySelector('meta[name="theme-color"]')?.hasAttribute('media')).toBe(false)
+  })
+
+  it('利用可能なテーマにdefault-flatを含める', async () => {
     const { useTheme } = await import('../useTheme')
     const { themes } = useTheme()
 
-    expect(themes.value.map(({ id }) => id)).toEqual(['default', 'neumorphism'])
+    expect(themes.value.map(({ id }) => id)).toEqual(['default', 'default-flat', 'neumorphism'])
   })
 
   it.each(['default-2', 'default-3', 'default-4', 'default-5'])(
@@ -79,7 +101,7 @@ describe('useTheme', () => {
 
       expect(currentThemeId.value).toBe('default')
       expect(localStorage.getItem('yqb-theme')).toBe('default')
-      expect(themeColorMetaValues()).toEqual(['#14171a', '#14171a'])
+      expect(themeColorMetaValues()).toEqual(['#14171a'])
     },
   )
 })

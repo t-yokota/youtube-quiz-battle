@@ -1,0 +1,156 @@
+/* ==========================================================================
+   Theme: フラット
+   -----------------------------------------------------------------------
+   暖かいオフホワイトを基調としたフラットテーマ。
+   デフォルトと同じ朱・芥子・緑・紫の役割を維持しながら、明るい面で
+   読みやすい濃度へ調整する。フラットな同系色の面を罫線で分け、
+   両方向のソフトシャドウを使うニューモーフィズムとは表現を分ける。
+   ========================================================================== */
+[data-theme='default-flat'] {
+  /* --- メタ情報 --- */
+  --theme-label: 'フラット';
+  --theme-order: 1;
+  --theme-color: #f3eee7;
+
+  /* --- フォント --- */
+  --font-body: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* --- テキスト・罫線 --- */
+  --color-text-main: #2b2723;
+  --color-text-dim: #6b6259;
+  --color-placeholder: #7d7369;
+  --color-line: #d8d1c7;
+
+  /* --- セマンティックカラー（色相を維持し、明るい面向けに濃度を補正） --- */
+  --color-accent: #c94b35;
+  --color-accent-hover: #b9402e;
+  --color-on-accent: #fffdf9;
+  --color-info: #356fca;
+  --color-answer-correct: #1f8559;
+  --color-answer-wrong: #6756c7;
+  --color-error: #c83a2a;
+  --color-urgent: #c83a2a;
+
+  /* --- サーフェス（暖色系の白と薄いグレー） --- */
+  --surface-app: #fffdf9;
+  --surface-panel: #fffdf9;
+  --surface-raised: #eee9e2;
+  --header-bg: #fffdf9;
+  --overlay-bg: rgba(50, 42, 35, 0.42);
+  --gate-bg: #fffdf9;
+  --result-bg: #fffdf9;
+
+  /* --- パネル・モーダル（通常面は罫線のみで分離） --- */
+  --panel-border: 1px solid var(--color-line);
+  --panel-shadow: 0 0 rgba(0, 0, 0, 0);
+  --row-shadow: none;
+  --modal-shadow: 0 1rem 3rem rgba(63, 49, 38, 0.22);
+
+  /* --- 入力欄 --- */
+  --input-bg: #ffffff;
+  --input-border-color: #978a7e;
+  --input-shadow: none;
+  --input-focus-border-color: var(--color-info);
+  --input-focus-shadow: 0 0 0 0.1875rem rgba(53, 111, 202, 0.18);
+
+  /* --- 汎用ボタン --- */
+  --btn-primary-bg: var(--color-accent);
+  --btn-primary-bg-hover: var(--color-accent-hover);
+  --btn-primary-text: var(--color-on-accent);
+  --btn-primary-shadow: none;
+  --btn-replay-bg: #c83a2a;
+  --btn-replay-bg-hover: #ad2f22;
+  --btn-replay-text: #ffffff;
+  --btn-replay-shadow: none;
+  --btn-muted-bg: var(--surface-raised);
+  --btn-muted-text: var(--color-text-main);
+
+  /* --- 早押しボタン（単色と変形で状態を表現） --- */
+  --quiz-btn-face: #e6402e;
+  --quiz-btn-text: #ffffff;
+  --quiz-btn-text-shadow: none;
+  --quiz-btn-shadow: none;
+  --quiz-btn-shadow-pressed: none;
+  --quiz-btn-shadow-released: none;
+  --quiz-btn-shadow-disabled: none;
+  --quiz-btn-disabled-filter: grayscale(0.65) brightness(0.9);
+  --pedestal-bg: transparent;
+  --pedestal-border: 1px solid var(--color-line);
+  --pedestal-shadow: none;
+  --pulse-color: var(--color-accent);
+  --spotlight-glow: none;
+
+  /* --- 戦績チップ --- */
+  --chip-bg: #eee9e2;
+  --chip-correct-bg: rgba(31, 133, 89, 0.12);
+  --chip-wrong-bg: rgba(103, 86, 199, 0.12);
+  --chip-current-glow: 0 0 0.375rem rgba(201, 75, 53, 0.35);
+  --chip-current-correct-glow: 0 0 0.375rem rgba(31, 133, 89, 0.35);
+  --chip-current-wrong-glow: 0 0 0.375rem rgba(103, 86, 199, 0.35);
+
+  /* --- トグル・スライダー --- */
+  --toggle-track: #e5dfd7;
+  --toggle-track-border: #978a7e;
+  --toggle-track-shadow: none;
+  --toggle-on-track: rgba(201, 75, 53, 0.15);
+  --toggle-on-border: var(--color-accent);
+  --toggle-knob: #6b6259;
+  --toggle-on-knob: var(--color-accent);
+  --slider-track: #978a7e;
+  --slider-thumb: var(--color-accent);
+  --slider-thumb-shadow: none;
+
+  /* --- タイマー・リザルト演出 --- */
+  --timer-track: #ddd6cd;
+  --timer-hole: var(--surface-panel);
+  --banner-correct-bg: rgba(31, 133, 89, 0.12);
+  --banner-wrong-bg: rgba(103, 86, 199, 0.12);
+  --flash-correct-glow: 0 0 1.125rem rgba(31, 133, 89, 0.2);
+  --flash-wrong-glow: 0 0 1.125rem rgba(103, 86, 199, 0.22);
+}
+
+/* --- 早押しボタン（実画面・テーマプレビュー） --- */
+html[data-theme='default-flat'] .quiz-button {
+  border: 1px solid #ad2f22;
+}
+
+:is(.card-shell, .zoom-layer)[data-theme='default-flat'] .p-quiz-button {
+  border: 1px solid #ad2f22;
+}
+
+/* --- 開始操作・Result正解率 --- */
+html[data-theme='default-flat'] :is(.start-gate-action, .final-rate .pct) {
+  --color-accent: #9a6810;
+}
+
+/* --- 戦績チップ（ゲーム・Result画面・テーマプレビュー） --- */
+html[data-theme='default-flat'] :is(.score-chips, .result-list),
+:is(.card-shell, .zoom-layer)[data-theme='default-flat'] .p-chips {
+  --color-accent: #9a6810;
+  --color-answer-wrong: #b33f30;
+  --chip-wrong-bg: rgba(179, 63, 48, 0.12);
+  --chip-current-glow: 0 0 0.375rem rgba(154, 104, 16, 0.35);
+  --chip-current-wrong-glow: 0 0 0.375rem rgba(179, 63, 48, 0.35);
+}
+
+/* --- 解答エリア（実画面・テーマプレビュー） --- */
+html[data-theme='default-flat'] .answer-area,
+:is(.card-shell, .zoom-layer)[data-theme='default-flat'] .p-panel {
+  --color-accent: #9a6810;
+  --color-answer-wrong: #b33f30;
+  --color-urgent: #b33f30;
+  --btn-primary-bg: #d99b23;
+  --btn-primary-bg-hover: #c88912;
+  --btn-primary-text: #241800;
+  --banner-wrong-bg: rgba(179, 63, 48, 0.12);
+  --flash-wrong-glow: 0 0 1.125rem rgba(179, 63, 48, 0.2);
+}
+
+/* --- ボタンチェックトグル（実画面・テーマプレビュー） --- */
+html[data-theme='default-flat'] .check-toggle,
+:is(.card-shell, .zoom-layer)[data-theme='default-flat'] .p-toggle-row {
+  --color-accent: #9a6810;
+  --toggle-on-track: rgba(154, 104, 16, 0.14);
+  --toggle-on-border: #9a6810;
+  --toggle-on-knob: #9a6810;
+}

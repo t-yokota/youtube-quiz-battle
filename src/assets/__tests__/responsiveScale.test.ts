@@ -53,6 +53,12 @@ describe('実画面のレスポンシブスケール', () => {
     expect(htmlRule).toContain('font-size: var(--ui-layout-unit)')
   })
 
+  it('WebKitがブラウザUI色を導出できるようルート背景へtheme-colorを適用する', () => {
+    const rootCanvas = selectorBlock(mainStyles, 'html,\nbody')
+
+    expect(rootCanvas).toContain('background-color: var(--theme-color)')
+  })
+
   it('開始画面とゲーム本体の文字だけを独立した文字unitへ移す', () => {
     expect(selectorBlock(app, '.start-gate-action')).toContain(
       'font-size: calc(0.9375 * var(--ui-font-unit))',

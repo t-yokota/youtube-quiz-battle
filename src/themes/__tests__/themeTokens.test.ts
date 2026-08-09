@@ -71,8 +71,9 @@ function stripCssComments(source: string): string {
 }
 
 describe('theme token contract', () => {
-  it('defaultとneumorphismだけをテーマとして公開する', () => {
+  it('公開するテーマファイルを固定する', () => {
     expect(Object.keys(themeFiles).sort()).toEqual([
+      'default-flat.theme.css',
       'default.theme.css',
       'neumorphism.theme.css',
     ])
@@ -90,6 +91,12 @@ describe('theme token contract', () => {
     }
   })
 
+  it('テーマの並び順を重複させない', () => {
+    const orders = Object.values(themeFiles).map((css) => tokenValue(css, '--theme-order'))
+
+    expect(new Set(orders).size).toBe(orders.length)
+  })
+
   it('本番スタイルが旧トークンを参照しない', () => {
     for (const file of sourceFiles(sourceDirectory)) {
       const uncommentedSource = stripCssComments(readFileSync(file, 'utf8'))
@@ -99,5 +106,4 @@ describe('theme token contract', () => {
       }
     }
   })
-
 })
