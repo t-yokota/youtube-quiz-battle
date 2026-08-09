@@ -71,8 +71,11 @@ function stripCssComments(source: string): string {
 }
 
 describe('theme token contract', () => {
-  it('テーマファイルを検出する', () => {
-    expect(Object.keys(themeFiles).length).toBeGreaterThan(0)
+  it('defaultとneumorphismだけをテーマとして公開する', () => {
+    expect(Object.keys(themeFiles).sort()).toEqual([
+      'default.theme.css',
+      'neumorphism.theme.css',
+    ])
   })
 
   it.each(Object.entries(themeFiles))('%s が用途別のカラートークンをすべて定義する', (_, css) => {

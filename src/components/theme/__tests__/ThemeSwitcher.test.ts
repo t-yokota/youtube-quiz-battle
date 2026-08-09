@@ -12,7 +12,7 @@ vi.mock('@/composables/useTheme', async () => {
 
   return {
     useTheme: () => ({
-      themes: ref([{ id: 'default', label: 'ステージ', order: 0 }]),
+      themes: ref([{ id: 'default', label: 'デフォルト', order: 0 }]),
       currentThemeId: ref('default'),
       setTheme: themeMock.setTheme,
     }),

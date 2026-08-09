@@ -68,7 +68,13 @@ function init(): void {
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
 
   const saved = localStorage.getItem(STORAGE_KEY)
-  apply(saved !== null && themeIds.includes(saved) ? saved : DEFAULT_THEME)
+  const initialTheme = saved !== null && themeIds.includes(saved) ? saved : DEFAULT_THEME
+  apply(initialTheme)
+
+  // 削除済みテーマなどの古い保存値は、次回以降も有効なdefaultへ正規化する。
+  if (saved !== null && saved !== initialTheme) {
+    localStorage.setItem(STORAGE_KEY, initialTheme)
+  }
 }
 
 export function useTheme() {
