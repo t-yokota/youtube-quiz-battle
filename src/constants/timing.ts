@@ -52,11 +52,6 @@ export const BUTTON_PUSHED_DURATION_MS = 100
 export const BUTTON_CHECK_RELEASE_MS = 1800
 
 /**
- * ボタンチェック終了後も BUTTON CHECK ラベルを保持する時間（ミリ秒, 表示層のみの遅延）
- */
-export const BUTTON_CHECK_LABEL_HOLD_MS = 0
-
-/**
  * ボタンチェック完了（STANDBY/TALKING 遷移）から動画再生開始までの遅延（ミリ秒）
  * 正解音（2秒）と動画音声の重なりを避け、チェック完了の「間」を作る。0 で即時再生
  */

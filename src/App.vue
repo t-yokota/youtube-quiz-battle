@@ -30,6 +30,7 @@ import { GameState } from './types'
 import type { QuizData, YouTubePlayerManager } from './types'
 import { shouldHandleSpaceKey } from './utils/keyboardHandler'
 import { logger } from './utils/logger'
+import { createUuid } from './utils/uuid'
 
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
@@ -233,7 +234,7 @@ watch(
   () => gameStore.currentState,
   (next, prev) => {
     if (prev === GameState.READY && next === GameState.TALKING) {
-      quizSessionId.value = crypto.randomUUID()
+      quizSessionId.value = createUuid()
       lastSentResultCount.value = 0
       videoTitle.value = playerManagerRef.value?.getVideoTitle() ?? ''
 

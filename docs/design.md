@@ -315,7 +315,7 @@ stateDiagram-v2
 | DISABLED → STANDBY | ゲーム状態変化（READY/QUESTIONING） | 即座 | 問題開始時・ゲーム開始準備完了時 |
 | DISABLED → 非表示 | ゲーム状態変化（FINISHED） | 即座 | ゲーム終了時 |
 
-表示層のみの補足として、`BUTTON_CHECK_LABEL_HOLD_MS`（2026-07-07時点0ms）でBUTTON CHECKラベルの表示保持時間を延長できる（QuizButton.vue内の演出用）。
+表示ラベルはボタン状態へ即時追従し、DISABLEDへ変わった時点で必ず「WAIT」へ切り替える。
 
 ### Button Interaction Rules
 
@@ -1525,7 +1525,7 @@ _Answer Content（QUESTIONING/ANSWERING/WAITING/REVEALING状態用）_
 **Quiz Button**（円形の物理ボタンを模した表現。4:3矩形のCSS描画ではない）
 
 - **見た目**: 真上視点の円形キャップ + 同心円の台座 + LEDグロー。固定rem値でサイズ指定（画面高さから逆算する動的計算ではなく、rem全体スケーリング — 後述のResponsive Design参照 — に追従する）
-- **表示テキスト**: STANDBY/PUSHED時「PUSH」、RELEASED時「ON!」、DISABLED時「WAIT」。READYでボタンチェック中は2行の「BUTTON CHECK」表示（`BUTTON_CHECK_LABEL_HOLD_MS`だけ表示保持を延長できる）
+- **表示テキスト**: STANDBY/PUSHED時「PUSH」、RELEASED時「ON!」、DISABLED時「WAIT」。READYでボタンチェック中は2行の「BUTTON CHECK」を表示し、DISABLEDへの変更時は即座に「WAIT」へ切り替える
 - **ボタンチェックOFF時のREADY**: 白い再生三角アイコンを表示する単純な再生ボタンとして動作する
 - **演出**: QUESTIONING中は外周パルスリングがアニメーションし、押せることを示す。押せる状態（READY/QUESTIONINGのSTANDBY）ではスポットライトが点灯する
 - **BUTTON CHECKトグル**: ボタン領域右下に常設。`settingsStore.buttonCheckOverride`を切り替えるトグルスイッチ（設定モーダルの同項目と連動）
@@ -2213,7 +2213,7 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 ### セッションIDとタイミング
 
 - **生成タイミング**: READY→TALKING遷移時（ページロード時ではない）。リプレイは新しいセッションとして再発行する
-- **形式**: UUID v4（`crypto.randomUUID()`）
+- **形式**: UUID v4（通常は`crypto.randomUUID()`、HTTPのLANアクセスなど未対応環境では`crypto.getRandomValues()`、Web Crypto自体がない場合のみ擬似乱数へフォールバック）
 - **初期化タイミング**: 開始ゲートのタップ直後に`AnalyticsService.init()`を呼ぶ（ゲート通過前は外部リクエストを一切発生させない）
 
 ### PII対策と送信抑制

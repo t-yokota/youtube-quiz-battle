@@ -194,7 +194,7 @@ export function createAnalyticsService(): AnalyticsService
 
 ## 25-5. セッション ID とフック位置（App.vue）
 
-- セッション ID: `crypto.randomUUID()`。**READY → TALKING 遷移ごとに新規発行**（リプレイは別セッション。
+- セッション ID: UUID v4。通常は`crypto.randomUUID()`、HTTPのLANアクセスなど未対応環境では`crypto.getRandomValues()`、Web Crypto自体がない場合のみ擬似乱数を使用する。**READY → TALKING 遷移ごとに新規発行**（リプレイは別セッション。
   問題間の TALKING 再突入は REVEALING 等からの遷移なので発火しない）
 - 送信フックは **App.vue の watcher に集約**（ストア・サービスの純度を保つ。gameStore への Analytics 依存の混入は不可）:
   1. `watch(() => gameStore.currentState, (next, prev))`: prev === READY && next === TALKING で
