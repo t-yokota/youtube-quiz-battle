@@ -302,6 +302,17 @@ const handleOverlayClick = (event: MouseEvent) => {
               </p>
             </section>
 
+            <!-- UI Theme -->
+            <section class="settings-section">
+              <div class="setting-row">
+                <span class="setting-label">UIテーマ</span>
+                <button type="button" class="theme-button" @click="emit('openThemeSwitcher')">
+                  えらぶ
+                </button>
+              </div>
+              <p class="seek-description">アプリ全体の見た目を切り替えます。</p>
+            </section>
+
             <!-- Debug Settings（Task 29: debug データかつメニュー表示ONの時のみ） -->
             <section v-if="isDebugSectionVisible" class="settings-section">
               <h3 class="section-title debug-section-title">デバッグ</h3>
@@ -369,17 +380,6 @@ const handleOverlayClick = (event: MouseEvent) => {
               <button type="button" class="debug-reset-button" @click="handleResetOverrides">
                 すべてリセット
               </button>
-            </section>
-
-            <!-- UI Theme -->
-            <section class="settings-section">
-              <div class="setting-row">
-                <span class="setting-label">UIテーマ</span>
-                <button type="button" class="theme-button" @click="emit('openThemeSwitcher')">
-                  えらぶ
-                </button>
-              </div>
-              <p class="seek-description">アプリ全体の見た目を切り替えます。</p>
             </section>
 
             <!-- Privacy Info -->

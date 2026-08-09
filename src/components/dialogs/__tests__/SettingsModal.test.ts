@@ -21,7 +21,7 @@ function selectorBlock(selector: string): string {
 }
 
 describe('SettingsModal', () => {
-  it('UIテーマを設定項目の最下段かつデータ収集セクションの直前に置く', () => {
+  it('UIテーマ・デバッグ・データ収集の順で設定項目の下部に置く', () => {
     const parsedTemplate = document.createElement('template')
     parsedTemplate.innerHTML = template
     const sections = [...parsedTemplate.content.querySelectorAll<HTMLElement>('.settings-section')]
@@ -36,8 +36,8 @@ describe('SettingsModal', () => {
     expect(themeSection).toBeDefined()
     expect(privacySection).toBeDefined()
     expect(debugSection).toBeDefined()
-    expect(sections.indexOf(themeSection!)).toBeGreaterThan(sections.indexOf(debugSection!))
-    expect(themeSection?.nextElementSibling).toBe(privacySection)
+    expect(themeSection?.nextElementSibling).toBe(debugSection)
+    expect(debugSection?.nextElementSibling).toBe(privacySection)
   })
 
   it('設定画面専用のレイアウト・文字・操作部unitを定義する', () => {
