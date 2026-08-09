@@ -120,6 +120,7 @@ describe('実画面のレスポンシブスケール', () => {
   it('テーマプレビューのchip・早押しボタン・トグル寸法を実画面のunitへ揃える', () => {
     const chips = selectorBlock(themePreview, '.p-chips')
     const chip = selectorBlock(themePreview, '.p-chip')
+    const buttonContainer = selectorBlock(themePreview, '.p-button-container')
     const pedestal = selectorBlock(themePreview, '.p-pedestal')
     const quizButton = selectorBlock(themePreview, '.p-quiz-button')
     const toggleRow = selectorBlock(themePreview, '.p-toggle-row')
@@ -131,8 +132,12 @@ describe('実画面のレスポンシブスケール', () => {
     expect(chips).toContain('gap: calc(0.3125 * var(--preview-chip-unit))')
     expect(chip).toContain('width: var(--preview-chip-unit)')
     expect(chip).toContain('height: var(--preview-chip-unit)')
-    expect(pedestal).toContain('calc(12.25 * var(--ui-layout-unit))')
-    expect(quizButton).toContain('calc(9.375 * var(--ui-layout-unit))')
+    expect(buttonContainer).toContain('min-height: 13.5rem')
+    expect(pedestal).toContain('width: 12.25rem')
+    expect(pedestal).toContain('height: 12.25rem')
+    expect(quizButton).toContain('width: 9.375rem')
+    expect(quizButton).toContain('height: 9.375rem')
+    expect(themePreview).not.toContain('cqmin')
     expect(toggleRow).toContain('--preview-toggle-unit: var(--ui-font-unit)')
     expect(toggle).toContain('width: calc(2.75 * var(--preview-toggle-unit))')
     expect(toggle).toContain('height: calc(1.25 * var(--preview-toggle-unit))')
@@ -165,6 +170,9 @@ describe('実画面のレスポンシブスケール', () => {
     expect(selectorBlock(themePreview, '.p-panel')).toContain('padding: 0.75rem 0.875rem')
     expect(selectorBlock(themePreview, '.p-input')).toContain('height: max(44px, 2.75rem)')
     expect(selectorBlock(themePreview, '.p-submit')).toContain('height: max(44px, 2.75rem)')
+    expect(themePreview).toMatch(
+      /@media\s*\(max-height:\s*640px\)\s*{[\s\S]*?\.p-game\s*{[^}]*gap:\s*0\.625rem;[^}]*padding:\s*0\.625rem 0\.75rem;/,
+    )
   })
 
   it('リザルト画面の文字全体を独立した文字unitへ移す', () => {

@@ -80,9 +80,21 @@ describe('ThemePreview', () => {
     expect(preview?.style.height).toBe('667px')
   })
 
-  it('短い画面では早押しボタンを利用可能領域内へ縮小する', () => {
-    expect(themePreviewSource).toMatch(/\.p-button-area\s*{[^}]*container-type:\s*size;/s)
-    expect(themePreviewSource).toMatch(/\.p-pedestal\s*{[^}]*100cqmin/s)
-    expect(themePreviewSource).toMatch(/\.p-quiz-button\s*{[^}]*cqmin/s)
+  it('短い画面でも実画面と同じボタン寸法とコンテナ構造を維持する', async () => {
+    const markup = await renderToString(createSSRApp(ThemePreview))
+    const container = document.createElement('div')
+    container.innerHTML = markup
+    const buttonContainer = container.querySelector('.p-button-container')
+
+    expect(buttonContainer?.querySelector(':scope > .p-button-area')).not.toBeNull()
+    expect(buttonContainer?.querySelector(':scope > .p-toggle-row')).not.toBeNull()
+    expect(themePreviewSource).toMatch(/\.p-button-container\s*{[^}]*min-height:\s*13\.5rem;/s)
+    expect(themePreviewSource).toMatch(
+      /\.p-pedestal\s*{[^}]*width:\s*12\.25rem;[^}]*height:\s*12\.25rem;/s,
+    )
+    expect(themePreviewSource).toMatch(
+      /\.p-quiz-button\s*{[^}]*width:\s*9\.375rem;[^}]*height:\s*9\.375rem;/s,
+    )
+    expect(themePreviewSource).not.toContain('cqmin')
   })
 })

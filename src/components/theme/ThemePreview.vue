@@ -70,18 +70,20 @@ withDefaults(defineProps<Props>(), {
         </div>
       </div>
 
-      <!-- 早押しボタン（押せる状態） -->
-      <div class="p-button-area">
-        <span class="p-pedestal"></span>
-        <span class="p-quiz-button">PUSH</span>
-      </div>
+      <!-- 早押しボタン領域（実画面と同じくトグルを内包） -->
+      <div class="p-button-container">
+        <div class="p-button-area">
+          <span class="p-pedestal"></span>
+          <span class="p-quiz-button">PUSH</span>
+        </div>
 
-      <!-- BUTTON CHECK トグル -->
-      <div class="p-toggle-row">
-        <span class="p-toggle-label">BUTTON CHECK</span>
-        <span class="p-toggle"
-          ><span class="p-toggle-state">ON</span><span class="p-toggle-knob"></span
-        ></span>
+        <!-- BUTTON CHECK トグル -->
+        <div class="p-toggle-row">
+          <span class="p-toggle-label">BUTTON CHECK</span>
+          <span class="p-toggle"
+            ><span class="p-toggle-state">ON</span><span class="p-toggle-knob"></span
+          ></span>
+        </div>
       </div>
     </div>
   </div>
@@ -328,20 +330,26 @@ withDefaults(defineProps<Props>(), {
 }
 
 /* 早押しボタン */
+.p-button-container {
+  flex: 1;
+  min-height: 13.5rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
 .p-button-area {
   flex: 1;
   min-height: 0;
   display: grid;
   place-items: center;
   position: relative;
-  container-type: size;
 }
 
 .p-pedestal {
   grid-area: 1 / 1;
-  width: min(calc(12.25 * var(--ui-layout-unit)), 100cqmin);
-  height: auto;
-  aspect-ratio: 1;
+  width: 12.25rem;
+  height: 12.25rem;
   border-radius: 50%;
   background: var(--pedestal-bg);
   border: var(--pedestal-border);
@@ -350,9 +358,8 @@ withDefaults(defineProps<Props>(), {
 
 .p-quiz-button {
   grid-area: 1 / 1;
-  width: min(calc(9.375 * var(--ui-layout-unit)), 76.53cqmin);
-  height: auto;
-  aspect-ratio: 1;
+  width: 9.375rem;
+  height: 9.375rem;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -413,5 +420,13 @@ withDefaults(defineProps<Props>(), {
   height: calc(0.9375 * var(--preview-toggle-unit));
   border-radius: 50%;
   background: var(--toggle-on-knob);
+}
+
+/* 実画面と同じく、短いviewportではボタン寸法ではなく周囲の余白を詰める */
+@media (max-height: 640px) {
+  .p-game {
+    gap: 0.625rem;
+    padding: 0.625rem 0.75rem;
+  }
 }
 </style>
