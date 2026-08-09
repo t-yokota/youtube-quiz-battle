@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // ThemeSwitcher コンポーネント
 // マルチタスク画面風のUI着せ替えスイッチャー。
-// - useTheme() が検出した全テーマを横スクロールのカードとして表示（自動追加）
+// - useTheme() が検出した全テーマを2列グリッドのカードとして表示（自動追加）
 // - カードは ThemePreview の実DOMを [data-theme] スコープで縮小描画（画像不要）
 // - タップでカード位置から全画面へズームしながらテーマを適用
 import { nextTick, onUnmounted, ref, watch } from 'vue'
@@ -66,13 +66,12 @@ function updateHeadingPosition() {
   const heading = headingRef.value
   const safeAreaProbe = safeAreaProbeRef.value
   const rail = railRef.value
-  const card =
-    rail?.querySelector<HTMLElement>(`[data-card='${currentThemeId.value}'] .card-shell`) ??
-    rail?.querySelector<HTMLElement>('.card-shell')
-  if (!overlay || !heading || !safeAreaProbe || !card) return
+  const card = rail?.querySelector<HTMLElement>('.card-shell')
+  if (!overlay || !heading || !safeAreaProbe || !rail || !card) return
 
   const overlayTop = overlay.getBoundingClientRect().top
-  const cardTop = card.getBoundingClientRect().top - overlayTop
+  // 縦スクロールしても見出し位置が動かないよう、先頭行の未スクロール位置を使う。
+  const cardTop = card.getBoundingClientRect().top - overlayTop + rail.scrollTop
   const headingHeight = heading.getBoundingClientRect().height
   const safeAreaTop = safeAreaProbe.getBoundingClientRect().height
   const viewportTop = Math.max(0, (window.visualViewport?.offsetTop ?? 0) - overlayTop)
@@ -110,7 +109,7 @@ function removeViewportListeners() {
   activeVisualViewport = null
 }
 
-// 開いたとき、現在テーマのカードを中央に寄せて見出し位置を実測する
+// 開いたとき、現在テーマの行を先頭行の基準位置へ合わせて見出し位置を実測する
 watch(
   () => props.isOpen,
   async (open) => {
@@ -126,9 +125,10 @@ watch(
     await nextTick()
     if (!props.isOpen) return
     const rail = railRef.value
-    const cur = rail?.querySelector<HTMLElement>(`[data-card='${currentThemeId.value}']`)
-    if (rail && cur) {
-      rail.scrollLeft = cur.offsetLeft - (rail.clientWidth - cur.offsetWidth) / 2
+    const firstCard = rail?.querySelector<HTMLElement>('.card')
+    const currentCard = rail?.querySelector<HTMLElement>(`[data-card='${currentThemeId.value}']`)
+    if (rail && firstCard && currentCard) {
+      rail.scrollTop = Math.max(0, currentCard.offsetTop - firstCard.offsetTop)
     }
     updateHeadingPosition()
     addViewportListeners()
@@ -201,7 +201,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
           :style="{ top: headingTop + 'px', visibility: isHeadingVisible ? 'visible' : 'hidden' }"
         >
           <p class="switcher-title">UIをえらぶ</p>
-          <p class="switcher-hint">横にスクロール · タップで適用</p>
+          <p class="switcher-hint">上下にスクロール · タップで適用</p>
         </div>
 
         <div ref="railRef" class="rail">
@@ -303,19 +303,23 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   letter-spacing: 0.04em;
 }
 
-/* カードカルーセル（中央スナップ） */
+/* 2列のカードグリッド（一覧部分だけを縦スクロール） */
 .rail {
+  position: relative;
   flex: 1;
   min-height: 0;
   width: 100%;
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(2, var(--card-width));
+  grid-auto-rows: max-content;
+  justify-content: center;
+  align-content: start;
   gap: 1.125rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   box-sizing: border-box;
-  padding: 0 calc(50% - var(--card-width) / 2);
+  padding: 6rem 1rem 1rem;
   scrollbar-width: none;
 }
 
@@ -324,8 +328,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 }
 
 .card {
-  scroll-snap-align: center;
-  flex-shrink: 0;
+  width: var(--card-width);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -368,7 +371,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 }
 
 .switcher-dismiss {
-  margin: 0 0 1.375rem;
+  margin: 0.75rem 0 1.375rem;
   padding: 0.375rem 0.875rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;

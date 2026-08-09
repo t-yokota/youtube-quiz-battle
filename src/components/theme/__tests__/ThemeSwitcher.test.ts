@@ -1,7 +1,22 @@
 import { createApp, nextTick } from 'vue'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import ThemeSwitcher from '@/components/theme/ThemeSwitcher.vue'
+
+const themeSwitcherSource = readFileSync(
+  resolve(process.cwd(), 'src/components/theme/ThemeSwitcher.vue'),
+  'utf8',
+)
+
+function cssRule(source: string, selector: string): string {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const rule = source.match(new RegExp(`^\\s*${escapedSelector}\\s*\\{([^}]*)\\}`, 'ms'))?.[1]
+
+  if (!rule) throw new Error(`${selector} is not defined`)
+  return rule
+}
 
 const themeMock = vi.hoisted(() => ({
   setTheme: vi.fn(),
@@ -112,6 +127,23 @@ describe('ThemeSwitcher', () => {
     rail.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
     expect(close).toHaveBeenCalledOnce()
+  })
+
+  it('プレビューを2列グリッドで並べ、一覧だけを縦スクロールする', () => {
+    const rail = cssRule(themeSwitcherSource, '.rail')
+    const dismiss = cssRule(themeSwitcherSource, '.switcher-dismiss')
+
+    expect(rail).toContain('display: grid')
+    expect(rail).toContain('grid-template-columns: repeat(2, var(--card-width))')
+    expect(rail).toContain('grid-auto-rows: max-content')
+    expect(rail).toContain('overflow-x: hidden')
+    expect(rail).toContain('overflow-y: auto')
+    expect(themeSwitcherSource).toContain('上下にスクロール · タップで適用')
+    expect(themeSwitcherSource).toContain(
+      'rail.scrollTop = Math.max(0, currentCard.offsetTop - firstCard.offsetTop)',
+    )
+    expect(themeSwitcherSource).not.toContain('rail.scrollLeft =')
+    expect(dismiss).toContain('margin: 0.75rem 0 1.375rem')
   })
 
   it('カードをviewportと同じ縦横比で縮小表示する', async () => {
