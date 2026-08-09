@@ -600,7 +600,7 @@ onUnmounted(() => {
 }
 
 .start-gate-title {
-  font-size: 1.125rem;
+  font-size: calc(1.125 * var(--ui-font-unit));
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -611,14 +611,14 @@ onUnmounted(() => {
 }
 
 .start-gate-action {
-  font-size: 0.9375rem;
+  font-size: calc(0.9375 * var(--ui-font-unit));
   font-weight: 700;
   color: var(--color-accent);
   animation: gate-blink 1.6s ease-in-out infinite;
 }
 
 .start-gate-note {
-  font-size: 0.75rem;
+  font-size: calc(0.75 * var(--ui-font-unit));
   color: var(--color-text-dim);
 }
 

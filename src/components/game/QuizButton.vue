@@ -145,11 +145,14 @@ const handleButtonCheckToggle = () => {
 <style scoped>
 /* ボタンチェック演出のトグル（フロー配置・右寄せ。ボタンはこの上の残り空間で中央配置される） */
 .check-toggle {
+  --_check-toggle-unit: var(--ui-font-unit);
+  --_check-toggle-knob-size: calc(0.9375 * var(--_check-toggle-unit));
+  --_check-toggle-knob-inset: calc(0.125 * var(--_check-toggle-unit));
   align-self: flex-end;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: calc(0.4 * var(--_check-toggle-unit));
   background: none;
   border: none;
   padding: 0;
@@ -158,7 +161,7 @@ const handleButtonCheckToggle = () => {
 }
 
 .check-toggle-label {
-  font-size: 0.625rem;
+  font-size: calc(0.625 * var(--ui-font-unit));
   font-weight: 700;
   letter-spacing: 0.14em;
   color: var(--color-text-dim);
@@ -166,8 +169,8 @@ const handleButtonCheckToggle = () => {
 
 .check-toggle-track {
   position: relative;
-  width: 2.75rem;
-  height: 1.25rem;
+  width: calc(2.75 * var(--_check-toggle-unit));
+  height: calc(1.25 * var(--_check-toggle-unit));
   border-radius: 62.4375rem;
   background: var(--toggle-track);
   border: 1px solid var(--toggle-track-border);
@@ -188,30 +191,29 @@ const handleButtonCheckToggle = () => {
   bottom: 0;
   display: flex;
   align-items: center;
-  transform: translateY(0.5px);
-  font-size: 0.5rem;
+  font-size: calc(0.5 * var(--ui-font-unit));
   line-height: 1;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--color-text-dim);
   /* OFF: ノブが左なので文言は右側 */
-  right: 0.3125rem;
+  right: calc(0.3125 * var(--_check-toggle-unit));
 }
 
 .check-toggle-track.on .check-toggle-state {
   color: var(--color-accent);
   /* ON: ノブが右なので文言は左側 */
   right: auto;
-  left: 0.3125rem;
+  left: calc(0.3125 * var(--_check-toggle-unit));
 }
 
 .check-toggle-knob {
   position: absolute;
   top: 50%;
-  left: 0.125rem;
+  left: var(--_check-toggle-knob-inset);
   transform: translateY(-50%);
-  width: 0.9375rem;
-  height: 0.9375rem;
+  width: var(--_check-toggle-knob-size);
+  height: var(--_check-toggle-knob-size);
   border-radius: 50%;
   background: var(--toggle-knob);
   transition:
@@ -220,14 +222,14 @@ const handleButtonCheckToggle = () => {
 }
 
 .check-toggle-track.on .check-toggle-knob {
-  left: calc(100% - 0.9375rem - 0.125rem);
+  left: calc(100% - var(--_check-toggle-knob-size) - var(--_check-toggle-knob-inset));
   background: var(--toggle-on-knob);
 }
 
 /* ボタンチェック中の 2 行ラベル */
 .check-label {
   display: block;
-  font-size: 0.9375rem;
+  font-size: calc(0.9375 * var(--ui-font-unit));
   line-height: 1.35;
   letter-spacing: 0.14em;
 }
@@ -337,7 +339,7 @@ const handleButtonCheckToggle = () => {
   border-radius: 50%;
   border: none;
   cursor: pointer;
-  font-size: 1.1875rem;
+  font-size: calc(1.1875 * var(--ui-font-unit));
   font-weight: 800;
   letter-spacing: 0.12em;
   color: var(--quiz-btn-text);

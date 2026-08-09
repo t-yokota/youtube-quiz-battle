@@ -144,13 +144,13 @@ function moveChips(delta: number) {
 .progress {
   font-variant-numeric: tabular-nums;
   font-weight: 800;
-  font-size: 1.0625rem;
+  font-size: calc(1.0625 * var(--ui-font-unit));
   letter-spacing: 0.04em;
   color: var(--color-text-main);
 }
 
 .progress .q-label {
-  font-size: 0.9375rem;
+  font-size: calc(0.9375 * var(--ui-font-unit));
   color: var(--color-accent);
   letter-spacing: 0.2em;
   margin-right: 0.2rem;
@@ -159,22 +159,29 @@ function moveChips(delta: number) {
 
 .progress .total {
   color: var(--color-text-dim);
-  font-size: 0.75rem;
+  font-size: calc(0.75 * var(--ui-font-unit));
   font-weight: 600;
 }
 
 /* チップ列 */
 .score-chips {
+  --score-chip-unit: var(--ui-width-unit);
   display: flex;
   align-items: center;
-  gap: 0.3125rem;
+  gap: calc(0.3125 * var(--score-chip-unit));
+}
+
+/* ResultChipはResult画面でも共有するため、ゲーム中のチップだけ横幅基準にする */
+.score-chips :deep(.chip) {
+  width: var(--score-chip-unit);
+  height: var(--score-chip-unit);
 }
 
 /* 三角ページャ（視覚は 7x9・タッチ領域は擬似要素で 2.75rem 確保） */
 .chips-nav {
   position: relative;
-  width: 0.875rem;
-  height: 1rem;
+  width: calc(0.875 * var(--score-chip-unit));
+  height: var(--score-chip-unit);
   display: grid;
   place-items: center;
   background: none;
@@ -204,8 +211,8 @@ function moveChips(delta: number) {
 }
 
 .chips-nav svg {
-  width: 0.4375rem;
-  height: 0.5625rem;
+  width: calc(0.4375 * var(--score-chip-unit));
+  height: calc(0.5625 * var(--score-chip-unit));
   display: block;
 }
 

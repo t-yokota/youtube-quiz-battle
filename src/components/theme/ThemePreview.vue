@@ -388,7 +388,7 @@ withDefaults(defineProps<Props>(), {
   position: absolute;
   left: 7px;
   top: 50%;
-  transform: translateY(calc(-50% + 0.5px));
+  transform: translateY(-50%);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.08em;

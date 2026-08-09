@@ -25,14 +25,16 @@ describe('AnswerArea styles', () => {
   const gamePanel = readSource('src/components/game/GamePanel.vue')
   const mainStyles = readSource('src/assets/main.css')
 
-  it('残り回数の文字を0.8remで表示する', () => {
-    expect(selectorBlock(answerContent, '.attempts-counter')).toContain('font-size: 0.8rem')
+  it('残り回数の文字を独立文字unitの0.8倍で表示する', () => {
+    expect(selectorBlock(answerContent, '.attempts-counter')).toContain(
+      'font-size: calc(0.8 * var(--ui-font-unit))',
+    )
   })
 
-  it('残り秒数の文字を0.8remで表示する', () => {
+  it('残り秒数の文字を独立文字unitの0.8倍で表示する', () => {
     const rule = selectorBlock(answerContent, '.answer-timer')
 
-    expect(rule).toContain('font-size: 0.8rem')
+    expect(rule).toContain('font-size: calc(0.8 * var(--ui-font-unit))')
     expect(rule).toContain('gap: 0.375rem')
     expect(rule).toContain('transition: --timer-progress 1s linear')
   })

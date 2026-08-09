@@ -33,7 +33,7 @@ const handleReplay = () => {
   background: var(--btn-replay-bg);
   color: var(--btn-replay-text);
   box-shadow: var(--btn-replay-shadow);
-  font-size: 1rem;
+  font-size: var(--ui-font-unit);
   font-weight: 800;
   letter-spacing: 0.08em;
   cursor: pointer;

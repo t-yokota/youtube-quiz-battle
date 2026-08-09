@@ -49,7 +49,7 @@ const handleSettingsClick = () => {
 
 .wordmark {
   font-weight: 800;
-  font-size: 0.8125rem;
+  font-size: calc(0.8125 * var(--ui-font-unit));
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-text-main);

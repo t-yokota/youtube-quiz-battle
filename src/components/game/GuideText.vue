@@ -30,7 +30,7 @@ const showDownCue = computed(() => gameStore.currentState === GameState.READY)
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 0.875rem;
+  font-size: calc(0.875 * var(--ui-font-unit));
   color: var(--color-text-dim);
   line-height: 1.5;
 }
@@ -45,7 +45,7 @@ const showDownCue = computed(() => gameStore.currentState === GameState.READY)
   left: 50%;
   top: calc(50% + 1rem);
   transform: translateX(-50%);
-  font-size: 0.875rem;
+  font-size: calc(0.875 * var(--ui-font-unit));
   color: var(--color-accent);
   animation: bob 1.2s ease-in-out infinite;
 }

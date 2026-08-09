@@ -100,7 +100,7 @@ function yoursText(result: QuestionResult): string {
   border-radius: var(--radius-md);
   box-shadow: var(--row-shadow);
   padding: 0.5625rem 0.75rem;
-  font-size: 0.75rem;
+  font-size: calc(0.75 * var(--ui-font-unit));
   color: var(--color-text-main);
 }
 
@@ -122,7 +122,7 @@ function yoursText(result: QuestionResult): string {
 
 .result-row .yours {
   color: var(--color-text-dim);
-  font-size: 0.6875rem;
+  font-size: calc(0.6875 * var(--ui-font-unit));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -131,7 +131,7 @@ function yoursText(result: QuestionResult): string {
 .result-row .qno {
   margin-left: auto;
   color: var(--color-text-dim);
-  font-size: 0.625rem;
+  font-size: calc(0.625 * var(--ui-font-unit));
   flex-shrink: 0;
 }
 </style>

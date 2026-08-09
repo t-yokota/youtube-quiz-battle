@@ -157,14 +157,14 @@ onMounted(async () => {
 
 .placeholder-text {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: calc(1.25 * var(--ui-font-unit));
   font-weight: 600;
   color: var(--color-text-dim);
 }
 
 .placeholder-subtext {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: calc(0.875 * var(--ui-font-unit));
   color: var(--color-text-dim);
 }
 
@@ -176,11 +176,11 @@ onMounted(async () => {
   }
 
   .placeholder-text {
-    font-size: 1.125rem;
+    font-size: calc(1.125 * var(--ui-font-unit));
   }
 
   .placeholder-subtext {
-    font-size: 0.8125rem;
+    font-size: calc(0.8125 * var(--ui-font-unit));
   }
 }
 
@@ -192,11 +192,11 @@ onMounted(async () => {
   }
 
   .placeholder-text {
-    font-size: 1rem;
+    font-size: var(--ui-font-unit);
   }
 
   .placeholder-subtext {
-    font-size: 0.75rem;
+    font-size: calc(0.75 * var(--ui-font-unit));
   }
 
   .placeholder-content {

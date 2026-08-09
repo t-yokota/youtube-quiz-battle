@@ -50,8 +50,13 @@ html {
      大きい文字が Display 寄りの字形に変わり、従来の Inter Text と見え方が
      ずれるのを防ぐ */
   font-optical-sizing: none;
-  /* wireframe (315×700) に対する比率でUI全体をスケール。縦比率優先・幅不足時は幅基準 */
-  font-size: clamp(13px, calc(min(100dvh / 700, 100vw / 315) * 16), 26px);
+  /* wireframe (315×700) に対するレイアウト縮尺。縦比率優先・幅不足時は幅基準 */
+  --ui-layout-unit: clamp(13px, calc(min(100dvh / 700, 100vw / 315) * 16), 26px);
+  /* 文字も短辺に追従させつつ、16px下限で設計基準の可読性を保つ */
+  --ui-font-unit: clamp(16px, calc(min(100dvh / 700, 100vw / 315) * 16), 26px);
+  /* 縦幅に左右されたくない要素は横幅基準のサイズを維持する */
+  --ui-width-unit: clamp(13px, calc(100vw / 315 * 16), 26px);
+  font-size: var(--ui-layout-unit);
 }
 
 html,

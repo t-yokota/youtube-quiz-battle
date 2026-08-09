@@ -154,7 +154,7 @@ watch(
   height: 1.625rem;
   /* 両端の残り回数・タイマーを枠から数 px 内側に寄せる */
   padding: 0 0.25rem;
-  font-size: 0.75rem;
+  font-size: calc(0.75 * var(--ui-font-unit));
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
@@ -162,7 +162,7 @@ watch(
 .attempts-counter {
   color: var(--color-info);
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: calc(0.8 * var(--ui-font-unit));
 }
 
 .attempts-counter .dim {
@@ -179,7 +179,7 @@ watch(
   width: calc(1.375rem + 0.375rem + var(--timer-label-width, 3ch));
   margin-left: auto;
   flex-shrink: 0;
-  font-size: 0.8rem;
+  font-size: calc(0.8 * var(--ui-font-unit));
   font-weight: 800;
   color: var(--color-text-main);
   /* 1秒刻みの進捗更新を線形補間して連続的に見せる（@property 登録は main.css） */
@@ -243,7 +243,7 @@ watch(
   left: 50%;
   top: 0.5rem;
   transform: translateX(-50%);
-  font-size: 0.875rem;
+  font-size: calc(0.875 * var(--ui-font-unit));
   font-weight: 800;
   letter-spacing: 0.08em;
   padding: 0.1875rem 0.875rem;
@@ -282,7 +282,7 @@ watch(
   min-width: 0;
   height: max(44px, 2.75rem);
   padding: 0 0.875rem;
-  font-size: max(16px, 1rem); /* iOSズーム防止（実 px 16 を下回らない） */
+  font-size: max(16px, var(--ui-font-unit)); /* iOSズーム防止（実 px 16 を下回らない） */
   color: var(--color-text-main);
   background: var(--input-bg);
   border: 2px solid var(--input-border-color);
@@ -311,7 +311,7 @@ watch(
   height: max(44px, 2.75rem);
   min-width: max(44px, 2.75rem);
   padding: 0 1rem;
-  font-size: 0.9375rem;
+  font-size: calc(0.9375 * var(--ui-font-unit));
   font-weight: 800;
   color: var(--btn-primary-text);
   background: var(--btn-primary-bg);
