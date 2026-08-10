@@ -417,12 +417,12 @@ const handleOverlayClick = (event: MouseEvent) => {
   --settings-font-max: 15px;
   --settings-layout-unit: clamp(
     var(--settings-layout-min),
-    calc(min(100dvh / 700, 100vw / 315) * 16),
+    calc(min(var(--ui-viewport-height) / 700, 100vw / 315) * 16),
     var(--settings-layout-max)
   );
   --settings-font-unit: clamp(
     var(--settings-font-min),
-    calc(min(100dvh / 700, 100vw / 315) * 16),
+    calc(min(var(--ui-viewport-height) / 700, 100vw / 315) * 16),
     var(--settings-font-max)
   );
   --settings-control-height: max(40px, calc(2.75 * var(--settings-layout-unit)));
@@ -448,7 +448,7 @@ const handleOverlayClick = (event: MouseEvent) => {
   border-radius: var(--radius-lg);
   max-width: calc(27.5 * var(--settings-layout-unit));
   width: 100%;
-  max-height: calc(100dvh - 4 * var(--settings-layout-unit));
+  max-height: calc(var(--ui-viewport-height) - 4 * var(--settings-layout-unit));
   overflow: hidden;
   display: flex;
   flex-direction: column;

@@ -15,6 +15,10 @@ function selectorBlock(source: string, selector: string): string {
   return block
 }
 
+function normalizeCssValue(value: string | undefined): string | undefined {
+  return value?.replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')')
+}
+
 describe('実画面のレスポンシブスケール', () => {
   const mainStyles = readSource('src/assets/main.css')
   const app = readSource('src/App.vue')
@@ -43,14 +47,16 @@ describe('実画面のレスポンシブスケール', () => {
     const fontUnit = htmlRule.match(/--ui-font-unit:\s*([^;]+);/)?.[1]
     const widthUnit = htmlRule.match(/--ui-width-unit:\s*([^;]+);/)?.[1]
 
-    expect(layoutUnit).toBe(
-      'clamp(13px, calc(min(100dvh / 700, 100vw / 315) * 16), 26px)',
+    expect(htmlRule).toContain('--ui-viewport-height: 100dvh')
+    expect(normalizeCssValue(layoutUnit)).toBe(
+      'clamp(13px, calc(min(var(--ui-viewport-height) / 700, 100vw / 315) * 16), 26px)',
     )
-    expect(fontUnit).toBe(
-      'clamp(16px, calc(min(100dvh / 700, 100vw / 315) * 16), 26px)',
+    expect(normalizeCssValue(fontUnit)).toBe(
+      'clamp(16px, calc(min(var(--ui-viewport-height) / 700, 100vw / 315) * 16), 26px)',
     )
     expect(widthUnit).toBe('clamp(13px, calc(100vw / 315 * 16), 26px)')
     expect(htmlRule).toContain('font-size: var(--ui-layout-unit)')
+    expect(selectorBlock(app, '.app-container')).toContain('height: var(--ui-viewport-height)')
   })
 
   it('WebKitがブラウザUI色を導出できるようルート背景へtheme-colorを適用する', () => {
