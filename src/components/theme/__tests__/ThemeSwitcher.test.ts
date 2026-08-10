@@ -44,8 +44,6 @@ describe('ThemeSwitcher', () => {
   let overlayTop: number
   let overlayWidth: number
   let overlayHeight: number
-  let safeAreaTop: number
-  let viewportOffsetTop: number
   let viewportWidth: number
   let viewportHeight: number
   let visualViewport: EventTarget
@@ -71,12 +69,9 @@ describe('ThemeSwitcher', () => {
     overlayTop = 0
     overlayWidth = 390
     overlayHeight = 844
-    safeAreaTop = 0
-    viewportOffsetTop = 0
     viewportWidth = 390
     viewportHeight = 844
     visualViewport = new EventTarget()
-    Object.defineProperty(visualViewport, 'offsetTop', { get: () => viewportOffsetTop })
     Object.defineProperty(visualViewport, 'width', { get: () => viewportWidth })
     Object.defineProperty(visualViewport, 'height', { get: () => viewportHeight })
     vi.stubGlobal('visualViewport', visualViewport)
@@ -94,8 +89,6 @@ describe('ThemeSwitcher', () => {
       if (this.classList.contains('switcher-overlay')) {
         return rect(overlayTop, overlayWidth, overlayHeight, overlayLeft)
       }
-      if (this.classList.contains('switcher-heading')) return rect(0, 240, 32)
-      if (this.classList.contains('safe-area-probe')) return rect(0, 0, safeAreaTop)
       return rect(0, 0, 0)
     })
     close = vi.fn()
@@ -131,6 +124,7 @@ describe('ThemeSwitcher', () => {
 
   it('プレビューを2列グリッドで並べ、一覧だけを縦スクロールする', () => {
     const rail = cssRule(themeSwitcherSource, '.rail')
+    const cardShell = cssRule(themeSwitcherSource, '.card-shell')
     const dismiss = cssRule(themeSwitcherSource, '.switcher-dismiss')
 
     expect(rail).toContain('display: grid')
@@ -143,7 +137,33 @@ describe('ThemeSwitcher', () => {
       'rail.scrollTop = Math.max(0, currentCard.offsetTop - firstCard.offsetTop)',
     )
     expect(themeSwitcherSource).not.toContain('rail.scrollLeft =')
-    expect(dismiss).toContain('margin: 0.75rem 0 1.375rem')
+    expect(cardShell).not.toContain('box-shadow')
+    expect(dismiss).toContain('margin: 1.25rem 0')
+  })
+
+  it('可変高の見出し領域で文字を中央配置し、その下から一覧を表示する', () => {
+    const overlay = cssRule(themeSwitcherSource, '.switcher-overlay')
+    const heading = cssRule(themeSwitcherSource, '.switcher-heading')
+    const title = cssRule(themeSwitcherSource, '.switcher-title')
+    const rail = cssRule(themeSwitcherSource, '.rail')
+    const headingElement = document.querySelector<HTMLElement>('.switcher-heading')
+    const railElement = document.querySelector<HTMLElement>('.rail')
+
+    expect(overlay).toContain('--switcher-heading-height: clamp(88px, 6rem, 110px)')
+    expect(overlay).toContain('--switcher-grid-offset: clamp(4px, 0.25rem, 6px)')
+    expect(overlay).toContain('padding-top: env(safe-area-inset-top, 0px)')
+    expect(heading).toContain('flex: 0 0 var(--switcher-heading-height)')
+    expect(heading).toContain('height: var(--switcher-heading-height)')
+    expect(heading).toContain('width: 100%')
+    expect(heading).toContain('display: flex')
+    expect(heading).toContain('flex-direction: column')
+    expect(heading).toContain('justify-content: center')
+    expect(heading).not.toContain('position: absolute')
+    expect(title).toContain('margin: var(--switcher-grid-offset) 0 0')
+    expect(rail).toContain('padding: var(--switcher-grid-offset) 1rem 1rem')
+    expect(headingElement?.nextElementSibling).toBe(railElement)
+    expect(themeSwitcherSource).not.toContain('.switcher-heading::before')
+    expect(themeSwitcherSource).not.toContain('calculateHeadingPlacement')
   })
 
   it('カードをviewportと同じ縦横比で縮小表示する', async () => {
@@ -229,58 +249,5 @@ describe('ThemeSwitcher', () => {
 
     expect(themeMock.setTheme).toHaveBeenCalledWith('default')
     expect(close).toHaveBeenCalledOnce()
-  })
-
-  it('見出しの中心を画面上端とカード上端の中点に配置する', () => {
-    const heading = document.querySelector<HTMLElement>('.switcher-heading')
-
-    expect(heading?.style.top).toBe('64px')
-    expect(heading?.style.visibility).toBe('visible')
-  })
-
-  it('viewport変更時に再計算し、小さい画面ではカードとの間隔を優先する', async () => {
-    cardTop = 52
-
-    window.dispatchEvent(new Event('resize'))
-    await nextTick()
-    await nextTick()
-
-    const heading = document.querySelector<HTMLElement>('.switcher-heading')
-    expect(heading?.style.top).toBe('8px')
-    expect(8 + 32 + 12).toBeLessThanOrEqual(cardTop)
-  })
-
-  it('見出しを置く空間がない場合はカードへ重ねず非表示にする', async () => {
-    cardTop = 30
-
-    window.dispatchEvent(new Event('resize'))
-    await nextTick()
-    await nextTick()
-
-    const heading = document.querySelector<HTMLElement>('.switcher-heading')
-    expect(heading?.style.visibility).toBe('hidden')
-  })
-
-  it('safe area内へ入らない範囲で中点位置を補正する', async () => {
-    safeAreaTop = 70
-
-    window.dispatchEvent(new Event('resize'))
-    await nextTick()
-    await nextTick()
-
-    const heading = document.querySelector<HTMLElement>('.switcher-heading')
-    expect(heading?.style.top).toBe('78px')
-  })
-
-  it('visual viewportの移動とリサイズでも位置を再計算する', async () => {
-    viewportOffsetTop = 20
-    cardTop = 180
-
-    visualViewport.dispatchEvent(new Event('resize'))
-    await nextTick()
-    await nextTick()
-
-    const heading = document.querySelector<HTMLElement>('.switcher-heading')
-    expect(heading?.style.top).toBe('84px')
   })
 })

@@ -6,7 +6,7 @@
 // - タップでカード位置から全画面へズームしながらテーマを適用
 import { nextTick, onUnmounted, ref, watch } from 'vue'
 import { useTheme, type ThemeInfo } from '@/composables/useTheme'
-import { calculateCardGeometry, calculateHeadingPlacement } from './themeSwitcherLayout'
+import { calculateCardGeometry } from './themeSwitcherLayout'
 import ThemePreview from './ThemePreview.vue'
 
 const props = defineProps<{ isOpen: boolean }>()
@@ -19,13 +19,7 @@ const { themes, currentThemeId, setTheme } = useTheme()
 
 const overlayRef = ref<HTMLElement | null>(null)
 const railRef = ref<HTMLElement | null>(null)
-const headingRef = ref<HTMLElement | null>(null)
-const safeAreaProbeRef = ref<HTMLElement | null>(null)
-const headingTop = ref(0)
-const isHeadingVisible = ref(false)
 
-const HEADING_CARD_GAP = 12
-const HEADING_SAFE_PADDING = 8
 const CARD_BORDER_RADIUS = 10
 const cardWidth = ref(148)
 const cardHeight = ref(329)
@@ -59,38 +53,8 @@ function updateCardGeometry() {
   cardPreviewScale.value = geometry.previewScale
 }
 
-function updateHeadingPosition() {
-  if (!props.isOpen) return
-
-  const overlay = overlayRef.value
-  const heading = headingRef.value
-  const safeAreaProbe = safeAreaProbeRef.value
-  const rail = railRef.value
-  const card = rail?.querySelector<HTMLElement>('.card-shell')
-  if (!overlay || !heading || !safeAreaProbe || !rail || !card) return
-
-  const overlayTop = overlay.getBoundingClientRect().top
-  // 縦スクロールしても見出し位置が動かないよう、先頭行の未スクロール位置を使う。
-  const cardTop = card.getBoundingClientRect().top - overlayTop + rail.scrollTop
-  const headingHeight = heading.getBoundingClientRect().height
-  const safeAreaTop = safeAreaProbe.getBoundingClientRect().height
-  const viewportTop = Math.max(0, (window.visualViewport?.offsetTop ?? 0) - overlayTop)
-  const placement = calculateHeadingPlacement({
-    viewportTop,
-    cardTop,
-    headingHeight,
-    safeAreaTop,
-    viewportPadding: HEADING_SAFE_PADDING,
-    cardGap: HEADING_CARD_GAP,
-  })
-
-  headingTop.value = placement.top
-  isHeadingVisible.value = placement.visible
-}
-
 function handleViewportResize() {
   updateCardGeometry()
-  void nextTick(updateHeadingPosition)
 }
 
 function addViewportListeners() {
@@ -113,7 +77,6 @@ function removeViewportListeners() {
 watch(
   () => props.isOpen,
   async (open) => {
-    isHeadingVisible.value = false
     if (!open) {
       removeViewportListeners()
       return
@@ -130,7 +93,6 @@ watch(
     if (rail && firstCard && currentCard) {
       rail.scrollTop = Math.max(0, currentCard.offsetTop - firstCard.offsetTop)
     }
-    updateHeadingPosition()
     addViewportListeners()
   },
   { immediate: true },
@@ -194,12 +156,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
         :style="{ '--card-width': cardWidth + 'px' }"
         @click="emit('close')"
       >
-        <span ref="safeAreaProbeRef" class="safe-area-probe" aria-hidden="true"></span>
-        <div
-          ref="headingRef"
-          class="switcher-heading"
-          :style="{ top: headingTop + 'px', visibility: isHeadingVisible ? 'visible' : 'hidden' }"
-        >
+        <div class="switcher-heading">
           <p class="switcher-title">UIをえらぶ</p>
           <p class="switcher-hint">上下にスクロール · タップで適用</p>
         </div>
@@ -255,6 +212,8 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 
 <style scoped>
 .switcher-overlay {
+  --switcher-heading-height: clamp(88px, 6rem, 110px);
+  --switcher-grid-offset: clamp(4px, 0.25rem, 6px);
   position: fixed;
   inset: 0;
   z-index: 2500;
@@ -264,32 +223,23 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  /* 絶対配置へ移した見出しの旧フロー領域を保ち、カードの縦位置を維持する */
-  padding-top: 3.5625rem;
-}
-
-.safe-area-probe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: env(safe-area-inset-top, 0px);
-  visibility: hidden;
-  pointer-events: none;
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .switcher-heading {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1;
+  flex: 0 0 var(--switcher-heading-height);
+  height: var(--switcher-heading-height);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   text-align: center;
   pointer-events: none;
 }
 
 .switcher-title {
-  margin: 0;
+  /* プレビュー上端が見出し領域よりoffset分下がるため、文字群も半分だけ下へ寄る */
+  margin: var(--switcher-grid-offset) 0 0;
   color: rgba(255, 255, 255, 0.92);
   font-size: max(15px, calc(0.8125 * var(--ui-font-unit)));
   font-weight: 800;
@@ -319,7 +269,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   overflow-y: auto;
   overscroll-behavior-y: contain;
   box-sizing: border-box;
-  padding: 6rem 1rem 1rem;
+  padding: var(--switcher-grid-offset) 1rem 1rem;
   scrollbar-width: none;
 }
 
@@ -344,7 +294,6 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   display: block;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 0.875rem 2.125rem rgba(0, 0, 0, 0.55);
   outline: 2px solid rgba(255, 255, 255, 0.15);
   background: #000;
 }
@@ -371,7 +320,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
 }
 
 .switcher-dismiss {
-  margin: 0.75rem 0 1.375rem;
+  margin: 1.25rem 0;
   padding: 0.375rem 0.875rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
