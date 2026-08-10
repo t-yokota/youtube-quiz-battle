@@ -576,7 +576,7 @@ onUnmounted(() => {
   flex-direction: column;
   width: 100%;
   height: 100dvh;
-  /* ノッチ・ホームバー対応（viewport-fit=cover 前提） */
+  /* standalone表示などでsafe-areaが提供される場合に操作領域を保護する */
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);

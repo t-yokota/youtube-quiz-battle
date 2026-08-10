@@ -41,4 +41,8 @@ describe('PWA configuration', () => {
       '<link rel="apple-touch-icon" href="/youtube-quiz-battle/apple-touch-icon.png" />',
     )
   })
+
+  it('Androidのナビゲーション領域へ初回表示を広げない', () => {
+    expect(indexHtml).not.toContain('viewport-fit=cover')
+  })
 })
