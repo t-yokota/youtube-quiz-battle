@@ -3,6 +3,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import VideoPlayer from './components/common/VideoPlayer.vue'
+import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue'
 import GameInfo from './components/game/GameInfo.vue'
 import GamePanel from './components/game/GamePanel.vue'
 import QuizButton from './components/game/QuizButton.vue'
@@ -547,6 +548,8 @@ onUnmounted(() => {
       :show-close="false"
       @action="handleErrorAction"
     />
+
+    <PwaUpdatePrompt />
 
     <!-- 開始ゲート: 音声許諾 + 動画ウォームアップをユーザー操作内で行う（LOADING 中から表示） -->
     <button

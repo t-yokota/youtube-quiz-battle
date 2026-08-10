@@ -1,0 +1,44 @@
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+const root = process.cwd()
+const viteConfig = readFileSync(resolve(root, 'vite.config.ts'), 'utf8')
+const appSource = readFileSync(resolve(root, 'src/App.vue'), 'utf8')
+const indexHtml = readFileSync(resolve(root, 'index.html'), 'utf8')
+
+describe('PWA configuration', () => {
+  it('GitHub Pages配下へprompt方式のManifestとService Workerを生成する', () => {
+    expect(viteConfig).toContain("import { VitePWA } from 'vite-plugin-pwa'")
+    expect(viteConfig).toContain("const BASE_PATH = '/youtube-quiz-battle/'")
+    expect(viteConfig).toContain("registerType: 'prompt'")
+    expect(viteConfig).toContain('start_url: BASE_PATH')
+    expect(viteConfig).toContain('scope: BASE_PATH')
+    expect(viteConfig).toContain("display: 'standalone'")
+    expect(viteConfig).toContain("orientation: 'portrait'")
+    expect(viteConfig).toContain("theme_color: '#14171a'")
+    expect(viteConfig).toContain("background_color: '#14171a'")
+    expect(viteConfig).toContain("purpose: 'any maskable'")
+    expect(viteConfig).toContain('cleanupOutdatedCaches: true')
+  })
+
+  it('アプリから更新通知UIを常時マウントする', () => {
+    expect(appSource).toContain(
+      "import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue'",
+    )
+    expect(appSource).toContain('<PwaUpdatePrompt />')
+  })
+
+  it('iOS向けアイコンとPWA派生アイコンを用意する', () => {
+    const assets = [
+      'public/pwa-192x192.png',
+      'public/pwa-512x512.png',
+      'public/pwa-maskable-512x512.png',
+      'public/apple-touch-icon.png',
+    ]
+
+    for (const asset of assets) expect(existsSync(resolve(root, asset)), asset).toBe(true)
+    expect(indexHtml).toContain(
+      '<link rel="apple-touch-icon" href="/youtube-quiz-battle/apple-touch-icon.png" />',
+    )
+  })
+})
