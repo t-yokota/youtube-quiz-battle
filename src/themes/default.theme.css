@@ -47,9 +47,7 @@ html,
   --surface-raised: #272d31;
   --header-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
   --overlay-bg: rgba(8, 10, 12, 0.72);
-  --gate-bg:
-    radial-gradient(80% 55% at 50% 60%, rgba(255, 107, 79, 0.08) 0%, transparent 65%),
-    linear-gradient(180deg, #14171a 0%, #171b1e 60%, #101315 100%);
+  --gate-bg: linear-gradient(180deg, #14171a 0%, #171b1e 60%, #101315 100%);
   --result-bg:
     radial-gradient(120% 50% at 50% 0%, rgba(255, 107, 79, 0.1) 0%, transparent 60%),
     linear-gradient(180deg, #171b1e 0%, #14171a 100%);

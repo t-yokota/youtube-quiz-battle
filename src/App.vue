@@ -33,6 +33,12 @@ import { shouldHandleSpaceKey } from './utils/keyboardHandler'
 import { logger } from './utils/logger'
 import { createUuid } from './utils/uuid'
 
+type StartGateConceptStyle = 'accent-only' | 'white-fill'
+
+// 白下地付きと比較する場合は 'white-fill' へ切り替える
+// const START_GATE_CONCEPT_STYLE: StartGateConceptStyle = 'accent-only'
+const START_GATE_CONCEPT_STYLE: StartGateConceptStyle = 'white-fill'
+
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
 
@@ -562,7 +568,12 @@ onUnmounted(() => {
       <span class="start-gate-title">YOUTUBE <em>QUIZ BATTLE</em></span>
       <template v-if="gameStore.currentState === GameState.READY">
         <span class="start-gate-action">タップしてはじめる</span>
-        <span class="start-gate-note">効果音と動画を有効にします</span>
+        <span
+          class="start-gate-concept"
+          :class="`start-gate-concept--${START_GATE_CONCEPT_STYLE}`"
+          aria-hidden="true"
+        ></span>
+        <span class="start-gate-note">クイズ動画を視聴しながら<br>早押しで勝負に参加することができます</span>
       </template>
       <span v-else class="start-gate-note">読み込み中...</span>
     </button>
@@ -624,6 +635,40 @@ onUnmounted(() => {
 .start-gate-note {
   font-size: calc(0.75 * var(--ui-font-unit));
   color: var(--color-text-dim);
+}
+
+.start-gate-concept {
+  position: relative;
+  display: block;
+  width: min(50%, calc(var(--ui-viewport-height) * 0.45));
+  aspect-ratio: 1;
+  flex: none;
+}
+
+.start-gate-concept::before {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background-color: #fff;
+  -webkit-mask: url('/quiz-battle-concept-white-fill.svg') center / contain no-repeat;
+  mask: url('/quiz-battle-concept-white-fill.svg') center / contain no-repeat;
+}
+
+.start-gate-concept::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background-color: var(--color-accent);
+  -webkit-mask: url('/quiz-battle-concept-mc.svg') center / contain no-repeat;
+  mask: url('/quiz-battle-concept-mc.svg') center / contain no-repeat;
+}
+
+.start-gate-concept--accent-only::before {
+  display: none;
+}
+
+.start-gate-concept--white-fill::before {
+  display: block;
 }
 
 @keyframes gate-blink {

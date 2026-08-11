@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -86,6 +86,57 @@ describe('実画面のレスポンシブスケール', () => {
     )
     expect(selectorBlock(quizButton, '.quiz-button')).toContain(
       'font-size: calc(1.1875 * var(--ui-font-unit))',
+    )
+  })
+
+  it('開始ゲートのコンセプト画像をアクセント単色と白下地付きで切り替えられる', () => {
+    const concept = selectorBlock(app, '.start-gate-concept')
+    const accentOnly = selectorBlock(app, '.start-gate-concept--accent-only::before')
+    const whiteFill = selectorBlock(app, '.start-gate-concept--white-fill::before')
+    const underlay = selectorBlock(app, '.start-gate-concept::before')
+    const mainArtwork = selectorBlock(app, '.start-gate-concept::after')
+    const conceptRules = [concept, accentOnly, whiteFill, underlay, mainArtwork].join('\n')
+    const accentSvg = readSource('public/quiz-battle-concept-mc.svg')
+    const underlaySvg = readSource('public/quiz-battle-concept-white-fill.svg')
+    const pathCount = (svg: string) => [...svg.matchAll(/<path\b/g)].length
+    const viewBox = (svg: string) => svg.match(/\bviewBox="([^"]+)"/)?.[1]
+
+    expect(existsSync(resolve(process.cwd(), 'public/quiz-battle-concept-mc.svg'))).toBe(true)
+    expect(
+      existsSync(resolve(process.cwd(), 'public/quiz-battle-concept-white-fill.svg')),
+    ).toBe(true)
+    expect(pathCount(accentSvg)).toBe(19)
+    expect(pathCount(underlaySvg)).toBe(19)
+    expect(viewBox(accentSvg)).toBe('0 0 5225 5225')
+    expect(viewBox(underlaySvg)).toBe(viewBox(accentSvg))
+    expect(app).toContain(
+      "type StartGateConceptStyle = 'accent-only' | 'white-fill'",
+    )
+    expect(app).toMatch(
+      /const START_GATE_CONCEPT_STYLE: StartGateConceptStyle = '(?:accent-only|white-fill)'/,
+    )
+    expect(app).toMatch(
+      /class="start-gate-concept"\s+:class="`start-gate-concept--\$\{START_GATE_CONCEPT_STYLE\}`"\s+aria-hidden="true"/,
+    )
+    expect(concept).toContain('width: min(50%, calc(var(--ui-viewport-height) * 0.45))')
+    expect(accentOnly).toContain('display: none')
+    expect(whiteFill).toContain('display: block')
+    expect(underlay).toContain('background-color: #fff')
+    expect(conceptRules).not.toContain('filter:')
+    expect(conceptRules).not.toContain('drop-shadow(')
+    expect(conceptRules).not.toContain('--_concept-')
+    expect(underlay).toContain(
+      "-webkit-mask: url('/quiz-battle-concept-white-fill.svg') center / contain no-repeat",
+    )
+    expect(underlay).toContain(
+      "mask: url('/quiz-battle-concept-white-fill.svg') center / contain no-repeat",
+    )
+    expect(mainArtwork).toContain('background-color: var(--color-accent)')
+    expect(mainArtwork).toContain(
+      "-webkit-mask: url('/quiz-battle-concept-mc.svg') center / contain no-repeat",
+    )
+    expect(mainArtwork).toContain(
+      "mask: url('/quiz-battle-concept-mc.svg') center / contain no-repeat",
     )
   })
 

@@ -60,6 +60,12 @@ describe('default theme', () => {
     })
   })
 
+  it('開始ゲート背景には赤いスポットライトを重ねない', () => {
+    expect(rootTokens.get('--gate-bg')).toBe(
+      'linear-gradient(180deg, #14171a 0%, #171b1e 60%, #101315 100%)',
+    )
+  })
+
   it('戦績チップを芥子と朱の配色にする', () => {
     expectOverrides(
       `html[data-theme='default'] :is(.score-chips, .result-list), ${PREVIEW_THEME_SCOPE} .p-chips`,
