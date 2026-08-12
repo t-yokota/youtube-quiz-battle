@@ -14,13 +14,7 @@ html,
   --theme-color: #14171a;
 
   /* --- フォント --- */
-  --font-body:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  --font-body: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* --- テキスト・罫線 --- */
   --color-text-main: #eceff1;
@@ -40,17 +34,13 @@ html,
   --color-urgent: #e6402e;
 
   /* --- サーフェス（グラファイト基調のグレー階調） --- */
-  --surface-app:
-    radial-gradient(140% 60% at 50% 108%, rgba(255, 107, 79, 0.08) 0%, transparent 55%),
-    linear-gradient(180deg, #14171a 0%, #171b1e 60%, #101315 100%);
+  --surface-app: #171b1e;
   --surface-panel: #1c2124;
   --surface-raised: #272d31;
-  --header-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+  --header-bg: none;
   --overlay-bg: rgba(8, 10, 12, 0.72);
-  --gate-bg: linear-gradient(180deg, #14171a 0%, #171b1e 60%, #101315 100%);
-  --result-bg:
-    radial-gradient(120% 50% at 50% 0%, rgba(255, 107, 79, 0.1) 0%, transparent 60%),
-    linear-gradient(180deg, #171b1e 0%, #14171a 100%);
+  --gate-bg: #171b1e;
+  --result-bg: #171b1e;
 
   /* --- パネル・モーダル --- */
   --panel-border: 1px solid var(--color-line);
@@ -83,27 +73,19 @@ html,
     radial-gradient(circle, #e6402e 55%, #c5301f 80%, #9c2317 100%);
   --quiz-btn-text: #ffffff;
   --quiz-btn-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --quiz-btn-shadow:
-    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
-    0 0.5rem 1.375rem rgba(0, 0, 0, 0.55);
+  --quiz-btn-shadow: 0 0.5rem 1.375rem rgba(0, 0, 0, 0.55);
   --quiz-btn-shadow-pressed:
-    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
-    0 2px 0.375rem rgba(0, 0, 0, 0.4),
-    inset 0 0 1.375rem rgba(0, 0, 0, 0.45);
+    0 2px 0.375rem rgba(0, 0, 0, 0.4), inset 0 0 0.875rem rgba(0, 0, 0, 0.45);
   --quiz-btn-shadow-released:
-    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
-    0 0.1875rem 0.625rem rgba(0, 0, 0, 0.45),
-    inset 0 0 0.875rem rgba(0, 0, 0, 0.3),
+    0 0.1875rem 0.625rem rgba(0, 0, 0, 0.45), inset 0 0 0.5rem rgba(0, 0, 0, 0.3),
     0 0 1.75rem 0.625rem rgba(230, 64, 46, 0.55);
-  --quiz-btn-shadow-disabled:
-    0 0 0 0.3125rem rgba(0, 0, 0, 0.35),
-    inset 0 0 1.375rem rgba(0, 0, 0, 0.5);
-  --quiz-btn-disabled-filter: grayscale(0.85) brightness(0.55);
-  --pedestal-bg: radial-gradient(circle, #181c1f 58%, #272d31 78%, #14171a 100%);
+  --quiz-btn-shadow-disabled: inset 0 0 0.875rem rgba(0, 0, 0, 0.45);
+  --quiz-btn-disabled-filter: grayscale(0.5) brightness(0.55);
+  --pedestal-bg: radial-gradient(circle, #181c1f 50%, #272d31 70%, #1c2124 100%);
   --pedestal-border: 1px solid var(--color-line);
   --pedestal-shadow: none;
   --pulse-color: var(--color-accent);
-  --spotlight-glow: radial-gradient(60% 55% at 50% 58%, rgba(255, 107, 79, 0.13) 0%, transparent 70%);
+  --spotlight-glow: none;
 
   /* --- 戦績チップ --- */
   --chip-bg: var(--surface-raised);
@@ -134,13 +116,23 @@ html,
   --flash-wrong-glow: 0 0 1.125rem rgba(139, 124, 255, 0.3);
 }
 
+/* --- 早押しボタン（実画面・テーマプレビュー） --- */
+html[data-theme='default'] .quiz-button {
+  border: 1px solid #9c2317;
+}
+
+:is(.card-shell, .zoom-layer)[data-theme='default'] .p-quiz-button {
+  border: 1px solid #9c2317;
+}
+
 /* --- 開始操作・Result正解率 --- */
 html[data-theme='default'] :is(.start-gate-action, .final-rate .pct) {
   --color-accent: #e8b032;
 }
 
 /* --- 戦績チップ（ゲーム・Result画面・テーマプレビュー） --- */
-html[data-theme='default'] :is(.score-chips, .result-list), :is(.card-shell, .zoom-layer)[data-theme='default'] .p-chips {
+html[data-theme='default'] :is(.score-chips, .result-list),
+:is(.card-shell, .zoom-layer)[data-theme='default'] .p-chips {
   --color-accent: #e8b032;
   --color-answer-wrong: #ef5340;
   --chip-wrong-bg: rgba(239, 83, 64, 0.14);
@@ -149,7 +141,8 @@ html[data-theme='default'] :is(.score-chips, .result-list), :is(.card-shell, .zo
 }
 
 /* --- 解答エリア（実画面・テーマプレビュー） --- */
-html[data-theme='default'] .answer-area, :is(.card-shell, .zoom-layer)[data-theme='default'] .p-panel {
+html[data-theme='default'] .answer-area,
+:is(.card-shell, .zoom-layer)[data-theme='default'] .p-panel {
   --color-accent: #e8b032;
   --color-answer-wrong: #ef5340;
   --color-urgent: #ef5340;
@@ -161,7 +154,8 @@ html[data-theme='default'] .answer-area, :is(.card-shell, .zoom-layer)[data-them
 }
 
 /* --- ボタンチェックトグル（実画面・テーマプレビュー） --- */
-html[data-theme='default'] .check-toggle, :is(.card-shell, .zoom-layer)[data-theme='default'] .p-toggle-row {
+html[data-theme='default'] .check-toggle,
+:is(.card-shell, .zoom-layer)[data-theme='default'] .p-toggle-row {
   --color-accent: #e8b032;
   --toggle-on-track: rgba(232, 176, 50, 0.22);
   --toggle-on-border: #e8b032;

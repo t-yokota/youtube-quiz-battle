@@ -60,15 +60,50 @@ describe('default theme', () => {
     })
   })
 
-  it('開始ゲート背景には赤いスポットライトを重ねない', () => {
-    expect(rootTokens.get('--gate-bg')).toBe(
-      'linear-gradient(180deg, #14171a 0%, #171b1e 60%, #101315 100%)',
+  it('画面背景を単色にしてスポットライトを付けない', () => {
+    expect(rootTokens.get('--surface-app')).toBe('#171b1e')
+    expect(rootTokens.get('--gate-bg')).toBe('#171b1e')
+    expect(rootTokens.get('--result-bg')).toBe('#171b1e')
+    expect(rootTokens.get('--spotlight-glow')).toBe('none')
+  })
+
+  it('ヘッダーには背景グラデーションを付けない', () => {
+    expect(rootTokens.get('--header-bg')).toBe('none')
+  })
+
+  it('早押しボタンの太い外周を1pxの枠線へ置き換える', () => {
+    expect(ruleBody(defaultTheme, "html[data-theme='default'] .quiz-button")).toContain(
+      'border: 1px solid #9c2317',
+    )
+    expect(
+      ruleBody(defaultTheme, ":is(.card-shell, .zoom-layer)[data-theme='default'] .p-quiz-button"),
+    ).toContain('border: 1px solid #9c2317')
+
+    for (const token of [
+      '--quiz-btn-shadow',
+      '--quiz-btn-shadow-pressed',
+      '--quiz-btn-shadow-released',
+      '--quiz-btn-shadow-disabled',
+    ]) {
+      expect(rootTokens.get(token), token).not.toContain('0 0 0 0.3125rem')
+    }
+  })
+
+  it('早押しボタン各状態のinsetシャドウを細くする', () => {
+    expect(rootTokens.get('--quiz-btn-shadow-pressed')).toContain(
+      'inset 0 0 0.875rem rgba(0, 0, 0, 0.45)',
+    )
+    expect(rootTokens.get('--quiz-btn-shadow-released')).toContain(
+      'inset 0 0 0.5rem rgba(0, 0, 0, 0.3)',
+    )
+    expect(rootTokens.get('--quiz-btn-shadow-disabled')).toBe(
+      'inset 0 0 0.875rem rgba(0, 0, 0, 0.45)',
     )
   })
 
   it('戦績チップを芥子と朱の配色にする', () => {
     expectOverrides(
-      `html[data-theme='default'] :is(.score-chips, .result-list), ${PREVIEW_THEME_SCOPE} .p-chips`,
+      `html[data-theme='default'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
       {
         '--color-accent': '#e8b032',
         '--color-answer-wrong': '#ef5340',
@@ -80,7 +115,7 @@ describe('default theme', () => {
   })
 
   it('解答エリアを芥子と朱の配色にする', () => {
-    expectOverrides(`html[data-theme='default'] .answer-area, ${PREVIEW_THEME_SCOPE} .p-panel`, {
+    expectOverrides(`html[data-theme='default'] .answer-area,\n${PREVIEW_THEME_SCOPE} .p-panel`, {
       '--color-accent': '#e8b032',
       '--color-answer-wrong': '#ef5340',
       '--color-urgent': '#ef5340',
@@ -94,7 +129,7 @@ describe('default theme', () => {
 
   it('ボタンチェックトグルを芥子色にする', () => {
     expectOverrides(
-      `html[data-theme='default'] .check-toggle, ${PREVIEW_THEME_SCOPE} .p-toggle-row`,
+      `html[data-theme='default'] .check-toggle,\n${PREVIEW_THEME_SCOPE} .p-toggle-row`,
       {
         '--color-accent': '#e8b032',
         '--toggle-on-track': 'rgba(232, 176, 50, 0.22)',
@@ -145,7 +180,7 @@ describe('default theme', () => {
       selectors.filter(
         (selector) =>
           selector.includes('.q-label') ||
-          selector.includes('.p-q') ||
+          /\.p-q\b/.test(selector) ||
           selector.includes('.modal-overlay') ||
           selector.includes('.dialog-overlay'),
       ),
