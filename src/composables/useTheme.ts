@@ -12,6 +12,9 @@ const themeModules = import.meta.glob('../themes/*.theme.css', { eager: true })
 
 const STORAGE_KEY = 'yqb-theme'
 const DEFAULT_THEME = 'default'
+const LEGACY_THEME_IDS: Readonly<Record<string, string>> = {
+  'default-flat': 'flat',
+}
 
 export interface ThemeInfo {
   id: string
@@ -78,10 +81,12 @@ function init(): void {
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
 
   const saved = localStorage.getItem(STORAGE_KEY)
-  const initialTheme = saved !== null && themeIds.includes(saved) ? saved : DEFAULT_THEME
+  const normalizedSaved = saved === null ? null : (LEGACY_THEME_IDS[saved] ?? saved)
+  const initialTheme =
+    normalizedSaved !== null && themeIds.includes(normalizedSaved) ? normalizedSaved : DEFAULT_THEME
   apply(initialTheme)
 
-  // 削除済みテーマなどの古い保存値は、次回以降も有効なdefaultへ正規化する。
+  // 改名・削除済みテーマなどの古い保存値を、次回以降も有効なIDへ正規化する。
   if (saved !== null && saved !== initialTheme) {
     localStorage.setItem(STORAGE_KEY, initialTheme)
   }

@@ -73,8 +73,9 @@ function stripCssComments(source: string): string {
 describe('theme token contract', () => {
   it('公開するテーマファイルを固定する', () => {
     expect(Object.keys(themeFiles).sort()).toEqual([
-      'default-flat.theme.css',
       'default.theme.css',
+      'flat.theme.css',
+      'light.theme.css',
       'neumorphism.theme.css',
     ])
   })

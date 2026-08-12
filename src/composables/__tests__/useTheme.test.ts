@@ -2,14 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const THEME_COLORS: Record<string, string> = {
   default: '#14171a',
-  'default-flat': '#f3eee7',
+  flat: '#f3eee7',
+  light: '#eee8df',
   neumorphism: '#e3e7f0',
 }
 
 const THEME_ORDERS: Record<string, string> = {
   default: '0',
-  'default-flat': '1',
-  neumorphism: '2',
+  flat: '1',
+  light: '2',
+  neumorphism: '3',
 }
 
 function installComputedStyleMock(): void {
@@ -67,7 +69,7 @@ describe('useTheme', () => {
     const { setTheme } = useTheme()
     const previousMeta = document.querySelector('meta[name="theme-color"]')
 
-    setTheme('default-flat')
+    setTheme('flat')
 
     expect(themeColorMetaValues()).toEqual(['#f3eee7'])
     expect(document.querySelector('meta[name="theme-color"]')?.hasAttribute('media')).toBe(false)
@@ -85,11 +87,21 @@ describe('useTheme', () => {
     expect(document.querySelector('meta[name="theme-color"]')?.hasAttribute('media')).toBe(false)
   })
 
-  it('利用可能なテーマにdefault-flatを含める', async () => {
+  it('利用可能なテーマを指定順で公開する', async () => {
     const { useTheme } = await import('../useTheme')
     const { themes } = useTheme()
 
-    expect(themes.value.map(({ id }) => id)).toEqual(['default', 'default-flat', 'neumorphism'])
+    expect(themes.value.map(({ id }) => id)).toEqual(['default', 'flat', 'light', 'neumorphism'])
+  })
+
+  it('保存済みのdefault-flatをflatへ移行する', async () => {
+    localStorage.setItem('yqb-theme', 'default-flat')
+    const { useTheme } = await import('../useTheme')
+    const { currentThemeId } = useTheme()
+
+    expect(currentThemeId.value).toBe('flat')
+    expect(localStorage.getItem('yqb-theme')).toBe('flat')
+    expect(themeColorMetaValues()).toEqual(['#f3eee7'])
   })
 
   it.each(['default-2', 'default-3', 'default-4', 'default-5'])(

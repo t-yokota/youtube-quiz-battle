@@ -3,10 +3,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-const neumorphism = readFileSync(
-  resolve(process.cwd(), 'src/themes/neumorphism.theme.css'),
-  'utf8',
-)
+const neumorphism = readFileSync(resolve(process.cwd(), 'src/themes/neumorphism.theme.css'), 'utf8')
 
 function tokenValue(token: string): string {
   const value = neumorphism.match(new RegExp(`${token}:\\s*([^;]+);`))?.[1]
@@ -17,6 +14,10 @@ function tokenValue(token: string): string {
 }
 
 describe('neumorphism theme', () => {
+  it('lightの後に表示する', () => {
+    expect(tokenValue('--theme-order')).toBe('3')
+  })
+
   it('WAITボタンを赤い面と赤系insetシャドウで沈み込ませる', () => {
     expect(tokenValue('--quiz-btn-face-disabled')).toBe('#e8604c')
     expect(tokenValue('--quiz-btn-shadow-disabled')).toBe(

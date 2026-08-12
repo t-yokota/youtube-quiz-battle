@@ -3,15 +3,15 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-const flatThemePath = resolve(process.cwd(), 'src/themes/default-flat.theme.css')
+const flatThemePath = resolve(process.cwd(), 'src/themes/flat.theme.css')
 const flatTheme = existsSync(flatThemePath) ? readFileSync(flatThemePath, 'utf8') : ''
 const defaultTheme = readFileSync(resolve(process.cwd(), 'src/themes/default.theme.css'), 'utf8')
 const neumorphismTheme = readFileSync(
   resolve(process.cwd(), 'src/themes/neumorphism.theme.css'),
   'utf8',
 )
-const ROOT_SELECTOR = "[data-theme='default-flat']"
-const PREVIEW_THEME_SCOPE = ":is(.card-shell, .zoom-layer)[data-theme='default-flat']"
+const ROOT_SELECTOR = "[data-theme='flat']"
+const PREVIEW_THEME_SCOPE = ":is(.card-shell, .zoom-layer)[data-theme='flat']"
 
 function ruleBody(css: string, selector: string): string {
   const ruleStart = css.indexOf(`${selector} {`)
@@ -69,7 +69,7 @@ function chromiumThemeColorLightness(hex: string): number {
   return Math.floor((Math.max(red, green, blue) + Math.min(red, green, blue)) / 2) / 255
 }
 
-describe('default-flat theme', () => {
+describe('flatテーマ', () => {
   it('テーマファイルを追加する', () => {
     expect(existsSync(flatThemePath)).toBe(true)
   })
@@ -174,26 +174,54 @@ describe('default-flat theme', () => {
   })
 
   it('早押しボタンの太い外周をなくし1pxの枠線だけを付ける', () => {
-    expect(ruleBody(flatTheme, "html[data-theme='default-flat'] .quiz-button")).toContain(
+    expect(ruleBody(flatTheme, "html[data-theme='flat'] .quiz-button")).toContain(
       'border: 1px solid #ad2f22',
     )
     expect(
-      ruleBody(
-        flatTheme,
-        ":is(.card-shell, .zoom-layer)[data-theme='default-flat'] .p-quiz-button",
-      ),
+      ruleBody(flatTheme, ":is(.card-shell, .zoom-layer)[data-theme='flat'] .p-quiz-button"),
     ).toContain('border: 1px solid #ad2f22')
   })
 
-  it('開始・戦績・解答・トグルに芥子色の役割を維持する', () => {
-    expect(
-      tokenMap(
-        ruleBody(
-          flatTheme,
-          "html[data-theme='default-flat'] :is(.start-gate-action, .final-rate .pct)",
-        ),
-      ).get('--color-accent'),
-    ).toBe('#9a6810')
+  it('ベースの朱を明るい面向けの色に揃える', () => {
+    const tokens = tokenMap(ruleBody(flatTheme, ROOT_SELECTOR))
+
+    expect(tokens.get('--color-accent')).toBe('#cc4933')
+    expect(tokens.get('--color-accent-hover')).toBe('#b83e2c')
+    expect(tokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(204, 73, 51, 0.35)')
+    expect(tokens.get('--toggle-on-track')).toBe('rgba(204, 73, 51, 0.15)')
+  })
+
+  it('芥子色の局所役割をオレンジ寄りにしてflatの実画面とプレビューだけへ適用する', () => {
+    const uiAccent = '#e97012'
+    const startTokens = tokenMap(
+      ruleBody(flatTheme, "html[data-theme='flat'] :is(.start-gate-action, .final-rate .pct)"),
+    )
+    const chipTokens = tokenMap(
+      ruleBody(
+        flatTheme,
+        `html[data-theme='flat'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
+      ),
+    )
+    const answerTokens = tokenMap(
+      ruleBody(flatTheme, `html[data-theme='flat'] .answer-area,\n${PREVIEW_THEME_SCOPE} .p-panel`),
+    )
+    const toggleTokens = tokenMap(
+      ruleBody(
+        flatTheme,
+        `html[data-theme='flat'] .check-toggle,\n${PREVIEW_THEME_SCOPE} .p-toggle-row`,
+      ),
+    )
+
+    expect(startTokens.get('--color-accent')).toBe(uiAccent)
+    expect(chipTokens.get('--color-accent')).toBe(uiAccent)
+    expect(chipTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(233, 112, 18, 0.35)')
+    expect(answerTokens.get('--color-accent')).toBe(uiAccent)
+    expect(answerTokens.get('--btn-primary-bg')).toBe(uiAccent)
+    expect(answerTokens.get('--btn-primary-bg-hover')).toBe('#d9650f')
+    expect(toggleTokens.get('--color-accent')).toBe(uiAccent)
+    expect(toggleTokens.get('--toggle-on-track')).toBe('rgba(233, 112, 18, 0.14)')
+    expect(toggleTokens.get('--toggle-on-border')).toBe(uiAccent)
+    expect(toggleTokens.get('--toggle-on-knob')).toBe(uiAccent)
 
     const previewSelectors = [...flatTheme.matchAll(/([^{}]+)\{[^{}]*\}/g)]
       .map((match) => match[1].trim())
