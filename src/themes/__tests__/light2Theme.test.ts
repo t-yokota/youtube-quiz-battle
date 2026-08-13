@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 const themesDirectory = resolve(process.cwd(), 'src/themes')
 const light2Theme = readFileSync(resolve(themesDirectory, 'light-2.theme.css'), 'utf8')
+const lightTheme = readFileSync(resolve(themesDirectory, 'light.theme.css'), 'utf8')
 const defaultTheme = readFileSync(resolve(themesDirectory, 'default.theme.css'), 'utf8')
 
 const ROOT_SELECTOR = "[data-theme='light-2']"
@@ -32,6 +33,22 @@ function tokenMap(rule: string): Map<string, string> {
   )
 }
 
+function relativeLuminance(hex: string): number {
+  const channels = hex
+    .slice(1)
+    .match(/.{2}/g)
+    ?.map((channel) => Number.parseInt(channel, 16) / 255)
+    .map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4))
+
+  if (!channels || channels.length !== 3) throw new Error(`${hex} is not a hex color`)
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722
+}
+
+function contrastRatio(foreground: string, background: string): number {
+  const values = [relativeLuminance(foreground), relativeLuminance(background)]
+  return (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05)
+}
+
 describe('light-2テーマ', () => {
   it('クールアイボリーのブラウザUI色と明色面を定義する', () => {
     const tokens = tokenMap(ruleBody(light2Theme, ROOT_SELECTOR))
@@ -43,6 +60,42 @@ describe('light-2テーマ', () => {
     expect(tokens.get('--result-bg')).toBe('#f6f6f4')
   })
 
+  it('明るくした朱と白の組み合わせで4.5対1を維持する', () => {
+    const tokens = tokenMap(ruleBody(light2Theme, ROOT_SELECTOR))
+    const accent = tokens.get('--color-accent') ?? ''
+    const onAccent = tokens.get('--color-on-accent') ?? ''
+
+    expect(accent).toBe('#cf4933')
+    expect(onAccent).toBe('#ffffff')
+    expect(contrastRatio(accent, '#ffffff')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(onAccent, accent)).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('正解と不正解を明色面で鮮やかにしながら4.5対1を維持する', () => {
+    const rootTokens = tokenMap(ruleBody(light2Theme, ROOT_SELECTOR))
+    const chipTokens = tokenMap(
+      ruleBody(
+        light2Theme,
+        `html[data-theme='light-2'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
+      ),
+    )
+    const answerTokens = tokenMap(
+      ruleBody(
+        light2Theme,
+        `html[data-theme='light-2'] .answer-area,\n${PREVIEW_THEME_SCOPE} .p-panel`,
+      ),
+    )
+    const correct = '#178758'
+    const wrong = '#cc4c39'
+
+    expect(rootTokens.get('--color-answer-correct')).toBe(correct)
+    expect(chipTokens.get('--color-answer-wrong')).toBe(wrong)
+    expect(answerTokens.get('--color-answer-wrong')).toBe(wrong)
+    expect(answerTokens.get('--color-urgent')).toBe(wrong)
+    expect(contrastRatio(correct, '#ffffff')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(wrong, '#ffffff')).toBeGreaterThanOrEqual(4.5)
+  })
+
   it('defaultが提供するroot tokenをすべて明示的に定義する', () => {
     const light2Tokens = [...tokenMap(ruleBody(light2Theme, ROOT_SELECTOR)).keys()].sort()
     const defaultTokens = [
@@ -52,8 +105,43 @@ describe('light-2テーマ', () => {
     expect(light2Tokens).toEqual(defaultTokens)
   })
 
+  it('現在位置チップをリングではなくブラーで強調する', () => {
+    const rootTokens = tokenMap(ruleBody(light2Theme, ROOT_SELECTOR))
+    const chipTokens = tokenMap(
+      ruleBody(
+        light2Theme,
+        `html[data-theme='light-2'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
+      ),
+    )
+
+    expect(rootTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(207, 73, 51, 0.35)')
+    expect(rootTokens.get('--chip-current-correct-glow')).toBe(
+      '0 0 0.375rem rgba(23, 135, 88, 0.35)',
+    )
+    expect(rootTokens.get('--chip-current-wrong-glow')).toBe(
+      '0 0 0.375rem rgba(103, 86, 199, 0.35)',
+    )
+    expect(chipTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(229, 118, 19, 0.35)')
+    expect(chipTokens.get('--chip-current-correct-glow')).toBe(
+      '0 0 0.375rem rgba(23, 135, 88, 0.35)',
+    )
+    expect(chipTokens.get('--chip-current-wrong-glow')).toBe('0 0 0.375rem rgba(204, 76, 57, 0.35)')
+  })
+
+  it('ON時の早押しボタン外周をlightと同じブラーにする', () => {
+    const light2Shadow =
+      tokenMap(ruleBody(light2Theme, ROOT_SELECTOR)).get('--quiz-btn-shadow-released') ?? ''
+    const lightShadow =
+      tokenMap(ruleBody(lightTheme, "[data-theme='light']")).get('--quiz-btn-shadow-released') ?? ''
+    const outerGlow = '0 0 1.75rem 0.625rem rgba(200, 58, 42, 0.28)'
+
+    expect(lightShadow.endsWith(outerGlow)).toBe(true)
+    expect(light2Shadow.endsWith(outerGlow)).toBe(true)
+    expect(light2Shadow).not.toContain('0 0 0 0.375rem')
+  })
+
   it('局所アクセントをlight-2の実画面とプレビューだけへ適用する', () => {
-    const uiAccent = '#ef8118'
+    const uiAccent = '#e57613'
     const startTokens = tokenMap(
       ruleBody(light2Theme, "html[data-theme='light-2'] :is(.start-gate-action, .final-rate .pct)"),
     )
@@ -84,6 +172,7 @@ describe('light-2テーマ', () => {
     expect(toggleTokens.get('--color-accent')).toBe(uiAccent)
     expect(toggleTokens.get('--toggle-on-border')).toBe(uiAccent)
     expect(toggleTokens.get('--toggle-on-knob')).toBe(uiAccent)
+    expect(contrastRatio(uiAccent, '#ffffff')).toBeGreaterThanOrEqual(3)
 
     const previewSelectors = [...light2Theme.matchAll(/([^{}]+)\{[^{}]*\}/g)]
       .map((match) => match[1].trim())
