@@ -92,10 +92,11 @@ describe('theme token contract', () => {
     }
   })
 
-  it('テーマの並び順を重複させない', () => {
-    const orders = Object.values(themeFiles).map((css) => tokenValue(css, '--theme-order'))
-
-    expect(new Set(orders).size).toBe(orders.length)
+  it('表示名と並び順をCSSへ重複定義しない', () => {
+    for (const css of Object.values(themeFiles)) {
+      expect(tokenValue(css, '--theme-label')).toBeNull()
+      expect(tokenValue(css, '--theme-order')).toBeNull()
+    }
   })
 
   it('本番スタイルが旧トークンを参照しない', () => {

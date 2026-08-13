@@ -74,11 +74,9 @@ describe('flatテーマ', () => {
     expect(existsSync(flatThemePath)).toBe(true)
   })
 
-  it('フラットテーマのメタ情報を定義する', () => {
+  it('フラットテーマのブラウザUI色を定義する', () => {
     const tokens = tokenMap(ruleBody(flatTheme, ROOT_SELECTOR))
 
-    expect(tokens.get('--theme-label')).toBe("'フラット'")
-    expect(tokens.get('--theme-order')).toBe('1')
     expect(tokens.get('--theme-color')).toBe('#f3eee7')
   })
 

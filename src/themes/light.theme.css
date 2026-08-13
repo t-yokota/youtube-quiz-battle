@@ -7,8 +7,6 @@
    ========================================================================== */
 [data-theme='light'] {
   /* --- メタ情報 --- */
-  --theme-label: 'ライト';
-  --theme-order: 2;
   --theme-color: #eee8df;
 
   /* --- フォント --- */
@@ -31,13 +29,13 @@
   --color-urgent: #c83a2a;
 
   /* --- サーフェス（明るい階調だけで奥行きを作る） --- */
-  --surface-app: #f7f3ed;
+  --surface-app: #faf7f2;
   --surface-panel: #fffdf9;
   --surface-raised: #eee9e2;
   --header-bg: none;
   --overlay-bg: rgba(50, 42, 35, 0.42);
-  --gate-bg: #f7f3ed;
-  --result-bg: #f7f3ed;
+  --gate-bg: #fffdf9;
+  --result-bg: #faf7f2;
 
   /* --- パネル・モーダル（通常パネルは罫線、行とモーダルは落影で分離） --- */
   --panel-border: 1px solid var(--color-line);
@@ -70,7 +68,7 @@
     radial-gradient(circle, #ed503d 54%, #de4230 80%, #c83a2a 100%);
   --quiz-btn-text: #ffffff;
   --quiz-btn-text-shadow: 0 1px 2px rgba(87, 28, 19, 0.42);
-  --quiz-btn-shadow: 0 0.5rem 1.375rem rgba(63, 49, 38, 0.28);
+  --quiz-btn-shadow: 0 0.5rem 1.375rem rgba(63, 49, 38, 0.15);
   --quiz-btn-shadow-pressed:
     0 2px 0.375rem rgba(63, 49, 38, 0.2), inset 0 0 0.875rem rgba(105, 34, 24, 0.3);
   --quiz-btn-shadow-released:
@@ -78,7 +76,7 @@
     0 0 1.75rem 0.625rem rgba(200, 58, 42, 0.28);
   --quiz-btn-shadow-disabled: inset 0 0 0.875rem rgba(105, 34, 24, 0.3);
   --quiz-btn-disabled-filter: brightness(0.8);
-  --pedestal-bg: radial-gradient(circle, #c2baad 45%, #f7f3ed 56%, #fffdf9 100%);
+  --pedestal-bg: radial-gradient(circle, #c2baad 45%, #faf7f2 55%, #fffdf9 70% 100%);
   --pedestal-border: 1px solid var(--color-line);
   --pedestal-shadow: none;
   --pulse-color: var(--color-accent);
@@ -94,15 +92,15 @@
 
   /* --- トグル・スライダー --- */
   --toggle-track: #e5dfd7;
-  --toggle-track-border: #978a7e;
-  --toggle-track-shadow: inset 0 1px 2px rgba(63, 49, 38, 0.12);
+  --toggle-track-border: #d3c8be;
+  --toggle-track-shadow: inset 0 1px 2px rgba(63, 49, 38, 0.08);
   --toggle-on-track: rgba(204, 73, 51, 0.15);
   --toggle-on-border: var(--color-accent);
   --toggle-knob: #6b6259;
   --toggle-on-knob: var(--color-accent);
-  --slider-track: #978a7e;
+  --slider-track: #c5b9ae;
   --slider-thumb: var(--color-accent);
-  --slider-thumb-shadow: 0 0.125rem 0.375rem rgba(63, 49, 38, 0.22);
+  --slider-thumb-shadow: 0 0.125rem 0.375rem rgba(63, 49, 38, 0.16);
 
   /* --- タイマー・リザルト演出 --- */
   --timer-track: #ddd6cd;
@@ -124,13 +122,13 @@ html[data-theme='light'] .quiz-button {
 
 /* --- 開始操作・Result正解率 --- */
 html[data-theme='light'] :is(.start-gate-action, .final-rate .pct) {
-  --color-accent: #e97012;
+  --color-accent: #b87312;
 }
 
 /* --- 戦績チップ（ゲーム・Result画面・テーマプレビュー） --- */
 html[data-theme='light'] :is(.score-chips, .result-list),
 :is(.card-shell, .zoom-layer)[data-theme='light'] .p-chips {
-  --color-accent: #e97012;
+  --color-accent: #b87312;
   --color-answer-wrong: #b33f30;
   --chip-wrong-bg: rgba(179, 63, 48, 0.12);
   --chip-current-glow: 0 0 0.375rem rgba(233, 112, 18, 0.35);
@@ -140,12 +138,12 @@ html[data-theme='light'] :is(.score-chips, .result-list),
 /* --- 解答エリア（実画面・テーマプレビュー） --- */
 html[data-theme='light'] .answer-area,
 :is(.card-shell, .zoom-layer)[data-theme='light'] .p-panel {
-  --color-accent: #e97012;
+  --color-accent: #b87312;
   --color-answer-wrong: #b33f30;
   --color-urgent: #b33f30;
-  --btn-primary-bg: #e97012;
-  --btn-primary-bg-hover: #d9650f;
-  --btn-primary-text: #241800;
+  --btn-primary-bg: #b87312;
+  --btn-primary-bg-hover: #bd7713;
+  --btn-primary-text: #fffdf9;
   --banner-wrong-bg: rgba(179, 63, 48, 0.12);
   --flash-wrong-glow: 0 0 1.125rem rgba(179, 63, 48, 0.2);
 }
@@ -153,8 +151,8 @@ html[data-theme='light'] .answer-area,
 /* --- ボタンチェックトグル（実画面・テーマプレビュー） --- */
 html[data-theme='light'] .check-toggle,
 :is(.card-shell, .zoom-layer)[data-theme='light'] .p-toggle-row {
-  --color-accent: #e97012;
-  --toggle-on-track: rgba(233, 112, 18, 0.14);
-  --toggle-on-border: #e97012;
-  --toggle-on-knob: #e97012;
+  --color-accent: #b87312;
+  --toggle-on-track: rgba(184, 115, 18, 0.14);
+  --toggle-on-border: #b87312;
+  --toggle-on-knob: #b87312;
 }

@@ -9,8 +9,6 @@
 html,
 [data-theme='default'] {
   /* --- メタ情報（スイッチャーが getComputedStyle で読む） --- */
-  --theme-label: 'デフォルト';
-  --theme-order: 0;
   --theme-color: #14171a;
 
   /* --- フォント --- */

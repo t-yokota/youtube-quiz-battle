@@ -14,10 +14,6 @@ function tokenValue(token: string): string {
 }
 
 describe('neumorphism theme', () => {
-  it('lightの後に表示する', () => {
-    expect(tokenValue('--theme-order')).toBe('3')
-  })
-
   it('WAITボタンを赤い面と赤系insetシャドウで沈み込ませる', () => {
     expect(tokenValue('--quiz-btn-face-disabled')).toBe('#e8604c')
     expect(tokenValue('--quiz-btn-shadow-disabled')).toBe(

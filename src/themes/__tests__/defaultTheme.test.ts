@@ -35,9 +35,7 @@ function expectOverrides(selector: string, expected: Record<string, string>): vo
 describe('default theme', () => {
   const rootTokens = tokenMap(ruleBody(defaultTheme, ROOT_SELECTOR))
 
-  it('デフォルトの基本配色とメタ情報を定義する', () => {
-    expect(rootTokens.get('--theme-label')).toBe("'デフォルト'")
-    expect(rootTokens.get('--theme-order')).toBe('0')
+  it('デフォルトの基本配色とブラウザUI色を定義する', () => {
     expect(rootTokens.get('--theme-color')).toBe('#14171a')
     expect(rootTokens.get('--color-accent')).toBe('#ff6b4f')
     expect(rootTokens.get('--color-answer-wrong')).toBe('#8b7cff')

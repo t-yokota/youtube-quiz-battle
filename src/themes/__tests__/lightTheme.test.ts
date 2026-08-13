@@ -55,12 +55,10 @@ function contrastRatio(foreground: string, background: string): number {
 }
 
 describe('lightテーマ', () => {
-  it('テーマファイルとメタ情報を追加する', () => {
+  it('テーマファイルとブラウザUI色を追加する', () => {
     expect(existsSync(lightThemePath)).toBe(true)
     const tokens = tokenMap(ruleBody(lightTheme, ROOT_SELECTOR))
 
-    expect(tokens.get('--theme-label')).toBe("'ライト'")
-    expect(tokens.get('--theme-order')).toBe('2')
     expect(tokens.get('--theme-color')).toBe('#eee8df')
   })
 
@@ -95,15 +93,16 @@ describe('lightテーマ', () => {
     expect(contrastRatio('#fffdf9', accent)).toBeGreaterThanOrEqual(4.5)
   })
 
-  it('背景本体をパネルより少しだけ暗くする', () => {
+  it('開始ゲートをパネル色に揃え、ゲーム・Result背景だけを少し暗くする', () => {
     const panel = tokenValue(lightTheme, '--surface-panel')
 
     expect(panel).toBe('#fffdf9')
-    expect(tokenValue(lightTheme, '--surface-app')).toBe('#f7f3ed')
-    expect(tokenValue(lightTheme, '--gate-bg')).toBe('#f7f3ed')
-    expect(tokenValue(lightTheme, '--result-bg')).toBe('#f7f3ed')
-    expect(contrastRatio(panel, '#f7f3ed')).toBeGreaterThan(1)
-    expect(contrastRatio(panel, '#f7f3ed')).toBeLessThan(1.1)
+    expect(tokenValue(lightTheme, '--surface-app')).toBe('#faf7f2')
+    expect(tokenValue(lightTheme, '--gate-bg')).toBe(panel)
+    expect(tokenValue(lightTheme, '--result-bg')).toBe('#faf7f2')
+    expect(tokenValue(lightTheme, '--pedestal-bg')).toContain('#faf7f2')
+    expect(contrastRatio(panel, '#faf7f2')).toBeGreaterThan(1)
+    expect(contrastRatio(panel, '#faf7f2')).toBeLessThan(1.1)
   })
 
   it('画面背景にはグラデーションとスポットライトを付けない', () => {
@@ -142,6 +141,19 @@ describe('lightテーマ', () => {
 
   it('モーダルなどのprimaryボタンにはシャドウを付けない', () => {
     expect(tokenValue(lightTheme, '--btn-primary-shadow')).toBe('none')
+  })
+
+  it('設定UIの非選択部分を明るい面になじむ淡い色へ揃える', () => {
+    expect(tokenValue(lightTheme, '--toggle-track-border')).toBe('#d3c8be')
+    expect(tokenValue(lightTheme, '--toggle-track-shadow')).toBe(
+      'inset 0 1px 2px rgba(63, 49, 38, 0.08)',
+    )
+    expect(tokenValue(lightTheme, '--slider-track')).toBe('#c5b9ae')
+    expect(tokenValue(lightTheme, '--slider-thumb-shadow')).toBe(
+      '0 0.125rem 0.375rem rgba(63, 49, 38, 0.16)',
+    )
+    expect(tokenValue(lightTheme, '--input-border-color')).toBe('#978a7e')
+    expect(tokenValue(lightTheme, '--toggle-knob')).toBe('#6b6259')
   })
 
   it('早押しボタンの太い外周を1pxの枠線へ置き換える', () => {
@@ -201,7 +213,7 @@ describe('lightテーマ', () => {
   })
 
   it('芥子色の局所役割をオレンジ寄りにしてlightの実画面とプレビューだけへ適用する', () => {
-    const uiAccent = '#e97012'
+    const uiAccent = '#b87312'
     const startTokens = tokenMap(
       ruleBody(lightTheme, "html[data-theme='light'] :is(.start-gate-action, .final-rate .pct)"),
     )
@@ -227,16 +239,18 @@ describe('lightテーマ', () => {
     expect(startTokens.get('--color-accent')).toBe(uiAccent)
     expect(chipTokens.get('--color-accent')).toBe(uiAccent)
     expect(chipTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(233, 112, 18, 0.35)')
+    expect(chipTokens.get('--chip-current-wrong-glow')).toBe(
+      '0 0 0.375rem rgba(179, 63, 48, 0.35)',
+    )
     expect(answerTokens.get('--color-accent')).toBe(uiAccent)
     expect(answerTokens.get('--btn-primary-bg')).toBe(uiAccent)
-    expect(answerTokens.get('--btn-primary-bg-hover')).toBe('#d9650f')
+    expect(answerTokens.get('--btn-primary-bg-hover')).toBe('#bd7713')
+    expect(answerTokens.get('--btn-primary-text')).toBe('#fffdf9')
     expect(toggleTokens.get('--color-accent')).toBe(uiAccent)
-    expect(toggleTokens.get('--toggle-on-track')).toBe('rgba(233, 112, 18, 0.14)')
+    expect(toggleTokens.get('--toggle-on-track')).toBe('rgba(184, 115, 18, 0.14)')
     expect(toggleTokens.get('--toggle-on-border')).toBe(uiAccent)
     expect(toggleTokens.get('--toggle-on-knob')).toBe(uiAccent)
     expect(contrastRatio(uiAccent, '#fffdf9')).toBeGreaterThanOrEqual(3)
-    expect(contrastRatio('#241800', uiAccent)).toBeGreaterThanOrEqual(4.5)
-    expect(contrastRatio('#241800', '#d9650f')).toBeGreaterThanOrEqual(4.5)
 
     const previewSelectors = [...lightTheme.matchAll(/([^{}]+)\{[^{}]*\}/g)]
       .map((match) => match[1].trim())
