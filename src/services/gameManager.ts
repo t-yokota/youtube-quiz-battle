@@ -7,7 +7,7 @@ import {
   BUTTON_CHECK_RELEASE_MS,
   VIDEO_START_DELAY_MS,
   GATE_WARMUP_PLAY_MS,
-  READY_PLAY_SUPPRESS_MS,
+  GATE_WARMUP_EVENT_MARGIN_MS,
 } from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
 import type { useSettingsStore } from '@/stores/settingsStore'
@@ -129,7 +129,7 @@ export class GameManager {
    * 許可させる。ウォームアップ中の PLAYING は無視され TALKING へは遷移しない
    */
   warmupVideoPlayback(): void {
-    this.externalPause.beginGateWarmup(GATE_WARMUP_PLAY_MS + READY_PLAY_SUPPRESS_MS)
+    this.externalPause.beginGateWarmup(GATE_WARMUP_PLAY_MS + GATE_WARMUP_EVENT_MARGIN_MS)
     this.playerControl.playVideo()
     this.warmupStopTimer = window.setTimeout(() => {
       this.warmupStopTimer = null
@@ -180,6 +180,7 @@ export class GameManager {
       this.clearWarmupStop(false)
       this.playerControl.seekTo(0)
       this.timeManager.resetTimeValues()
+      this.externalPause.completeReplayReset()
       this.gameStore.transitionToState(GameState.TALKING)
       this.playerControl.playVideo()
       return
@@ -221,6 +222,7 @@ export class GameManager {
           this.gameStore.setButtonState(ButtonState.STANDBY)
           // ボタンチェック完了時の正解音（STANDBY復帰時）
           this.audioManager?.playSound(SOUND_TYPE.CORRECT)
+          this.externalPause.completeReplayReset()
           this.gameStore.transitionToState(GameState.TALKING)
           // 動画再生開始は少し遅らせ、正解音と動画音声の重なりを避ける
           setTimeout(() => {

@@ -1274,7 +1274,7 @@ describe('解答カウントダウンタイマー', () => {
     expect(store.answerTimeRemaining).toBe(8)
   })
 
-  it('リプレイ直後の spurious PLAYING では TALKING に遷移しない（抑止ウィンドウ）', () => {
+  it('リプレイ直後の spurious PLAYING では TALKING に遷移しない', () => {
     const player = makePlayerMock()
     const { gm, store } = makeGameManager(makeQuizData(), player)
 
@@ -1288,13 +1288,39 @@ describe('解答カウントダウンタイマー', () => {
     simulatePlayback(gm, 46, 0)
     gm.handleReplay()
     expect(store.currentState).toBe(GameState.READY)
+    expect(player.pauseVideo).toHaveBeenCalledTimes(1)
 
     // seekTo(0) 起因の spurious PLAYING が直後に到達
     stateChangeCallback!(1) // PLAYING
 
     // TALKING に遷移せず READY のまま、動画は停止し直される
     expect(store.currentState).toBe(GameState.READY)
-    expect(player.pauseVideo).toHaveBeenCalled()
+    expect(player.pauseVideo).toHaveBeenCalledTimes(2)
+  })
+
+  it('リプレイのリセット完了が遅れても spurious PLAYING では WAIT に遷移しない', () => {
+    const player = makePlayerMock()
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+
+    let stateChangeCallback: ((state: number) => void) | null = null
+    player.onStateChange = vi.fn((cb: (state: number) => void) => {
+      stateChangeCallback = cb
+    })
+    gm.initializeExternalPauseHandling()
+
+    simulatePlayback(gm, 46, 0)
+    gm.handleReplay()
+    expect(store.currentState).toBe(GameState.READY)
+    expect(store.buttonState).toBe(ButtonState.STANDBY)
+    expect(player.pauseVideo).toHaveBeenCalledTimes(1)
+
+    // 端末や通信状況によって seekTo(0) 起因の通知が数秒遅れて到達する
+    vi.advanceTimersByTime(5000)
+    stateChangeCallback!(YouTubePlayerState.PLAYING)
+
+    expect(store.currentState).toBe(GameState.READY)
+    expect(store.buttonState).toBe(ButtonState.STANDBY)
+    expect(player.pauseVideo).toHaveBeenCalledTimes(2)
   })
 
   it('user 一時停止中に末尾へシークしても検出され FINISHED になる（再生再開なし）', () => {

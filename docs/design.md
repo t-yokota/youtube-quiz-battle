@@ -221,8 +221,8 @@ TALKING → [⏰ 問読み区間開始] → QUESTIONING
 FINISHED → [👆 シークバー操作等] → FINISHED（状態固定、時間ベース遷移なし）
         └── [👆 もう一度プレイ押下] → resetGame()でLOADINGへ一旦戻し、動画を0秒にシーク
              → READY（リセット後。自動再生はしない）
-             ※ READY復帰直後は`READY_PLAY_SUPPRESS_MS`の間、seekTo(0)起因のspurious PLAYING
-                イベント（YouTube側の一瞬の発火）を無視する
+             ※ READY復帰後は正常な開始操作まで、seekTo(0)起因のspurious PLAYING
+                イベント（YouTube側の遅延通知）を無視する
 ```
 
 ### State Transition Flow
@@ -853,7 +853,7 @@ setupPlayerStateHandlers(): void {
       }
       if (!this.externalPaused && gameStore.currentState === GameState.READY) {
         if (performance.now() < this.gateWarmupUntil) return // 開始ゲートのウォームアップ再生中は無視
-        if (performance.now() < this.readyPlaySuppressUntil) {
+        if (this.replayResetPending) {
           this.playerControl.pauseVideo() // リプレイのseekTo(0)起因のspurious PLAYINGを抑止
           return
         }
@@ -1125,14 +1125,14 @@ YouTube巻き戻り補正でskipped結果をクリアする用途で、`gameStor
 3. `App.vue` が `replay` イベントをハンドル → `gameManager.handleReplay()` を呼び出し
 4. `handleReplay()` 内で以下を実行:
    - `currentState !== FINISHED` の場合は何もせず終了（FINISHED以外からの誤呼び出しガード）
-   - `externalPause.resetPauseState()` でExternal Pause状態をクリア（`readyPlaySuppressUntil`もここで設定される）
+   - `externalPause.resetPauseState()` でExternal Pause状態をクリアし、リプレイ準備中フラグを設定
    - `resetGame()` でストア・内部状態をリセット
    - 動画を先頭（0秒）にシーク → `pauseVideo()` で一時停止
    - `READY` 状態へ遷移（自動再生はしない。ユーザーがボタンチェックで開始）
 
 **注意点:**
 - **自動再生なし**: リプレイ後は `READY` 状態で待機し、ユーザーのボタンチェック操作で動画再生を開始する
-- **spurious PLAYING抑止**: `resetPauseState()`が設定する`READY_PLAY_SUPPRESS_MS`の間、`seekTo(0)`起因のYouTube側spurious PLAYINGイベントを無視する（詳細はState Transition Patterns参照）
+- **spurious PLAYING抑止**: `resetPauseState()`から正常な開始操作まで、`seekTo(0)`起因のYouTube側spurious PLAYINGイベントを到達時間に関係なく無視する（詳細はState Transition Patterns参照）
 - **タイマー**: 解答時間カウントダウンなどは、次の問題開始時に自動的に初期化される
 
 ### YouTube Player Manager

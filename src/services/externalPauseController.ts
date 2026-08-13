@@ -4,7 +4,6 @@ import {
   STALL_WALL_MS,
   STALL_VIDEO_DELTA_SEC,
   YOUTUBE_REWIND_THRESHOLD_SEC,
-  READY_PLAY_SUPPRESS_MS,
 } from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
 import { logger } from '@/utils/logger'
@@ -37,8 +36,8 @@ export class ExternalPauseController {
   // YouTube Playerによる巻き戻し関連
   private hasPassedRewindThreshold: boolean = false // 閾値通過フラグ
 
-  // リプレイ直後の spurious PLAYING（seekTo(0) 起因）を無視する期限
-  private readyPlaySuppressUntil: number = 0
+  // リプレイの先頭シーク完了前に遅れて届く PLAYING を識別するライフサイクルフラグ
+  private replayResetPending: boolean = false
 
   // 開始ゲートのウォームアップ再生中は READY の PLAYING を単に無視する期限
   // （リプレイ用の抑止と違い pause もしない — 一瞬の実再生を殺さないため）
@@ -304,8 +303,9 @@ export class ExternalPauseController {
           if (performance.now() < this.gateWarmupUntil) {
             return
           }
-          // リプレイの seekTo(0) 起因の spurious PLAYING は無視して停止状態を復元する
-          if (performance.now() < this.readyPlaySuppressUntil) {
+          // リプレイの seekTo(0) 起因の spurious PLAYING は、到達時間に依存せず
+          // 正常な開始操作まで無視して停止状態を復元する
+          if (this.replayResetPending) {
             logger.log('[ExternalPauseController] Suppressed spurious PLAYING after replay')
             this.playerControl.pauseVideo()
             return
@@ -384,19 +384,20 @@ export class ExternalPauseController {
 
   /**
    * handleReplay 用: External Pause状態をクリア
-   * 直後の seekTo(0) が発火させる spurious PLAYING の無視期限もここで設定する
+   * 直後の seekTo(0) が発火させる spurious PLAYING の抑止状態も開始する
    */
   resetPauseState(): void {
     this.externalPaused = false
     this.externalPausedReason = null
-    this.readyPlaySuppressUntil = performance.now() + READY_PLAY_SUPPRESS_MS
+    this.gateWarmupUntil = 0
+    this.replayResetPending = true
   }
 
   /**
-   * READY 中の spurious PLAYING を一定時間無視する（リプレイの seekTo(0) 対策）
+   * READY からの正常な開始操作が完了したため、リプレイの抑止状態を解除する
    */
-  suppressSpuriousReadyPlay(): void {
-    this.readyPlaySuppressUntil = performance.now() + READY_PLAY_SUPPRESS_MS
+  completeReplayReset(): void {
+    this.replayResetPending = false
   }
 
   /**

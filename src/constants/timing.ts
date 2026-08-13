@@ -65,11 +65,9 @@ export const VIDEO_START_DELAY_MS = 1200
 export const GATE_WARMUP_PLAY_MS = 500
 
 /**
- * リプレイ直後に READY で PLAYING イベントを無視する時間（ミリ秒）
- * seekTo(0) の直後に YouTube が一瞬 PLAYING を発火することがあり、
- * これを「プレイヤーからの直接再生」と誤認して TALKING へ遷移するのを防ぐ
+ * 開始ゲートのウォームアップ終了後に遅れて届く PLAYING イベントの猶予時間（ミリ秒）
  */
-export const READY_PLAY_SUPPRESS_MS = 1000
+export const GATE_WARMUP_EVENT_MARGIN_MS = 1000
 
 /**
  * 解答カウントダウンのインターバル（ミリ秒）
