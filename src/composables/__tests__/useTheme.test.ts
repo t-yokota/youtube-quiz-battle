@@ -4,6 +4,7 @@ const THEME_COLORS: Record<string, string> = {
   default: '#14171a',
   flat: '#f3eee7',
   light: '#eee8df',
+  'light-2': '#f0efec',
   neumorphism: '#e3e7f0',
 }
 
@@ -82,11 +83,18 @@ describe('useTheme', () => {
     const { useTheme } = await import('../useTheme')
     const { themes } = useTheme()
 
-    expect(themes.value.map(({ id }) => id)).toEqual(['default', 'light', 'flat', 'neumorphism'])
+    expect(themes.value.map(({ id }) => id)).toEqual([
+      'default',
+      'flat',
+      'light-2',
+      'light',
+      'neumorphism',
+    ])
     expect(themes.value.map(({ label }) => label)).toEqual([
       'デフォルト',
-      'ライト',
       'フラット',
+      'ライト2',
+      'ライト',
       'ニューモーフィズム',
     ])
   })

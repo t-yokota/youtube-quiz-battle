@@ -6,9 +6,10 @@ describe('themeMeta', () => {
   it('公開テーマの表示名と順序を一元管理する', () => {
     expect(themeMeta).toEqual({
       default: { label: 'デフォルト', order: 0 },
-      flat: { label: 'フラット', order: 2 },
-      light: { label: 'ライト', order: 1 },
-      neumorphism: { label: 'ニューモーフィズム', order: 3 },
+      flat: { label: 'フラット', order: 1 },
+      'light-2': { label: 'ライト2', order: 2 },
+      light: { label: 'ライト', order: 3 },
+      neumorphism: { label: 'ニューモーフィズム', order: 4 },
     })
   })
 
