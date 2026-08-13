@@ -35,7 +35,7 @@ function yoursText(result: QuestionResult): string {
 <template>
   <div class="result-list">
     <div v-for="result in results" :key="result.questionNumber" class="result-row">
-      <ResultChip class="mark" :variant="markOf(result)" />
+      <ResultChip class="mark" :variant="markOf(result)" :noanswer-mark-radius="1.2" />
       <span class="body">
         <span class="ans">{{ result.correctAnswer }}</span>
         <br v-if="showUserAnswers" />

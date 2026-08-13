@@ -2,6 +2,11 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { renderToString } from '@vue/server-renderer'
+import { createSSRApp } from 'vue'
+
+import ResultChip from '../ResultChip.vue'
+import ResultTable from '../../result/ResultTable.vue'
 
 const resultChipSource = readFileSync(
   resolve(process.cwd(), 'src/components/game/ResultChip.vue'),
@@ -16,6 +21,43 @@ function selectorBlock(selector: string): string {
 
   return block
 }
+
+function noanswerMarkRadius(html: string): string | null {
+  return (
+    new DOMParser()
+      .parseFromString(html, 'text/html')
+      .querySelector('.chip.noanswer .mark-fill')
+      ?.getAttribute('r') ?? null
+  )
+}
+
+describe('ResultChip noanswer mark', () => {
+  it('ゲーム中などの通常表示では従来の中黒点サイズを維持する', async () => {
+    const html = await renderToString(createSSRApp(ResultChip, { variant: 'noanswer' }))
+
+    expect(noanswerMarkRadius(html)).toBe('1.7')
+  })
+
+  it('Result画面ではスルー問題の中黒点を少し小さくする', async () => {
+    const html = await renderToString(
+      createSSRApp(ResultTable, {
+        results: [
+          {
+            questionNumber: 1,
+            isCorrect: false,
+            correctAnswer: '正解',
+            userAnswers: [],
+            skipped: false,
+            timesUntilPress: [],
+            submissionTypes: [],
+          },
+        ],
+      }),
+    )
+
+    expect(noanswerMarkRadius(html)).toBe('1.2')
+  })
+})
 
 describe('ResultChip current glow', () => {
   it('正誤以外の現在位置にはaccentのグローを使う', () => {

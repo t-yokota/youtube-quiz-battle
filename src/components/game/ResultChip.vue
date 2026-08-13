@@ -5,11 +5,18 @@
 
 export type ChipVariant = 'correct' | 'incorrect' | 'skipped' | 'noanswer' | 'empty' | 'current'
 
-defineProps<{
-  variant: ChipVariant
-  /** 現在の問題カーソル（結果色またはアクセントのリング + グロー）。variant と併用できる */
-  current?: boolean
-}>()
+withDefaults(
+  defineProps<{
+    variant: ChipVariant
+    /** 現在の問題カーソル（結果色またはアクセントのリング + グロー）。variant と併用できる */
+    current?: boolean
+    /** 無解答を示す中黒点の半径 */
+    noanswerMarkRadius?: number
+  }>(),
+  {
+    noanswerMarkRadius: 1.7,
+  },
+)
 </script>
 
 <template>
@@ -34,7 +41,13 @@ defineProps<{
       stroke-linecap="round"
     />
     <!-- ・（無解答） -->
-    <circle v-else-if="variant === 'noanswer'" class="mark-fill" cx="8" cy="8" r="1.7" />
+    <circle
+      v-else-if="variant === 'noanswer'"
+      class="mark-fill"
+      cx="8"
+      cy="8"
+      :r="noanswerMarkRadius"
+    />
   </svg>
 </template>
 
