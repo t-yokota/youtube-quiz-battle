@@ -1,11 +1,12 @@
-// UIテーマの自動検出・適用・永続化
+// UIテーマの読込・適用・永続化
 //
-// src/themes/*.theme.css を追加するだけでテーマが増える。
+// CSSファイルとthemeMetaの両方に存在するテーマだけを公開する。
 // - import.meta.glob がビルド時に themes/ を走査して全テーマCSSをバンドル
-// - テーマIDはファイル名（<id>.theme.css）から導出
-// - 表示名・並び順はCSS内の --theme-label / --theme-order を実行時に読む
-// → スイッチャー側のメンテ工数ゼロ
+// - themeMeta がスイッチャーへ公開するID・表示名・並び順を一元管理
 import { ref, computed } from 'vue'
+import { createThemeList, type ThemeInfo } from '@/themes/themeMeta'
+
+export type { ThemeInfo } from '@/themes/themeMeta'
 
 // eager: true で全テーマCSSを即時 import（<style> として注入される）
 const themeModules = import.meta.glob('../themes/*.theme.css', { eager: true })
@@ -16,35 +17,9 @@ const LEGACY_THEME_IDS: Readonly<Record<string, string>> = {
   'default-flat': 'flat',
 }
 
-export interface ThemeInfo {
-  id: string
-  label: string
-  order: number
-}
-
-const themeIds = Object.keys(themeModules)
-  .map((path) => /([^/]+)\.theme\.css$/.exec(path)?.[1])
-  .filter((id): id is string => id !== undefined)
-
-const themes = ref<ThemeInfo[]>([])
+const themes = ref<ThemeInfo[]>(createThemeList(Object.keys(themeModules)))
+const themeIds = themes.value.map(({ id }) => id)
 const currentThemeId = ref<string>(DEFAULT_THEME)
-
-// テーマCSSの [data-theme] セレクタを probe 要素に当てて、メタ情報を読み取る
-function readThemeMeta(id: string): { label: string; order: number } {
-  const probe = document.createElement('div')
-  probe.dataset.theme = id
-  probe.style.display = 'none'
-  document.body.appendChild(probe)
-  const style = getComputedStyle(probe)
-  const label =
-    style
-      .getPropertyValue('--theme-label')
-      .trim()
-      .replace(/^['"]|['"]$/g, '') || id
-  const order = Number(style.getPropertyValue('--theme-order')) || 0
-  probe.remove()
-  return { label, order }
-}
 
 function apply(id: string): void {
   currentThemeId.value = id
@@ -75,10 +50,6 @@ let initialized = false
 function init(): void {
   if (initialized) return
   initialized = true
-
-  themes.value = themeIds
-    .map((id) => ({ id, ...readThemeMeta(id) }))
-    .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
 
   const saved = localStorage.getItem(STORAGE_KEY)
   const normalizedSaved = saved === null ? null : (LEGACY_THEME_IDS[saved] ?? saved)

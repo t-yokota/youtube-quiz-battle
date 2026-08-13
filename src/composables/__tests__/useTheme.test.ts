@@ -7,13 +7,6 @@ const THEME_COLORS: Record<string, string> = {
   neumorphism: '#e3e7f0',
 }
 
-const THEME_ORDERS: Record<string, string> = {
-  default: '0',
-  flat: '1',
-  light: '2',
-  neumorphism: '3',
-}
-
 function installComputedStyleMock(): void {
   vi.stubGlobal(
     'getComputedStyle',
@@ -22,8 +15,6 @@ function installComputedStyleMock(): void {
 
       return {
         getPropertyValue(property: string) {
-          if (property === '--theme-label') return `'${themeId}'`
-          if (property === '--theme-order') return THEME_ORDERS[themeId] ?? ''
           if (property === '--theme-color') return THEME_COLORS[themeId] ?? ''
           return ''
         },
@@ -91,7 +82,23 @@ describe('useTheme', () => {
     const { useTheme } = await import('../useTheme')
     const { themes } = useTheme()
 
-    expect(themes.value.map(({ id }) => id)).toEqual(['default', 'flat', 'light', 'neumorphism'])
+    expect(themes.value.map(({ id }) => id)).toEqual(['default', 'light', 'flat', 'neumorphism'])
+    expect(themes.value.map(({ label }) => label)).toEqual([
+      'デフォルト',
+      'ライト',
+      'フラット',
+      'ニューモーフィズム',
+    ])
+  })
+
+  it('公開リストにないテーマへは切り替えない', async () => {
+    const { useTheme } = await import('../useTheme')
+    const { currentThemeId, setTheme } = useTheme()
+
+    setTheme('draft')
+
+    expect(currentThemeId.value).toBe('default')
+    expect(localStorage.getItem('yqb-theme')).toBeNull()
   })
 
   it('保存済みのdefault-flatをflatへ移行する', async () => {
