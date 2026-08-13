@@ -60,9 +60,9 @@ describe('useTheme', () => {
     const { setTheme } = useTheme()
     const previousMeta = document.querySelector('meta[name="theme-color"]')
 
-    setTheme('flat')
+    setTheme('dark')
 
-    expect(themeColorMetaValues()).toEqual(['#f0efec'])
+    expect(themeColorMetaValues()).toEqual(['#14171a'])
     expect(document.querySelector('meta[name="theme-color"]')?.hasAttribute('media')).toBe(false)
     expect(document.querySelector('meta[name="theme-color"]')).not.toBe(previousMeta)
     expect(previousMeta?.isConnected).toBe(false)
@@ -82,11 +82,10 @@ describe('useTheme', () => {
     const { useTheme } = await import('../useTheme')
     const { themes } = useTheme()
 
-    expect(themes.value.map(({ id }) => id)).toEqual(['light', 'dark', 'flat', 'neumorphism'])
+    expect(themes.value.map(({ id }) => id)).toEqual(['light', 'dark', 'neumorphism'])
     expect(themes.value.map(({ label }) => label)).toEqual([
       'デフォルト',
       'ダーク',
-      'フラット',
       'ニューモーフィズム',
     ])
   })
@@ -101,18 +100,28 @@ describe('useTheme', () => {
     expect(localStorage.getItem('yqb-theme')).toBeNull()
   })
 
-  it('保存済みのdefault-flatをflatへ移行する', async () => {
+  it('保存済みのdefault-flatをデフォルトのlightへ移行する', async () => {
     localStorage.setItem('yqb-theme', 'default-flat')
     const { useTheme } = await import('../useTheme')
     const { currentThemeId } = useTheme()
 
-    expect(currentThemeId.value).toBe('flat')
-    expect(localStorage.getItem('yqb-theme')).toBe('flat')
+    expect(currentThemeId.value).toBe('light')
+    expect(localStorage.getItem('yqb-theme')).toBe('light')
     expect(themeColorMetaValues()).toEqual(['#f0efec'])
   })
 
   it('保存済みのlight-2をlightへ移行する', async () => {
     localStorage.setItem('yqb-theme', 'light-2')
+    const { useTheme } = await import('../useTheme')
+    const { currentThemeId } = useTheme()
+
+    expect(currentThemeId.value).toBe('light')
+    expect(localStorage.getItem('yqb-theme')).toBe('light')
+    expect(themeColorMetaValues()).toEqual(['#f0efec'])
+  })
+
+  it('公開を停止したflatの保存値をデフォルトのlightへ移行する', async () => {
+    localStorage.setItem('yqb-theme', 'flat')
     const { useTheme } = await import('../useTheme')
     const { currentThemeId } = useTheme()
 

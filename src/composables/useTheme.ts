@@ -19,7 +19,7 @@ const LEGACY_THEME_IDS: Readonly<Record<string, string>> = {
   'default-3': 'dark',
   'default-4': 'dark',
   'default-5': 'dark',
-  'default-flat': 'flat',
+  'default-flat': 'light',
   'light-2': 'light',
 }
 

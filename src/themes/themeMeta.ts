@@ -14,8 +14,8 @@ export type ThemeMetadataMap = Readonly<Record<string, Readonly<ThemeMetadata>>>
 export const themeMeta = {
   light: { label: 'デフォルト', order: 0 },
   dark: { label: 'ダーク', order: 1 },
-  flat: { label: 'フラット', order: 2 },
-  neumorphism: { label: 'ニューモーフィズム', order: 3 },
+  neumorphism: { label: 'ニューモーフィズム', order: 2 },
+  // flat: { label: 'フラット', order: 3 },
 } as const satisfies ThemeMetadataMap
 
 export function createThemeList(
