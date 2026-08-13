@@ -629,6 +629,7 @@ onUnmounted(() => {
   font-size: calc(0.9375 * var(--ui-font-unit));
   font-weight: 700;
   color: var(--color-accent);
+  margin-bottom: 0.5rem;
   animation: gate-blink 1.6s ease-in-out infinite;
 }
 

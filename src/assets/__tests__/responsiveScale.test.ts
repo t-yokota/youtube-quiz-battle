@@ -70,6 +70,7 @@ describe('実画面のレスポンシブスケール', () => {
     expect(selectorBlock(app, '.start-gate-action')).toContain(
       'font-size: calc(0.9375 * var(--ui-font-unit))',
     )
+    expect(selectorBlock(app, '.start-gate-action')).toContain('margin-bottom: 0.5rem')
     expect(selectorBlock(appHeader, '.wordmark')).toContain(
       'font-size: calc(0.8125 * var(--ui-font-unit))',
     )
