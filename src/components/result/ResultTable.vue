@@ -131,7 +131,7 @@ function yoursText(result: QuestionResult): string {
 .result-row .qno {
   margin-left: auto;
   color: var(--color-text-dim);
-  font-size: calc(0.625 * var(--ui-font-unit));
+  font-size: calc(0.75 * var(--ui-font-unit));
   flex-shrink: 0;
 }
 </style>

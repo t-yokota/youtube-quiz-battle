@@ -260,7 +260,7 @@ describe('実画面のレスポンシブスケール', () => {
       'font-size: calc(0.6875 * var(--ui-font-unit))',
     )
     expect(selectorBlock(resultTable, '.result-row .qno')).toContain(
-      'font-size: calc(0.625 * var(--ui-font-unit))',
+      'font-size: calc(0.75 * var(--ui-font-unit))',
     )
     expect(selectorBlock(resultActions, '.replay-button')).toContain(
       'font-size: var(--ui-font-unit)',
