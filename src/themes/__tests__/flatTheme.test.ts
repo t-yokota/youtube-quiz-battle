@@ -5,6 +5,7 @@ import { resolve } from 'node:path'
 
 const flatThemePath = resolve(process.cwd(), 'src/themes/flat.theme.css')
 const flatTheme = existsSync(flatThemePath) ? readFileSync(flatThemePath, 'utf8') : ''
+const lightTheme = readFileSync(resolve(process.cwd(), 'src/themes/light.theme.css'), 'utf8')
 const defaultTheme = readFileSync(resolve(process.cwd(), 'src/themes/default.theme.css'), 'utf8')
 const neumorphismTheme = readFileSync(
   resolve(process.cwd(), 'src/themes/neumorphism.theme.css'),
@@ -77,7 +78,7 @@ describe('flatテーマ', () => {
   it('フラットテーマのブラウザUI色を定義する', () => {
     const tokens = tokenMap(ruleBody(flatTheme, ROOT_SELECTOR))
 
-    expect(tokens.get('--theme-color')).toBe('#f3eee7')
+    expect(tokens.get('--theme-color')).toBe('#f0efec')
   })
 
   it('Android Chromeが許容する明るさのブラウザUI色を使う', () => {
@@ -88,10 +89,11 @@ describe('flatテーマ', () => {
   })
 
   it('主要な面を単色にしてニューモーフィズムと区別する', () => {
-    expect(tokenValue(flatTheme, '--surface-app')).toBe('#fffdf9')
-    expect(tokenValue(flatTheme, '--header-bg')).toBe('#fffdf9')
-    expect(tokenValue(flatTheme, '--gate-bg')).toBe('#fffdf9')
-    expect(tokenValue(flatTheme, '--result-bg')).toBe('#fffdf9')
+    expect(tokenValue(flatTheme, '--surface-app')).toBe('#ffffff')
+    expect(tokenValue(flatTheme, '--surface-panel')).toBe('#ffffff')
+    expect(tokenValue(flatTheme, '--header-bg')).toBe('#ffffff')
+    expect(tokenValue(flatTheme, '--gate-bg')).toBe('#ffffff')
+    expect(tokenValue(flatTheme, '--result-bg')).toBe('#ffffff')
     expect(tokenValue(flatTheme, '--pedestal-bg')).toBe('transparent')
     expect(tokenValue(flatTheme, '--spotlight-glow')).toBe('none')
     expect(tokenValue(flatTheme, '--surface-app')).not.toBe(
@@ -183,14 +185,84 @@ describe('flatテーマ', () => {
   it('ベースの朱を明るい面向けの色に揃える', () => {
     const tokens = tokenMap(ruleBody(flatTheme, ROOT_SELECTOR))
 
-    expect(tokens.get('--color-accent')).toBe('#cc4933')
+    expect(tokens.get('--color-accent')).toBe('#cf4933')
     expect(tokens.get('--color-accent-hover')).toBe('#b83e2c')
-    expect(tokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(204, 73, 51, 0.35)')
-    expect(tokens.get('--toggle-on-track')).toBe('rgba(204, 73, 51, 0.15)')
+    expect(tokens.get('--color-on-accent')).toBe('#ffffff')
+    expect(tokens.get('--toggle-on-track')).toBe('rgba(207, 73, 51, 0.15)')
+  })
+
+  it('戦績チップの現在位置をグローのない細い外周線で囲む', () => {
+    const rootTokens = tokenMap(ruleBody(flatTheme, ROOT_SELECTOR))
+    const chipTokens = tokenMap(
+      ruleBody(
+        flatTheme,
+        `html[data-theme='flat'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
+      ),
+    )
+
+    expect(rootTokens.get('--chip-current-glow')).toBe(
+      'inset 0 0 0 0.0625rem rgba(207, 73, 51, 0.25), 0 0 0 0.09375rem rgba(207, 73, 51, 0.25)',
+    )
+    expect(rootTokens.get('--chip-current-correct-glow')).toBe(
+      'inset 0 0 0 0.0625rem rgba(23, 135, 88, 0.25), 0 0 0 0.09375rem rgba(23, 135, 88, 0.25)',
+    )
+    expect(rootTokens.get('--chip-current-wrong-glow')).toBe(
+      'inset 0 0 0 0.0625rem rgba(103, 86, 199, 0.25), 0 0 0 0.09375rem rgba(103, 86, 199, 0.25)',
+    )
+    expect(chipTokens.get('--chip-current-glow')).toBe(
+      'inset 0 0 0 0.0625rem rgba(229, 118, 19, 0.25), 0 0 0 0.09375rem rgba(229, 118, 19, 0.25)',
+    )
+    expect(chipTokens.get('--chip-current-correct-glow')).toBe(
+      'inset 0 0 0 0.0625rem rgba(23, 135, 88, 0.25), 0 0 0 0.09375rem rgba(23, 135, 88, 0.25)',
+    )
+    expect(chipTokens.get('--chip-current-wrong-glow')).toBe(
+      'inset 0 0 0 0.0625rem rgba(204, 76, 57, 0.25), 0 0 0 0.09375rem rgba(204, 76, 57, 0.25)',
+    )
+  })
+
+  it('新しいlightの中立パレットと正解色を取り込む', () => {
+    for (const token of [
+      '--theme-color',
+      '--color-text-main',
+      '--color-text-dim',
+      '--color-placeholder',
+      '--color-line',
+      '--color-accent',
+      '--color-accent-hover',
+      '--color-on-accent',
+      '--color-info',
+      '--color-answer-correct',
+      '--color-answer-wrong',
+      '--color-error',
+      '--color-urgent',
+      '--surface-raised',
+      '--overlay-bg',
+      '--input-bg',
+      '--input-border-color',
+      '--input-focus-border-color',
+      '--input-focus-shadow',
+      '--btn-primary-bg',
+      '--btn-primary-bg-hover',
+      '--btn-primary-text',
+      '--btn-replay-bg',
+      '--btn-replay-bg-hover',
+      '--btn-replay-text',
+      '--chip-correct-bg',
+      '--toggle-track',
+      '--toggle-knob',
+      '--timer-track',
+      '--banner-correct-bg',
+      '--flash-correct-glow',
+    ]) {
+      expect(tokenValue(flatTheme, token), token).toBe(tokenValue(lightTheme, token))
+    }
+
+    expect(tokenValue(flatTheme, '--toggle-track-border')).toBe('#8f9095')
+    expect(tokenValue(flatTheme, '--slider-track')).toBe('#8f9095')
   })
 
   it('芥子色の局所役割をオレンジ寄りにしてflatの実画面とプレビューだけへ適用する', () => {
-    const uiAccent = '#e97012'
+    const uiAccent = '#e57613'
     const startTokens = tokenMap(
       ruleBody(flatTheme, "html[data-theme='flat'] :is(.start-gate-action, .final-rate .pct)"),
     )
@@ -212,12 +284,15 @@ describe('flatテーマ', () => {
 
     expect(startTokens.get('--color-accent')).toBe(uiAccent)
     expect(chipTokens.get('--color-accent')).toBe(uiAccent)
-    expect(chipTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(233, 112, 18, 0.35)')
+    expect(chipTokens.get('--color-answer-wrong')).toBe('#cc4c39')
     expect(answerTokens.get('--color-accent')).toBe(uiAccent)
+    expect(answerTokens.get('--color-answer-wrong')).toBe('#cc4c39')
+    expect(answerTokens.get('--color-urgent')).toBe('#cc4c39')
     expect(answerTokens.get('--btn-primary-bg')).toBe(uiAccent)
-    expect(answerTokens.get('--btn-primary-bg-hover')).toBe('#d9650f')
+    expect(answerTokens.get('--btn-primary-bg-hover')).toBe('#f28f2f')
+    expect(answerTokens.get('--btn-primary-text')).toBe('#ffffff')
     expect(toggleTokens.get('--color-accent')).toBe(uiAccent)
-    expect(toggleTokens.get('--toggle-on-track')).toBe('rgba(233, 112, 18, 0.14)')
+    expect(toggleTokens.get('--toggle-on-track')).toBe('rgba(229, 118, 19, 0.16)')
     expect(toggleTokens.get('--toggle-on-border')).toBe(uiAccent)
     expect(toggleTokens.get('--toggle-on-knob')).toBe(uiAccent)
 

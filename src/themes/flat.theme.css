@@ -1,52 +1,52 @@
 /* ==========================================================================
    Theme: フラット
    -----------------------------------------------------------------------
-   暖かいオフホワイトを基調としたフラットテーマ。
-   デフォルトと同じ朱・芥子・緑・紫の役割を維持しながら、明るい面で
-   読みやすい濃度へ調整する。フラットな同系色の面を罫線で分け、
+   ライトと同じクールアイボリーのパレットを使うフラットテーマ。
+   調整した朱・オレンジ・正解緑・不正解朱の役割を共有しつつ、
+   背景とパネルを同じ白い面にして罫線で分け、
    両方向のソフトシャドウを使うニューモーフィズムとは表現を分ける。
    ========================================================================== */
 [data-theme='flat'] {
   /* --- メタ情報 --- */
-  --theme-color: #f3eee7;
+  --theme-color: #f0efec;
 
   /* --- フォント --- */
   --font-body: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* --- テキスト・罫線 --- */
-  --color-text-main: #2b2723;
-  --color-text-dim: #6b6259;
-  --color-placeholder: #7d7369;
-  --color-line: #d8d1c7;
+  --color-text-main: #292a2c;
+  --color-text-dim: #676a6e;
+  --color-placeholder: #7b7e83;
+  --color-line: #dcdbd6;
 
   /* --- セマンティックカラー（色相を維持し、明るい面向けに濃度を補正） --- */
-  --color-accent: #cc4933;
+  --color-accent: #cf4933;
   --color-accent-hover: #b83e2c;
-  --color-on-accent: #fffdf9;
+  --color-on-accent: #ffffff;
   --color-info: #356fca;
-  --color-answer-correct: #1f8559;
+  --color-answer-correct: #178758;
   --color-answer-wrong: #6756c7;
   --color-error: #c83a2a;
   --color-urgent: #c83a2a;
 
-  /* --- サーフェス（暖色系の白と薄いグレー） --- */
-  --surface-app: #fffdf9;
-  --surface-panel: #fffdf9;
-  --surface-raised: #eee9e2;
-  --header-bg: #fffdf9;
-  --overlay-bg: rgba(50, 42, 35, 0.42);
-  --gate-bg: #fffdf9;
-  --result-bg: #fffdf9;
+  /* --- サーフェス（背景とパネルを同じ白い面へ統一） --- */
+  --surface-app: #ffffff;
+  --surface-panel: #ffffff;
+  --surface-raised: #ebebe8;
+  --header-bg: #ffffff;
+  --overlay-bg: rgba(38, 40, 44, 0.44);
+  --gate-bg: #ffffff;
+  --result-bg: #ffffff;
 
   /* --- パネル・モーダル（通常面は罫線のみで分離） --- */
   --panel-border: 1px solid var(--color-line);
   --panel-shadow: 0 0 rgba(0, 0, 0, 0);
   --row-shadow: none;
-  --modal-shadow: 0 1rem 3rem rgba(63, 49, 38, 0.22);
+  --modal-shadow: 0 1rem 3rem rgba(40, 42, 46, 0.22);
 
   /* --- 入力欄 --- */
   --input-bg: #ffffff;
-  --input-border-color: #978a7e;
+  --input-border-color: #8f9095;
   --input-shadow: none;
   --input-focus-border-color: var(--color-info);
   --input-focus-shadow: 0 0 0 0.1875rem rgba(53, 111, 202, 0.18);
@@ -79,31 +79,34 @@
   --spotlight-glow: none;
 
   /* --- 戦績チップ --- */
-  --chip-bg: #eee9e2;
-  --chip-correct-bg: rgba(31, 133, 89, 0.12);
+  --chip-bg: #ebebe8;
+  --chip-correct-bg: rgba(23, 135, 88, 0.12);
   --chip-wrong-bg: rgba(103, 86, 199, 0.12);
-  --chip-current-glow: 0 0 0.375rem rgba(204, 73, 51, 0.35);
-  --chip-current-correct-glow: 0 0 0.375rem rgba(31, 133, 89, 0.35);
-  --chip-current-wrong-glow: 0 0 0.375rem rgba(103, 86, 199, 0.35);
+  --chip-current-glow:
+    inset 0 0 0 0.0625rem rgba(207, 73, 51, 0.25), 0 0 0 0.09375rem rgba(207, 73, 51, 0.25);
+  --chip-current-correct-glow:
+    inset 0 0 0 0.0625rem rgba(23, 135, 88, 0.25), 0 0 0 0.09375rem rgba(23, 135, 88, 0.25);
+  --chip-current-wrong-glow:
+    inset 0 0 0 0.0625rem rgba(103, 86, 199, 0.25), 0 0 0 0.09375rem rgba(103, 86, 199, 0.25);
 
   /* --- トグル・スライダー --- */
-  --toggle-track: #e5dfd7;
-  --toggle-track-border: #978a7e;
+  --toggle-track: #e8e8e5;
+  --toggle-track-border: #8f9095;
   --toggle-track-shadow: none;
-  --toggle-on-track: rgba(204, 73, 51, 0.15);
+  --toggle-on-track: rgba(207, 73, 51, 0.15);
   --toggle-on-border: var(--color-accent);
-  --toggle-knob: #6b6259;
+  --toggle-knob: #676a6e;
   --toggle-on-knob: var(--color-accent);
-  --slider-track: #978a7e;
+  --slider-track: #8f9095;
   --slider-thumb: var(--color-accent);
   --slider-thumb-shadow: none;
 
   /* --- タイマー・リザルト演出 --- */
-  --timer-track: #ddd6cd;
+  --timer-track: #dededa;
   --timer-hole: var(--surface-panel);
-  --banner-correct-bg: rgba(31, 133, 89, 0.12);
+  --banner-correct-bg: rgba(23, 135, 88, 0.12);
   --banner-wrong-bg: rgba(103, 86, 199, 0.12);
-  --flash-correct-glow: 0 0 1.125rem rgba(31, 133, 89, 0.2);
+  --flash-correct-glow: 0 0 1.125rem rgba(23, 135, 88, 0.2);
   --flash-wrong-glow: 0 0 1.125rem rgba(103, 86, 199, 0.22);
 }
 
@@ -118,37 +121,41 @@ html[data-theme='flat'] .quiz-button {
 
 /* --- 開始操作・Result正解率 --- */
 html[data-theme='flat'] :is(.start-gate-action, .final-rate .pct) {
-  --color-accent: #e97012;
+  --color-accent: #e57613;
 }
 
 /* --- 戦績チップ（ゲーム・Result画面・テーマプレビュー） --- */
 html[data-theme='flat'] :is(.score-chips, .result-list),
 :is(.card-shell, .zoom-layer)[data-theme='flat'] .p-chips {
-  --color-accent: #e97012;
-  --color-answer-wrong: #b33f30;
-  --chip-wrong-bg: rgba(179, 63, 48, 0.12);
-  --chip-current-glow: 0 0 0.375rem rgba(233, 112, 18, 0.35);
-  --chip-current-wrong-glow: 0 0 0.375rem rgba(179, 63, 48, 0.35);
+  --color-accent: #e57613;
+  --color-answer-wrong: #cc4c39;
+  --chip-wrong-bg: rgba(204, 76, 57, 0.12);
+  --chip-current-glow:
+    inset 0 0 0 0.0625rem rgba(229, 118, 19, 0.25), 0 0 0 0.09375rem rgba(229, 118, 19, 0.25);
+  --chip-current-wrong-glow:
+    inset 0 0 0 0.0625rem rgba(204, 76, 57, 0.25), 0 0 0 0.09375rem rgba(204, 76, 57, 0.25);
+  --chip-current-correct-glow:
+    inset 0 0 0 0.0625rem rgba(23, 135, 88, 0.25), 0 0 0 0.09375rem rgba(23, 135, 88, 0.25);
 }
 
 /* --- 解答エリア（実画面・テーマプレビュー） --- */
 html[data-theme='flat'] .answer-area,
 :is(.card-shell, .zoom-layer)[data-theme='flat'] .p-panel {
-  --color-accent: #e97012;
-  --color-answer-wrong: #b33f30;
-  --color-urgent: #b33f30;
-  --btn-primary-bg: #e97012;
-  --btn-primary-bg-hover: #d9650f;
-  --btn-primary-text: #241800;
-  --banner-wrong-bg: rgba(179, 63, 48, 0.12);
-  --flash-wrong-glow: 0 0 1.125rem rgba(179, 63, 48, 0.2);
+  --color-accent: #e57613;
+  --color-answer-wrong: #cc4c39;
+  --color-urgent: #cc4c39;
+  --btn-primary-bg: #e57613;
+  --btn-primary-bg-hover: #f28f2f;
+  --btn-primary-text: #ffffff;
+  --banner-wrong-bg: rgba(204, 76, 57, 0.12);
+  --flash-wrong-glow: 0 0 1.125rem rgba(204, 76, 57, 0.2);
 }
 
 /* --- ボタンチェックトグル（実画面・テーマプレビュー） --- */
 html[data-theme='flat'] .check-toggle,
 :is(.card-shell, .zoom-layer)[data-theme='flat'] .p-toggle-row {
-  --color-accent: #e97012;
-  --toggle-on-track: rgba(233, 112, 18, 0.14);
-  --toggle-on-border: #e97012;
-  --toggle-on-knob: #e97012;
+  --color-accent: #e57613;
+  --toggle-on-track: rgba(229, 118, 19, 0.16);
+  --toggle-on-border: #e57613;
+  --toggle-on-knob: #e57613;
 }
