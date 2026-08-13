@@ -56,7 +56,7 @@ describe('lightテーマ', () => {
     expect(tokens.get('--theme-color')).toBe('#f0efec')
     expect(tokens.get('--surface-app')).toBe('#f6f6f4')
     expect(tokens.get('--surface-panel')).toBe('#ffffff')
-    expect(tokens.get('--gate-bg')).toBe('#ffffff')
+    expect(tokens.get('--gate-bg')).toBe('#f6f6f4')
     expect(tokens.get('--result-bg')).toBe('#f6f6f4')
   })
 

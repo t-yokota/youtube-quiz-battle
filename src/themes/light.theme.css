@@ -37,7 +37,7 @@ html,
   --surface-raised: #ebebe8;
   --header-bg: none;
   --overlay-bg: rgba(38, 40, 44, 0.44);
-  --gate-bg: #ffffff;
+  --gate-bg: #f6f6f4;
   --result-bg: #f6f6f4;
 
   /* --- パネル・モーダル（落影はニュートラルグレー寄りに） --- */
