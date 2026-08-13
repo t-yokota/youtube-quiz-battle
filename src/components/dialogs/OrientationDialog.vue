@@ -60,7 +60,8 @@ withDefaults(defineProps<Props>(), {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  /* テーマ一覧・選択時のズームを含め、横向き中はすべての操作を警告で覆う */
+  z-index: 4000;
   padding: 1rem;
 }
 
