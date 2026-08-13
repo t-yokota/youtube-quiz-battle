@@ -43,13 +43,13 @@ html,
   /* --- パネル・モーダル --- */
   --panel-border: 1px solid var(--color-line);
   --panel-shadow: 0 0 rgba(0, 0, 0, 0); /* none 相当（多重指定と結合可能にするため透明影） */
-  --row-shadow: none;
+  --row-shadow: 0 0.0625rem 0.25rem rgba(0, 0, 0, 0.3);
   --modal-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.6);
 
   /* --- 入力欄 --- */
   --input-bg: #14171a;
   --input-border-color: var(--color-line);
-  --input-shadow: none;
+  --input-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
   --input-focus-border-color: var(--color-info);
   --input-focus-shadow: 0 0 0 0.1875rem rgba(79, 140, 255, 0.25);
 
@@ -61,7 +61,7 @@ html,
   --btn-replay-bg: #e6402e;
   --btn-replay-bg-hover: #f0523f;
   --btn-replay-text: #ffffff;
-  --btn-replay-shadow: none;
+  --btn-replay-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
   --btn-muted-bg: var(--surface-raised);
   --btn-muted-text: var(--color-text-main);
 
@@ -96,14 +96,14 @@ html,
   /* --- トグル・スライダー --- */
   --toggle-track: var(--surface-raised);
   --toggle-track-border: var(--color-line);
-  --toggle-track-shadow: none;
+  --toggle-track-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
   --toggle-on-track: rgba(255, 107, 79, 0.22);
   --toggle-on-border: var(--color-accent);
   --toggle-knob: var(--color-text-dim);
   --toggle-on-knob: var(--color-accent);
   --slider-track: #394147;
   --slider-thumb: var(--color-accent);
-  --slider-thumb-shadow: none;
+  --slider-thumb-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
 
   /* --- タイマー・リザルト演出 --- */
   --timer-track: var(--surface-raised);
@@ -112,6 +112,11 @@ html,
   --banner-wrong-bg: rgba(139, 124, 255, 0.16);
   --flash-correct-glow: 0 0 1.125rem rgba(67, 214, 141, 0.25);
   --flash-wrong-glow: 0 0 1.125rem rgba(139, 124, 255, 0.3);
+}
+
+/* --- モーダル系ボタン --- */
+html[data-theme='default'] :is(.modal-overlay, .dialog-overlay) {
+  --btn-primary-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
 }
 
 /* --- 早押しボタン（実画面・テーマプレビュー） --- */
@@ -147,6 +152,8 @@ html[data-theme='default'] .answer-area,
   --btn-primary-bg: #e8b032;
   --btn-primary-bg-hover: #f2bf4b;
   --btn-primary-text: #1a1204;
+  --btn-primary-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
+  --panel-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.3);
   --banner-wrong-bg: rgba(239, 83, 64, 0.15);
   --flash-wrong-glow: 0 0 1.125rem rgba(239, 83, 64, 0.25);
 }

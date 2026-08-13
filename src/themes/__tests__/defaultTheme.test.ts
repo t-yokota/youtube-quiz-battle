@@ -69,6 +69,29 @@ describe('default theme', () => {
     expect(rootTokens.get('--header-bg')).toBe('none')
   })
 
+  it('lightと同じUIへ暗色面向けの控えめなシャドウを付ける', () => {
+    expect(
+      Object.fromEntries(
+        [
+          '--row-shadow',
+          '--input-shadow',
+          '--btn-replay-shadow',
+          '--toggle-track-shadow',
+          '--slider-thumb-shadow',
+        ].map((token) => [token, rootTokens.get(token)]),
+      ),
+    ).toEqual({
+      '--row-shadow': '0 0.0625rem 0.25rem rgba(0, 0, 0, 0.3)',
+      '--input-shadow': 'inset 0 1px 2px rgba(0, 0, 0, 0.3)',
+      '--btn-replay-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)',
+      '--toggle-track-shadow': 'inset 0 1px 2px rgba(0, 0, 0, 0.28)',
+      '--slider-thumb-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)',
+    })
+
+    expect(rootTokens.get('--panel-shadow')).toBe('0 0 rgba(0, 0, 0, 0)')
+    expect(rootTokens.get('--btn-primary-shadow')).toBe('none')
+  })
+
   it('早押しボタンの太い外周を1pxの枠線へ置き換える', () => {
     expect(ruleBody(defaultTheme, "html[data-theme='default'] .quiz-button")).toContain(
       'border: 1px solid #9c2317',
@@ -120,6 +143,8 @@ describe('default theme', () => {
       '--btn-primary-bg': '#e8b032',
       '--btn-primary-bg-hover': '#f2bf4b',
       '--btn-primary-text': '#1a1204',
+      '--btn-primary-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)',
+      '--panel-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.3)',
       '--banner-wrong-bg': 'rgba(239, 83, 64, 0.15)',
       '--flash-wrong-glow': '0 0 1.125rem rgba(239, 83, 64, 0.25)',
     })
@@ -169,19 +194,19 @@ describe('default theme', () => {
     })
   })
 
-  it('Qとモーダルには局所上書きを追加しない', () => {
+  it('モーダル系のプライマリーボタンに暗色面向けのシャドウを付ける', () => {
+    expectOverrides("html[data-theme='default'] :is(.modal-overlay, .dialog-overlay)", {
+      '--btn-primary-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)',
+    })
+  })
+
+  it('Qには局所上書きを追加しない', () => {
     const selectors = [...defaultTheme.matchAll(/([^{}]+)\{[^{}]*\}/g)].map((match) =>
       match[1].trim(),
     )
 
     expect(
-      selectors.filter(
-        (selector) =>
-          selector.includes('.q-label') ||
-          /\.p-q\b/.test(selector) ||
-          selector.includes('.modal-overlay') ||
-          selector.includes('.dialog-overlay'),
-      ),
+      selectors.filter((selector) => selector.includes('.q-label') || /\.p-q\b/.test(selector)),
     ).toEqual([])
   })
 

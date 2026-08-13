@@ -136,6 +136,21 @@ describe('lightテーマ', () => {
     expect(releasedShadow).not.toContain('0 0 0 0.375rem')
   })
 
+  it('Result行・再プレイ・モーダルボタンに明色面向けのシャドウを付ける', () => {
+    const rootTokens = tokenMap(ruleBody(lightTheme, ROOT_SELECTOR))
+    const modalTokens = tokenMap(
+      ruleBody(lightTheme, "html[data-theme='light'] :is(.modal-overlay, .dialog-overlay)"),
+    )
+
+    expect(rootTokens.get('--btn-replay-shadow')).toBe(
+      '0 0.125rem 0.375rem rgba(125, 53, 40, 0.24)',
+    )
+    expect(rootTokens.get('--row-shadow')).toBe('0 0.0625rem 0.25rem rgba(40, 42, 46, 0.1)')
+    expect(modalTokens.get('--btn-primary-shadow')).toBe(
+      '0 0.125rem 0.375rem rgba(40, 42, 46, 0.16)',
+    )
+  })
+
   it('局所アクセントをlightの実画面とプレビューだけへ適用する', () => {
     const uiAccent = '#e57613'
     const startTokens = tokenMap(
@@ -165,6 +180,10 @@ describe('lightテーマ', () => {
     expect(answerTokens.get('--color-accent')).toBe(uiAccent)
     expect(answerTokens.get('--btn-primary-bg')).toBe(uiAccent)
     expect(answerTokens.get('--btn-primary-text')).toBe('#ffffff')
+    expect(answerTokens.get('--btn-primary-shadow')).toBe(
+      '0 0.125rem 0.375rem rgba(40, 42, 46, 0.16)',
+    )
+    expect(answerTokens.get('--panel-shadow')).toBe('0 0.125rem 0.375rem rgba(40, 42, 46, 0.06)')
     expect(toggleTokens.get('--color-accent')).toBe(uiAccent)
     expect(toggleTokens.get('--toggle-on-border')).toBe(uiAccent)
     expect(toggleTokens.get('--toggle-on-knob')).toBe(uiAccent)

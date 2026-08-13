@@ -1,16 +1,10 @@
 /* ==========================================================================
-   Theme: ライト（クールアイボリー）
+   Theme: ライト
    -----------------------------------------------------------------------
-   地の黄味を抜いた明るいニュートラル面に、
-   UIアクセントを明るいオレンジ（#e57613）＋暗い文字で載せる。
-   デフォルト（暗色＋芥子色）と同じ「明るい面 × 暗い文字」の運用を
-   ライト側に翻訳したもの。早押しボタンの赤とワードマークの朱は維持。
-
-   主な特徴:
-   - サーフェス/罫線/文字をクールアイボリーで統一
-   - UIアクセントに明るいオレンジ #e57613 を使用
-   - アクセント上の文字色を白 → #2b1704（コントラスト確保）
-   - チップの外側グロウは明色面向けの透明度に調整
+   クールアイボリー基調の明色テーマ。
+   基本操作には朱、開始操作・戦績・解答操作にはオレンジ、
+   正解には緑、不正解には朱を使用する。
+   罫線と控えめな影で明るい面に立体感を加える。
    ========================================================================== */
 [data-theme='light'] {
   /* --- メタ情報 --- */
@@ -25,7 +19,7 @@
   --color-placeholder: #7b7e83;
   --color-line: #dcdbd6;
 
-  /* --- セマンティックカラー（役割はライトと共通） --- */
+  /* --- セマンティックカラー（基調の朱・情報青・正誤色） --- */
   --color-accent: #cf4933;
   --color-accent-hover: #b83e2c;
   --color-on-accent: #ffffff;
@@ -47,7 +41,7 @@
   /* --- パネル・モーダル（落影はニュートラルグレー寄りに） --- */
   --panel-border: 1px solid var(--color-line);
   --panel-shadow: none;
-  --row-shadow: 0 0.125rem 0.5rem rgba(40, 42, 46, 0.1);
+  --row-shadow: 0 0.0625rem 0.25rem rgba(40, 42, 46, 0.1);
   --modal-shadow: 0 1rem 3rem rgba(40, 42, 46, 0.22);
 
   /* --- 入力欄 --- */
@@ -65,11 +59,11 @@
   --btn-replay-bg: #c83a2a;
   --btn-replay-bg-hover: #ad2f22;
   --btn-replay-text: #ffffff;
-  --btn-replay-shadow: 0 0.25rem 0.625rem rgba(125, 53, 40, 0.24);
+  --btn-replay-shadow: 0 0.125rem 0.375rem rgba(125, 53, 40, 0.24);
   --btn-muted-bg: var(--surface-raised);
   --btn-muted-text: var(--color-text-main);
 
-  /* --- 早押しボタン（赤は維持。影のみニュートラル化） --- */
+  /* --- 早押しボタン（赤い面とニュートラルな落影による立体表現） --- */
   --quiz-btn-face:
     radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.36) 0%, transparent 48%),
     radial-gradient(circle, #ed503d 54%, #de4230 80%, #c83a2a 100%);
@@ -118,6 +112,11 @@
   --flash-wrong-glow: 0 0 1.125rem rgba(103, 86, 199, 0.22);
 }
 
+/* --- モーダル系ボタン --- */
+html[data-theme='light'] :is(.modal-overlay, .dialog-overlay) {
+  --btn-primary-shadow: 0 0.125rem 0.375rem rgba(40, 42, 46, 0.16);
+}
+
 /* --- 早押しボタン（実画面・テーマプレビュー） --- */
 html[data-theme='light'] .quiz-button {
   border: 1px solid #ad2f22;
@@ -128,7 +127,7 @@ html[data-theme='light'] .quiz-button {
 }
 
 /* --- 開始操作・Result正解率 --- */
-/* 明るいオレンジ面には暗い文字を載せるため --color-on-accent も併せて上書きする */
+/* オレンジを文字色に使い、同じ局所スコープで面に使う場合の文字色も濃色へ揃える */
 html[data-theme='light'] :is(.start-gate-action, .final-rate .pct) {
   --color-accent: #e57613;
   --color-accent-hover: #f28f2f;
@@ -155,6 +154,8 @@ html[data-theme='light'] .answer-area,
   --btn-primary-bg: #e57613;
   --btn-primary-bg-hover: #f28f2f;
   --btn-primary-text: #ffffff;
+  --btn-primary-shadow: 0 0.125rem 0.375rem rgba(40, 42, 46, 0.16);
+  --panel-shadow: 0 0.125rem 0.375rem rgba(40, 42, 46, 0.06);
   --banner-wrong-bg: rgba(204, 76, 57, 0.12);
   --flash-wrong-glow: 0 0 1.125rem rgba(204, 76, 57, 0.2);
 }
