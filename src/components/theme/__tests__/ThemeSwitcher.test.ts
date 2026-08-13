@@ -27,8 +27,8 @@ vi.mock('@/composables/useTheme', async () => {
 
   return {
     useTheme: () => ({
-      themes: ref([{ id: 'default', label: 'デフォルト', order: 0 }]),
-      currentThemeId: ref('default'),
+      themes: ref([{ id: 'light', label: 'デフォルト', order: 0 }]),
+      currentThemeId: ref('light'),
       setTheme: themeMock.setTheme,
     }),
   }
@@ -247,7 +247,7 @@ describe('ThemeSwitcher', () => {
     vi.advanceTimersByTime(470)
     await nextTick()
 
-    expect(themeMock.setTheme).toHaveBeenCalledWith('default')
+    expect(themeMock.setTheme).toHaveBeenCalledWith('light')
     expect(close).toHaveBeenCalledOnce()
   })
 })

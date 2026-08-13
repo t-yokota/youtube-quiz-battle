@@ -12,9 +12,9 @@ export interface ThemeMetadata {
 export type ThemeMetadataMap = Readonly<Record<string, Readonly<ThemeMetadata>>>
 
 export const themeMeta = {
-  default: { label: 'デフォルト', order: 0 },
-  flat: { label: 'フラット', order: 1 },
-  light: { label: 'ライト', order: 2 },
+  light: { label: 'デフォルト', order: 0 },
+  dark: { label: 'ダーク', order: 1 },
+  flat: { label: 'フラット', order: 2 },
   neumorphism: { label: 'ニューモーフィズム', order: 3 },
 } as const satisfies ThemeMetadataMap
 

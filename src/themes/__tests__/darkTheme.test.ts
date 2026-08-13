@@ -3,10 +3,9 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-const defaultTheme = readFileSync(resolve(process.cwd(), 'src/themes/default.theme.css'), 'utf8')
-const indexHtml = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
-const ROOT_SELECTOR = "html,\n[data-theme='default']"
-const PREVIEW_THEME_SCOPE = ":is(.card-shell, .zoom-layer)[data-theme='default']"
+const darkTheme = readFileSync(resolve(process.cwd(), 'src/themes/dark.theme.css'), 'utf8')
+const ROOT_SELECTOR = "[data-theme='dark']"
+const PREVIEW_THEME_SCOPE = ":is(.card-shell, .zoom-layer)[data-theme='dark']"
 
 function ruleBody(css: string, selector: string): string {
   const ruleStart = css.indexOf(`${selector} {`)
@@ -29,13 +28,13 @@ function tokenMap(rule: string): Map<string, string> {
 }
 
 function expectOverrides(selector: string, expected: Record<string, string>): void {
-  expect(Object.fromEntries(tokenMap(ruleBody(defaultTheme, selector)))).toEqual(expected)
+  expect(Object.fromEntries(tokenMap(ruleBody(darkTheme, selector)))).toEqual(expected)
 }
 
-describe('default theme', () => {
-  const rootTokens = tokenMap(ruleBody(defaultTheme, ROOT_SELECTOR))
+describe('dark theme', () => {
+  const rootTokens = tokenMap(ruleBody(darkTheme, ROOT_SELECTOR))
 
-  it('デフォルトの基本配色とブラウザUI色を定義する', () => {
+  it('ダークの基本配色とブラウザUI色を定義する', () => {
     expect(rootTokens.get('--theme-color')).toBe('#14171a')
     expect(rootTokens.get('--color-accent')).toBe('#ff6b4f')
     expect(rootTokens.get('--color-answer-wrong')).toBe('#8b7cff')
@@ -43,17 +42,8 @@ describe('default theme', () => {
     expect(rootTokens.get('--btn-replay-bg')).toBe('#e6402e')
   })
 
-  it('初期表示のtheme-colorをdefaultの背景色に揃える', () => {
-    const themeColors = [...indexHtml.matchAll(/<meta name="theme-color" content="([^"]+)"/g)].map(
-      (match) => match[1],
-    )
-
-    expect(themeColors).toEqual(['#14171a'])
-    expect(indexHtml).not.toMatch(/<meta name="theme-color"[^>]*\bmedia=/)
-  })
-
   it('開始アクションとResult正解率を芥子色にする', () => {
-    expectOverrides("html[data-theme='default'] :is(.start-gate-action, .final-rate .pct)", {
+    expectOverrides("html[data-theme='dark'] :is(.start-gate-action, .final-rate .pct)", {
       '--color-accent': '#e8b032',
     })
   })
@@ -93,11 +83,11 @@ describe('default theme', () => {
   })
 
   it('早押しボタンの太い外周を1pxの枠線へ置き換える', () => {
-    expect(ruleBody(defaultTheme, "html[data-theme='default'] .quiz-button")).toContain(
+    expect(ruleBody(darkTheme, "html[data-theme='dark'] .quiz-button")).toContain(
       'border: 1px solid #9c2317',
     )
     expect(
-      ruleBody(defaultTheme, ":is(.card-shell, .zoom-layer)[data-theme='default'] .p-quiz-button"),
+      ruleBody(darkTheme, ":is(.card-shell, .zoom-layer)[data-theme='dark'] .p-quiz-button"),
     ).toContain('border: 1px solid #9c2317')
 
     for (const token of [
@@ -124,7 +114,7 @@ describe('default theme', () => {
 
   it('戦績チップを芥子と朱の配色にする', () => {
     expectOverrides(
-      `html[data-theme='default'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
+      `html[data-theme='dark'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
       {
         '--color-accent': '#e8b032',
         '--color-answer-wrong': '#ef5340',
@@ -136,7 +126,7 @@ describe('default theme', () => {
   })
 
   it('解答エリアを芥子と朱の配色にする', () => {
-    expectOverrides(`html[data-theme='default'] .answer-area,\n${PREVIEW_THEME_SCOPE} .p-panel`, {
+    expectOverrides(`html[data-theme='dark'] .answer-area,\n${PREVIEW_THEME_SCOPE} .p-panel`, {
       '--color-accent': '#e8b032',
       '--color-answer-wrong': '#ef5340',
       '--color-urgent': '#ef5340',
@@ -152,7 +142,7 @@ describe('default theme', () => {
 
   it('ボタンチェックトグルを芥子色にする', () => {
     expectOverrides(
-      `html[data-theme='default'] .check-toggle,\n${PREVIEW_THEME_SCOPE} .p-toggle-row`,
+      `html[data-theme='dark'] .check-toggle,\n${PREVIEW_THEME_SCOPE} .p-toggle-row`,
       {
         '--color-accent': '#e8b032',
         '--toggle-on-track': 'rgba(232, 176, 50, 0.22)',
@@ -195,23 +185,21 @@ describe('default theme', () => {
   })
 
   it('モーダル系のプライマリーボタンに暗色面向けのシャドウを付ける', () => {
-    expectOverrides("html[data-theme='default'] :is(.modal-overlay, .dialog-overlay)", {
+    expectOverrides("html[data-theme='dark'] :is(.modal-overlay, .dialog-overlay)", {
       '--btn-primary-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)',
     })
   })
 
   it('Qには局所上書きを追加しない', () => {
-    const selectors = [...defaultTheme.matchAll(/([^{}]+)\{[^{}]*\}/g)].map((match) =>
-      match[1].trim(),
-    )
+    const selectors = [...darkTheme.matchAll(/([^{}]+)\{[^{}]*\}/g)].map((match) => match[1].trim())
 
     expect(
       selectors.filter((selector) => selector.includes('.q-label') || /\.p-q\b/.test(selector)),
     ).toEqual([])
   })
 
-  it('プレビュー上書きをdefaultカード自身のテーマ境界に限定する', () => {
-    const previewSelectors = [...defaultTheme.matchAll(/([^{}]+)\{[^{}]*\}/g)]
+  it('プレビュー上書きをdarkカード自身のテーマ境界に限定する', () => {
+    const previewSelectors = [...darkTheme.matchAll(/([^{}]+)\{[^{}]*\}/g)]
       .map((match) => match[1].trim())
       .filter((selector) => /\.p-(?:chips|panel|toggle-row)/.test(selector))
 

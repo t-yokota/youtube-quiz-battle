@@ -7,9 +7,10 @@ import { describe, expect, it } from 'vitest'
 
 const themesDirectory = resolve(process.cwd(), 'src/themes')
 const lightTheme = readFileSync(resolve(themesDirectory, 'light.theme.css'), 'utf8')
-const defaultTheme = readFileSync(resolve(themesDirectory, 'default.theme.css'), 'utf8')
+const darkTheme = readFileSync(resolve(themesDirectory, 'dark.theme.css'), 'utf8')
+const indexHtml = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
 
-const ROOT_SELECTOR = "[data-theme='light']"
+const ROOT_SELECTOR = "html,\n[data-theme='light']"
 const PREVIEW_THEME_SCOPE = ":is(.card-shell, .zoom-layer)[data-theme='light']"
 
 function ruleBody(css: string, selector: string): string {
@@ -59,6 +60,15 @@ describe('lightテーマ', () => {
     expect(tokens.get('--result-bg')).toBe('#f6f6f4')
   })
 
+  it('初期表示のtheme-colorをlightの背景色に揃える', () => {
+    const themeColors = [...indexHtml.matchAll(/<meta name="theme-color" content="([^"]+)"/g)].map(
+      (match) => match[1],
+    )
+
+    expect(themeColors).toEqual(['#f0efec'])
+    expect(indexHtml).not.toMatch(/<meta name="theme-color"[^>]*\bmedia=/)
+  })
+
   it('明るくした朱と白の組み合わせで4.5対1を維持する', () => {
     const tokens = tokenMap(ruleBody(lightTheme, ROOT_SELECTOR))
     const accent = tokens.get('--color-accent') ?? ''
@@ -95,13 +105,11 @@ describe('lightテーマ', () => {
     expect(contrastRatio(wrong, '#ffffff')).toBeGreaterThanOrEqual(4.5)
   })
 
-  it('defaultが提供するroot tokenをすべて明示的に定義する', () => {
+  it('darkが提供するroot tokenをすべて明示的に定義する', () => {
     const lightTokens = [...tokenMap(ruleBody(lightTheme, ROOT_SELECTOR)).keys()].sort()
-    const defaultTokens = [
-      ...tokenMap(ruleBody(defaultTheme, "[data-theme='default']")).keys(),
-    ].sort()
+    const darkTokens = [...tokenMap(ruleBody(darkTheme, "[data-theme='dark']")).keys()].sort()
 
-    expect(lightTokens).toEqual(defaultTokens)
+    expect(lightTokens).toEqual(darkTokens)
   })
 
   it('現在位置チップをリングではなくブラーで強調する', () => {

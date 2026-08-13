@@ -6,7 +6,7 @@ import { resolve } from 'node:path'
 const flatThemePath = resolve(process.cwd(), 'src/themes/flat.theme.css')
 const flatTheme = existsSync(flatThemePath) ? readFileSync(flatThemePath, 'utf8') : ''
 const lightTheme = readFileSync(resolve(process.cwd(), 'src/themes/light.theme.css'), 'utf8')
-const defaultTheme = readFileSync(resolve(process.cwd(), 'src/themes/default.theme.css'), 'utf8')
+const darkTheme = readFileSync(resolve(process.cwd(), 'src/themes/dark.theme.css'), 'utf8')
 const neumorphismTheme = readFileSync(
   resolve(process.cwd(), 'src/themes/neumorphism.theme.css'),
   'utf8',
@@ -139,13 +139,11 @@ describe('flatテーマ', () => {
     }
   })
 
-  it('デフォルトが提供するroot tokenをすべて明示的に定義する', () => {
+  it('darkが提供するroot tokenをすべて明示的に定義する', () => {
     const flatTokens = [...tokenMap(ruleBody(flatTheme, ROOT_SELECTOR)).keys()].sort()
-    const defaultTokens = [
-      ...tokenMap(ruleBody(defaultTheme, "[data-theme='default']")).keys(),
-    ].sort()
+    const darkTokens = [...tokenMap(ruleBody(darkTheme, "[data-theme='dark']")).keys()].sort()
 
-    expect(flatTokens).toEqual(defaultTokens)
+    expect(flatTokens).toEqual(darkTokens)
   })
 
   it('各種ボタンと設定UIを影のないフラットな面にする', () => {

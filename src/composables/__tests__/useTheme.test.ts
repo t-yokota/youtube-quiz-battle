@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const THEME_COLORS: Record<string, string> = {
-  default: '#14171a',
+  dark: '#14171a',
   flat: '#f0efec',
   light: '#f0efec',
   neumorphism: '#e3e7f0',
@@ -11,7 +11,7 @@ function installComputedStyleMock(): void {
   vi.stubGlobal(
     'getComputedStyle',
     vi.fn((element: HTMLElement) => {
-      const themeId = element.dataset.theme ?? 'default'
+      const themeId = element.dataset.theme ?? 'light'
 
       return {
         getPropertyValue(property: string) {
@@ -74,7 +74,7 @@ describe('useTheme', () => {
 
     useTheme()
 
-    expect(themeColorMetaValues()).toEqual(['#14171a'])
+    expect(themeColorMetaValues()).toEqual(['#f0efec'])
     expect(document.querySelector('meta[name="theme-color"]')?.hasAttribute('media')).toBe(false)
   })
 
@@ -82,11 +82,11 @@ describe('useTheme', () => {
     const { useTheme } = await import('../useTheme')
     const { themes } = useTheme()
 
-    expect(themes.value.map(({ id }) => id)).toEqual(['default', 'flat', 'light', 'neumorphism'])
+    expect(themes.value.map(({ id }) => id)).toEqual(['light', 'dark', 'flat', 'neumorphism'])
     expect(themes.value.map(({ label }) => label)).toEqual([
       'デフォルト',
+      'ダーク',
       'フラット',
-      'ライト',
       'ニューモーフィズム',
     ])
   })
@@ -97,7 +97,7 @@ describe('useTheme', () => {
 
     setTheme('draft')
 
-    expect(currentThemeId.value).toBe('default')
+    expect(currentThemeId.value).toBe('light')
     expect(localStorage.getItem('yqb-theme')).toBeNull()
   })
 
@@ -121,15 +121,25 @@ describe('useTheme', () => {
     expect(themeColorMetaValues()).toEqual(['#f0efec'])
   })
 
+  it('保存済みの旧defaultをdarkへ移行する', async () => {
+    localStorage.setItem('yqb-theme', 'default')
+    const { useTheme } = await import('../useTheme')
+    const { currentThemeId } = useTheme()
+
+    expect(currentThemeId.value).toBe('dark')
+    expect(localStorage.getItem('yqb-theme')).toBe('dark')
+    expect(themeColorMetaValues()).toEqual(['#14171a'])
+  })
+
   it.each(['default-2', 'default-3', 'default-4', 'default-5'])(
-    '保存済みの旧テーマ%sをdefaultへ移行する',
+    '保存済みの旧テーマ%sをdarkへ移行する',
     async (legacyTheme) => {
       localStorage.setItem('yqb-theme', legacyTheme)
       const { useTheme } = await import('../useTheme')
       const { currentThemeId } = useTheme()
 
-      expect(currentThemeId.value).toBe('default')
-      expect(localStorage.getItem('yqb-theme')).toBe('default')
+      expect(currentThemeId.value).toBe('dark')
+      expect(localStorage.getItem('yqb-theme')).toBe('dark')
       expect(themeColorMetaValues()).toEqual(['#14171a'])
     },
   )

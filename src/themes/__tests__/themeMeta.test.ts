@@ -5,9 +5,9 @@ import { createThemeList, themeMeta } from '../themeMeta'
 describe('themeMeta', () => {
   it('公開テーマの表示名と順序を一元管理する', () => {
     expect(themeMeta).toEqual({
-      default: { label: 'デフォルト', order: 0 },
-      flat: { label: 'フラット', order: 1 },
-      light: { label: 'ライト', order: 2 },
+      light: { label: 'デフォルト', order: 0 },
+      dark: { label: 'ダーク', order: 1 },
+      flat: { label: 'フラット', order: 2 },
       neumorphism: { label: 'ニューモーフィズム', order: 3 },
     })
   })
@@ -17,18 +17,21 @@ describe('themeMeta', () => {
       [
         '../themes/neumorphism.theme.css',
         '../themes/draft.theme.css',
-        '../themes/default.theme.css',
+        '../themes/light.theme.css',
+        '../themes/dark.theme.css',
       ],
       {
-        default: { label: 'デフォルト', order: 0 },
-        missing: { label: 'CSSなし', order: 1 },
-        neumorphism: { label: 'ニューモーフィズム', order: 2 },
+        light: { label: 'デフォルト', order: 0 },
+        dark: { label: 'ダーク', order: 1 },
+        missing: { label: 'CSSなし', order: 2 },
+        neumorphism: { label: 'ニューモーフィズム', order: 3 },
       },
     )
 
     expect(themes).toEqual([
-      { id: 'default', label: 'デフォルト', order: 0 },
-      { id: 'neumorphism', label: 'ニューモーフィズム', order: 2 },
+      { id: 'light', label: 'デフォルト', order: 0 },
+      { id: 'dark', label: 'ダーク', order: 1 },
+      { id: 'neumorphism', label: 'ニューモーフィズム', order: 3 },
     ])
   })
 })

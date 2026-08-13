@@ -12,8 +12,13 @@ export type { ThemeInfo } from '@/themes/themeMeta'
 const themeModules = import.meta.glob('../themes/*.theme.css', { eager: true })
 
 const STORAGE_KEY = 'yqb-theme'
-const DEFAULT_THEME = 'default'
+const DEFAULT_THEME = 'light'
 const LEGACY_THEME_IDS: Readonly<Record<string, string>> = {
+  default: 'dark',
+  'default-2': 'dark',
+  'default-3': 'dark',
+  'default-4': 'dark',
+  'default-5': 'dark',
   'default-flat': 'flat',
   'light-2': 'light',
 }
