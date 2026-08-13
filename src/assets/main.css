@@ -52,16 +52,18 @@ html {
   font-optical-sizing: none;
   /* Android Chromeでdvhの初期確定が遅れる場合はJSから実可視高さへ上書きする */
   --ui-viewport-height: 100dvh;
+  /* ソフトキーボード表示中もUI比率を維持するため、縮尺基準は表示高と分離する */
+  --ui-layout-viewport-height: var(--ui-viewport-height);
   /* wireframe (315×700) に対するレイアウト縮尺。縦比率優先・幅不足時は幅基準 */
   --ui-layout-unit: clamp(
     13px,
-    calc(min(var(--ui-viewport-height) / 700, 100vw / 315) * 16),
+    calc(min(var(--ui-layout-viewport-height) / 700, 100vw / 315) * 16),
     26px
   );
   /* 文字も短辺に追従させつつ、16px下限で設計基準の可読性を保つ */
   --ui-font-unit: clamp(
     16px,
-    calc(min(var(--ui-viewport-height) / 700, 100vw / 315) * 16),
+    calc(min(var(--ui-layout-viewport-height) / 700, 100vw / 315) * 16),
     26px
   );
   /* 縦幅に左右されたくない要素は横幅基準のサイズを維持する */

@@ -417,12 +417,12 @@ const handleOverlayClick = (event: MouseEvent) => {
   --settings-font-max: 15px;
   --settings-layout-unit: clamp(
     var(--settings-layout-min),
-    calc(min(var(--ui-viewport-height) / 700, 100vw / 315) * 16),
+    calc(min(var(--ui-layout-viewport-height) / 700, 100vw / 315) * 16),
     var(--settings-layout-max)
   );
   --settings-font-unit: clamp(
     var(--settings-font-min),
-    calc(min(var(--ui-viewport-height) / 700, 100vw / 315) * 16),
+    calc(min(var(--ui-layout-viewport-height) / 700, 100vw / 315) * 16),
     var(--settings-font-max)
   );
   --settings-control-height: max(40px, calc(2.75 * var(--settings-layout-unit)));

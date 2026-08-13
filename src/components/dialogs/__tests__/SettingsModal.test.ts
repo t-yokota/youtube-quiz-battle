@@ -49,10 +49,10 @@ describe('SettingsModal', () => {
     expect(overlay).toContain('--settings-layout-max: 15px')
     expect(overlay).toContain('--settings-font-max: 15px')
     expect(compactOverlay).toContain(
-      '--settings-layout-unit:clamp(var(--settings-layout-min),calc(min(var(--ui-viewport-height)/700,100vw/315)*16),var(--settings-layout-max))',
+      '--settings-layout-unit:clamp(var(--settings-layout-min),calc(min(var(--ui-layout-viewport-height)/700,100vw/315)*16),var(--settings-layout-max))',
     )
     expect(compactOverlay).toContain(
-      '--settings-font-unit:clamp(var(--settings-font-min),calc(min(var(--ui-viewport-height)/700,100vw/315)*16),var(--settings-font-max))',
+      '--settings-font-unit:clamp(var(--settings-font-min),calc(min(var(--ui-layout-viewport-height)/700,100vw/315)*16),var(--settings-font-max))',
     )
     expect(overlay).toContain(
       '--settings-control-height: max(40px, calc(2.75 * var(--settings-layout-unit)))',

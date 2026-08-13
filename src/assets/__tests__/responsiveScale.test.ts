@@ -48,11 +48,12 @@ describe('実画面のレスポンシブスケール', () => {
     const widthUnit = htmlRule.match(/--ui-width-unit:\s*([^;]+);/)?.[1]
 
     expect(htmlRule).toContain('--ui-viewport-height: 100dvh')
+    expect(htmlRule).toContain('--ui-layout-viewport-height: var(--ui-viewport-height)')
     expect(normalizeCssValue(layoutUnit)).toBe(
-      'clamp(13px, calc(min(var(--ui-viewport-height) / 700, 100vw / 315) * 16), 26px)',
+      'clamp(13px, calc(min(var(--ui-layout-viewport-height) / 700, 100vw / 315) * 16), 26px)',
     )
     expect(normalizeCssValue(fontUnit)).toBe(
-      'clamp(16px, calc(min(var(--ui-viewport-height) / 700, 100vw / 315) * 16), 26px)',
+      'clamp(16px, calc(min(var(--ui-layout-viewport-height) / 700, 100vw / 315) * 16), 26px)',
     )
     expect(widthUnit).toBe('clamp(13px, calc(100vw / 315 * 16), 26px)')
     expect(htmlRule).toContain('font-size: var(--ui-layout-unit)')

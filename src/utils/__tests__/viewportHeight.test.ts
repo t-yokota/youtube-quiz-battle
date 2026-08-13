@@ -25,6 +25,7 @@ describe('viewportHeight', () => {
       get: () => visibilityState,
     })
     document.documentElement.style.removeProperty('--ui-viewport-height')
+    document.documentElement.style.removeProperty('--ui-layout-viewport-height')
   })
 
   afterEach(() => {
@@ -36,6 +37,8 @@ describe('viewportHeight', () => {
     if (originalVisibilityState)
       Object.defineProperty(document, 'visibilityState', originalVisibilityState)
     document.documentElement.style.removeProperty('--ui-viewport-height')
+    document.documentElement.style.removeProperty('--ui-layout-viewport-height')
+    document.body.replaceChildren()
   })
 
   it('layout viewportより小さいvisual viewportを可視高さとして採用する', () => {
@@ -46,11 +49,47 @@ describe('viewportHeight', () => {
   it('初回表示と遅延確定したviewportをCSS変数へ同期する', () => {
     const stop = installViewportHeightSync()
     expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe('700px')
+    expect(document.documentElement.style.getPropertyValue('--ui-layout-viewport-height')).toBe(
+      '700px',
+    )
 
     visualViewport.height = 652
     vi.advanceTimersByTime(500)
 
     expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe('652px')
+    expect(document.documentElement.style.getPropertyValue('--ui-layout-viewport-height')).toBe(
+      '652px',
+    )
+    stop()
+  })
+
+  it('ソフトキーボード表示中は可視高だけを更新しUI縮尺の基準高を維持する', () => {
+    const stop = installViewportHeightSync()
+    const input = document.createElement('input')
+    input.type = 'text'
+    document.body.append(input)
+    input.focus()
+
+    visualViewport.height = 420
+    visualViewport.dispatchEvent(new Event('resize'))
+
+    expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe('420px')
+    expect(document.documentElement.style.getPropertyValue('--ui-layout-viewport-height')).toBe(
+      '700px',
+    )
+
+    input.blur()
+    visualViewport.dispatchEvent(new Event('resize'))
+    expect(document.documentElement.style.getPropertyValue('--ui-layout-viewport-height')).toBe(
+      '700px',
+    )
+
+    visualViewport.height = 700
+    visualViewport.dispatchEvent(new Event('resize'))
+
+    expect(document.documentElement.style.getPropertyValue('--ui-layout-viewport-height')).toBe(
+      '700px',
+    )
     stop()
   })
 
