@@ -2,9 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const THEME_COLORS: Record<string, string> = {
   default: '#14171a',
-  flat: '#f3eee7',
-  light: '#eee8df',
-  'light-2': '#f0efec',
+  flat: '#f0efec',
+  light: '#f0efec',
   neumorphism: '#e3e7f0',
 }
 
@@ -63,7 +62,7 @@ describe('useTheme', () => {
 
     setTheme('flat')
 
-    expect(themeColorMetaValues()).toEqual(['#f3eee7'])
+    expect(themeColorMetaValues()).toEqual(['#f0efec'])
     expect(document.querySelector('meta[name="theme-color"]')?.hasAttribute('media')).toBe(false)
     expect(document.querySelector('meta[name="theme-color"]')).not.toBe(previousMeta)
     expect(previousMeta?.isConnected).toBe(false)
@@ -83,17 +82,10 @@ describe('useTheme', () => {
     const { useTheme } = await import('../useTheme')
     const { themes } = useTheme()
 
-    expect(themes.value.map(({ id }) => id)).toEqual([
-      'default',
-      'flat',
-      'light-2',
-      'light',
-      'neumorphism',
-    ])
+    expect(themes.value.map(({ id }) => id)).toEqual(['default', 'flat', 'light', 'neumorphism'])
     expect(themes.value.map(({ label }) => label)).toEqual([
       'デフォルト',
       'フラット',
-      'ライト2',
       'ライト',
       'ニューモーフィズム',
     ])
@@ -116,7 +108,17 @@ describe('useTheme', () => {
 
     expect(currentThemeId.value).toBe('flat')
     expect(localStorage.getItem('yqb-theme')).toBe('flat')
-    expect(themeColorMetaValues()).toEqual(['#f3eee7'])
+    expect(themeColorMetaValues()).toEqual(['#f0efec'])
+  })
+
+  it('保存済みのlight-2をlightへ移行する', async () => {
+    localStorage.setItem('yqb-theme', 'light-2')
+    const { useTheme } = await import('../useTheme')
+    const { currentThemeId } = useTheme()
+
+    expect(currentThemeId.value).toBe('light')
+    expect(localStorage.getItem('yqb-theme')).toBe('light')
+    expect(themeColorMetaValues()).toEqual(['#f0efec'])
   })
 
   it.each(['default-2', 'default-3', 'default-4', 'default-5'])(

@@ -1,52 +1,59 @@
 /* ==========================================================================
-   Theme: ライト
+   Theme: ライト（クールアイボリー）
    -----------------------------------------------------------------------
-   フラットの暖かい明色パレットに、デフォルトの立体感とスポットライトを
-   組み合わせる。背景グラデーションは明るい階調内に留め、暗い停止色で
-   画面全体が重くならないようにする。
+   地の黄味を抜いた明るいニュートラル面に、
+   UIアクセントを明るいオレンジ（#e57613）＋暗い文字で載せる。
+   デフォルト（暗色＋芥子色）と同じ「明るい面 × 暗い文字」の運用を
+   ライト側に翻訳したもの。早押しボタンの赤とワードマークの朱は維持。
+
+   主な特徴:
+   - サーフェス/罫線/文字をクールアイボリーで統一
+   - UIアクセントに明るいオレンジ #e57613 を使用
+   - アクセント上の文字色を白 → #2b1704（コントラスト確保）
+   - チップの外側グロウは明色面向けの透明度に調整
    ========================================================================== */
 [data-theme='light'] {
   /* --- メタ情報 --- */
-  --theme-color: #eee8df;
+  --theme-color: #f0efec;
 
   /* --- フォント --- */
   --font-body: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* --- テキスト・罫線（flatと共通） --- */
-  --color-text-main: #2b2723;
-  --color-text-dim: #6b6259;
-  --color-placeholder: #7d7369;
-  --color-line: #d8d1c7;
+  /* --- テキスト・罫線（暖色を抜いたニュートラル） --- */
+  --color-text-main: #292a2c;
+  --color-text-dim: #676a6e;
+  --color-placeholder: #7b7e83;
+  --color-line: #dcdbd6;
 
-  /* --- セマンティックカラー（flatと共通） --- */
-  --color-accent: #cc4933;
+  /* --- セマンティックカラー（役割はライトと共通） --- */
+  --color-accent: #cf4933;
   --color-accent-hover: #b83e2c;
-  --color-on-accent: #fffdf9;
+  --color-on-accent: #ffffff;
   --color-info: #356fca;
-  --color-answer-correct: #1f8559;
+  --color-answer-correct: #178758;
   --color-answer-wrong: #6756c7;
   --color-error: #c83a2a;
   --color-urgent: #c83a2a;
 
-  /* --- サーフェス（明るい階調だけで奥行きを作る） --- */
-  --surface-app: #faf7f2;
-  --surface-panel: #fffdf9;
-  --surface-raised: #eee9e2;
+  /* --- サーフェス（クールアイボリー） --- */
+  --surface-app: #f6f6f4;
+  --surface-panel: #ffffff;
+  --surface-raised: #ebebe8;
   --header-bg: none;
-  --overlay-bg: rgba(50, 42, 35, 0.42);
-  --gate-bg: #fffdf9;
-  --result-bg: #faf7f2;
+  --overlay-bg: rgba(38, 40, 44, 0.44);
+  --gate-bg: #ffffff;
+  --result-bg: #f6f6f4;
 
-  /* --- パネル・モーダル（通常パネルは罫線、行とモーダルは落影で分離） --- */
+  /* --- パネル・モーダル（落影はニュートラルグレー寄りに） --- */
   --panel-border: 1px solid var(--color-line);
   --panel-shadow: none;
-  --row-shadow: 0 0.125rem 0.5rem rgba(63, 49, 38, 0.1);
-  --modal-shadow: 0 1rem 3rem rgba(63, 49, 38, 0.22);
+  --row-shadow: 0 0.125rem 0.5rem rgba(40, 42, 46, 0.1);
+  --modal-shadow: 0 1rem 3rem rgba(40, 42, 46, 0.22);
 
   /* --- 入力欄 --- */
   --input-bg: #ffffff;
-  --input-border-color: #978a7e;
-  --input-shadow: inset 0 1px 2px rgba(63, 49, 38, 0.1);
+  --input-border-color: #8f9095;
+  --input-shadow: inset 0 1px 2px rgba(40, 42, 46, 0.1);
   --input-focus-border-color: var(--color-info);
   --input-focus-shadow: 0 0 0 0.1875rem rgba(53, 111, 202, 0.18);
 
@@ -62,52 +69,52 @@
   --btn-muted-bg: var(--surface-raised);
   --btn-muted-text: var(--color-text-main);
 
-  /* --- 早押しボタン（暗い赤へ沈めすぎず、光と影で立体化） --- */
+  /* --- 早押しボタン（赤は維持。影のみニュートラル化） --- */
   --quiz-btn-face:
     radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.36) 0%, transparent 48%),
     radial-gradient(circle, #ed503d 54%, #de4230 80%, #c83a2a 100%);
   --quiz-btn-text: #ffffff;
   --quiz-btn-text-shadow: 0 1px 2px rgba(87, 28, 19, 0.42);
-  --quiz-btn-shadow: 0 0.5rem 1.375rem rgba(63, 49, 38, 0.15);
+  --quiz-btn-shadow: 0 0.5rem 1.375rem rgba(40, 42, 46, 0.15);
   --quiz-btn-shadow-pressed:
-    0 2px 0.375rem rgba(63, 49, 38, 0.2), inset 0 0 0.875rem rgba(105, 34, 24, 0.3);
+    0 2px 0.375rem rgba(40, 42, 46, 0.2), inset 0 0 0.875rem rgba(105, 34, 24, 0.3);
   --quiz-btn-shadow-released:
-    0 0.1875rem 0.625rem rgba(63, 49, 38, 0.22), inset 0 0 0.5rem rgba(105, 34, 24, 0.2),
+    0 0.1875rem 0.625rem rgba(40, 42, 46, 0.22), inset 0 0 0.5rem rgba(105, 34, 24, 0.2),
     0 0 1.75rem 0.625rem rgba(200, 58, 42, 0.28);
   --quiz-btn-shadow-disabled: inset 0 0 0.875rem rgba(105, 34, 24, 0.3);
-  --quiz-btn-disabled-filter: brightness(0.8);
-  --pedestal-bg: radial-gradient(circle, #c2baad 45%, #faf7f2 55%, #fffdf9 70% 100%);
+  --quiz-btn-disabled-filter: brightness(0.82) saturate(0.7);
+  --pedestal-bg: radial-gradient(circle, #c7c7c3 45%, #f6f6f4 55%, #ffffff 70% 100%);
   --pedestal-border: 1px solid var(--color-line);
   --pedestal-shadow: none;
   --pulse-color: var(--color-accent);
   --spotlight-glow: none;
 
   /* --- 戦績チップ --- */
-  --chip-bg: #eee9e2;
-  --chip-correct-bg: rgba(31, 133, 89, 0.12);
+  --chip-bg: #ebebe8;
+  --chip-correct-bg: rgba(23, 135, 88, 0.12);
   --chip-wrong-bg: rgba(103, 86, 199, 0.12);
-  --chip-current-glow: 0 0 0.375rem rgba(204, 73, 51, 0.35);
-  --chip-current-correct-glow: 0 0 0.375rem rgba(31, 133, 89, 0.35);
+  --chip-current-glow: 0 0 0.375rem rgba(207, 73, 51, 0.35);
+  --chip-current-correct-glow: 0 0 0.375rem rgba(23, 135, 88, 0.35);
   --chip-current-wrong-glow: 0 0 0.375rem rgba(103, 86, 199, 0.35);
 
   /* --- トグル・スライダー --- */
-  --toggle-track: #e5dfd7;
-  --toggle-track-border: #d3c8be;
-  --toggle-track-shadow: inset 0 1px 2px rgba(63, 49, 38, 0.08);
-  --toggle-on-track: rgba(204, 73, 51, 0.15);
+  --toggle-track: #e8e8e5;
+  --toggle-track-border: #d3d3ce;
+  --toggle-track-shadow: inset 0 1px 2px rgba(40, 42, 46, 0.08);
+  --toggle-on-track: rgba(207, 73, 51, 0.15);
   --toggle-on-border: var(--color-accent);
-  --toggle-knob: #6b6259;
+  --toggle-knob: #676a6e;
   --toggle-on-knob: var(--color-accent);
-  --slider-track: #c5b9ae;
+  --slider-track: #c2c3c1;
   --slider-thumb: var(--color-accent);
-  --slider-thumb-shadow: 0 0.125rem 0.375rem rgba(63, 49, 38, 0.16);
+  --slider-thumb-shadow: 0 0.125rem 0.375rem rgba(40, 42, 46, 0.16);
 
   /* --- タイマー・リザルト演出 --- */
-  --timer-track: #ddd6cd;
+  --timer-track: #dededa;
   --timer-hole: var(--surface-panel);
-  --banner-correct-bg: rgba(31, 133, 89, 0.12);
+  --banner-correct-bg: rgba(23, 135, 88, 0.12);
   --banner-wrong-bg: rgba(103, 86, 199, 0.12);
-  --flash-correct-glow: 0 0 1.125rem rgba(31, 133, 89, 0.2);
+  --flash-correct-glow: 0 0 1.125rem rgba(23, 135, 88, 0.2);
   --flash-wrong-glow: 0 0 1.125rem rgba(103, 86, 199, 0.22);
 }
 
@@ -121,38 +128,42 @@ html[data-theme='light'] .quiz-button {
 }
 
 /* --- 開始操作・Result正解率 --- */
+/* 明るいオレンジ面には暗い文字を載せるため --color-on-accent も併せて上書きする */
 html[data-theme='light'] :is(.start-gate-action, .final-rate .pct) {
-  --color-accent: #b87312;
+  --color-accent: #e57613;
+  --color-accent-hover: #f28f2f;
+  --color-on-accent: #2b1704;
 }
 
 /* --- 戦績チップ（ゲーム・Result画面・テーマプレビュー） --- */
 html[data-theme='light'] :is(.score-chips, .result-list),
 :is(.card-shell, .zoom-layer)[data-theme='light'] .p-chips {
-  --color-accent: #b87312;
-  --color-answer-wrong: #b33f30;
-  --chip-wrong-bg: rgba(179, 63, 48, 0.12);
-  --chip-current-glow: 0 0 0.375rem rgba(233, 112, 18, 0.35);
-  --chip-current-wrong-glow: 0 0 0.375rem rgba(179, 63, 48, 0.35);
+  --color-accent: #e57613;
+  --color-answer-wrong: #cc4c39;
+  --chip-wrong-bg: rgba(204, 76, 57, 0.12);
+  --chip-current-glow: 0 0 0.375rem rgba(229, 118, 19, 0.35);
+  --chip-current-wrong-glow: 0 0 0.375rem rgba(204, 76, 57, 0.35);
+  --chip-current-correct-glow: 0 0 0.375rem rgba(23, 135, 88, 0.35);
 }
 
 /* --- 解答エリア（実画面・テーマプレビュー） --- */
 html[data-theme='light'] .answer-area,
 :is(.card-shell, .zoom-layer)[data-theme='light'] .p-panel {
-  --color-accent: #b87312;
-  --color-answer-wrong: #b33f30;
-  --color-urgent: #b33f30;
-  --btn-primary-bg: #b87312;
-  --btn-primary-bg-hover: #bd7713;
-  --btn-primary-text: #fffdf9;
-  --banner-wrong-bg: rgba(179, 63, 48, 0.12);
-  --flash-wrong-glow: 0 0 1.125rem rgba(179, 63, 48, 0.2);
+  --color-accent: #e57613;
+  --color-answer-wrong: #cc4c39;
+  --color-urgent: #cc4c39;
+  --btn-primary-bg: #e57613;
+  --btn-primary-bg-hover: #f28f2f;
+  --btn-primary-text: #ffffff;
+  --banner-wrong-bg: rgba(204, 76, 57, 0.12);
+  --flash-wrong-glow: 0 0 1.125rem rgba(204, 76, 57, 0.2);
 }
 
 /* --- ボタンチェックトグル（実画面・テーマプレビュー） --- */
 html[data-theme='light'] .check-toggle,
 :is(.card-shell, .zoom-layer)[data-theme='light'] .p-toggle-row {
-  --color-accent: #b87312;
-  --toggle-on-track: rgba(184, 115, 18, 0.14);
-  --toggle-on-border: #b87312;
-  --toggle-on-knob: #b87312;
+  --color-accent: #e57613;
+  --toggle-on-track: rgba(229, 118, 19, 0.16);
+  --toggle-on-border: #e57613;
+  --toggle-on-knob: #e57613;
 }

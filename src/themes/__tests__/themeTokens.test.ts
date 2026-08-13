@@ -75,7 +75,6 @@ describe('theme token contract', () => {
     expect(Object.keys(themeFiles).sort()).toEqual([
       'default.theme.css',
       'flat.theme.css',
-      'light-2.theme.css',
       'light.theme.css',
       'neumorphism.theme.css',
     ])

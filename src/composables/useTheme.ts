@@ -15,6 +15,7 @@ const STORAGE_KEY = 'yqb-theme'
 const DEFAULT_THEME = 'default'
 const LEGACY_THEME_IDS: Readonly<Record<string, string>> = {
   'default-flat': 'flat',
+  'light-2': 'light',
 }
 
 const themes = ref<ThemeInfo[]>(createThemeList(Object.keys(themeModules)))

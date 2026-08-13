@@ -7,9 +7,8 @@ describe('themeMeta', () => {
     expect(themeMeta).toEqual({
       default: { label: 'デフォルト', order: 0 },
       flat: { label: 'フラット', order: 1 },
-      'light-2': { label: 'ライト2', order: 2 },
-      light: { label: 'ライト', order: 3 },
-      neumorphism: { label: 'ニューモーフィズム', order: 4 },
+      light: { label: 'ライト', order: 2 },
+      neumorphism: { label: 'ニューモーフィズム', order: 3 },
     })
   })
 
