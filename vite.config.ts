@@ -39,17 +39,17 @@ export default defineConfig(({ mode }) => ({
             purpose: 'any maskable',
           },
           {
-            src: `${BASE_PATH}pwa-192x192.png`,
+            src: `${BASE_PATH}icon-192x192.png`,
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: `${BASE_PATH}pwa-512x512.png`,
+            src: `${BASE_PATH}icon-512x512.png`,
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: `${BASE_PATH}pwa-maskable-512x512.png`,
+            src: `${BASE_PATH}icon-maskable-512x512.png`,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
