@@ -30,6 +30,7 @@ describe('PWA configuration', () => {
 
   it('iOS向けアイコンとPWA派生アイコンを用意する', () => {
     const assets = [
+      'public/icon.svg',
       'public/pwa-192x192.png',
       'public/pwa-512x512.png',
       'public/pwa-maskable-512x512.png',
@@ -39,6 +40,10 @@ describe('PWA configuration', () => {
     for (const asset of assets) expect(existsSync(resolve(root, asset)), asset).toBe(true)
     expect(indexHtml).toContain(
       '<link rel="apple-touch-icon" href="/youtube-quiz-battle/apple-touch-icon.png" />',
+    )
+    expect(viteConfig).toContain('src: `${BASE_PATH}icon.svg`')
+    expect(viteConfig).toMatch(
+      /src: `\$\{BASE_PATH\}icon\.svg`,\s+sizes: 'any',\s+type: 'image\/svg\+xml',\s+purpose: 'any maskable'/,
     )
   })
 

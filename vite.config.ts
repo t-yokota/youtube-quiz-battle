@@ -33,6 +33,12 @@ export default defineConfig(({ mode }) => ({
         background_color: '#f0efec',
         icons: [
           {
+            src: `${BASE_PATH}icon.svg`,
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
+          },
+          {
             src: `${BASE_PATH}pwa-192x192.png`,
             sizes: '192x192',
             type: 'image/png',
