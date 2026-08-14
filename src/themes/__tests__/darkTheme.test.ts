@@ -184,10 +184,13 @@ describe('dark theme', () => {
     })
   })
 
-  it('モーダル系のプライマリーボタンに暗色面向けのシャドウを付ける', () => {
-    expectOverrides("html[data-theme='dark'] :is(.modal-overlay, .dialog-overlay)", {
-      '--btn-primary-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)',
-    })
+  it('モーダル系と更新通知のプライマリーボタンに暗色面向けのシャドウを付ける', () => {
+    expectOverrides(
+      "html[data-theme='dark'] :is(.modal-overlay, .dialog-overlay, .pwa-update-prompt)",
+      {
+        '--btn-primary-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)',
+      },
+    )
   })
 
   it('Qには局所上書きを追加しない', () => {

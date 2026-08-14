@@ -144,10 +144,13 @@ describe('lightテーマ', () => {
     expect(releasedShadow).not.toContain('0 0 0 0.375rem')
   })
 
-  it('Result行・再プレイ・モーダルボタンに明色面向けのシャドウを付ける', () => {
+  it('Result行・再プレイ・モーダル・更新通知ボタンに明色面向けのシャドウを付ける', () => {
     const rootTokens = tokenMap(ruleBody(lightTheme, ROOT_SELECTOR))
     const modalTokens = tokenMap(
-      ruleBody(lightTheme, "html[data-theme='light'] :is(.modal-overlay, .dialog-overlay)"),
+      ruleBody(
+        lightTheme,
+        "html[data-theme='light'] :is(.modal-overlay, .dialog-overlay, .pwa-update-prompt)",
+      ),
     )
 
     expect(rootTokens.get('--btn-replay-shadow')).toBe(

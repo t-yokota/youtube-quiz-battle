@@ -112,8 +112,8 @@
   --flash-wrong-glow: 0 0 1.125rem rgba(139, 124, 255, 0.3);
 }
 
-/* --- モーダル系ボタン --- */
-html[data-theme='dark'] :is(.modal-overlay, .dialog-overlay) {
+/* --- モーダル・更新通知のプライマリーボタン --- */
+html[data-theme='dark'] :is(.modal-overlay, .dialog-overlay, .pwa-update-prompt) {
   --btn-primary-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
 }
 
