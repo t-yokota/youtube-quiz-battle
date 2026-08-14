@@ -31,9 +31,9 @@ describe('PWA configuration', () => {
   it('iOS向けアイコンとPWA派生アイコンを用意する', () => {
     const assets = [
       'public/icon.svg',
-      'public/icon-16x16.png',
-      'public/icon-32x32.png',
-      'public/icon-48x48.png',
+      'public/favicon-16x16.png',
+      'public/favicon-32x32.png',
+      'public/favicon-48x48.png',
       'public/icon-192x192.png',
       'public/icon-512x512.png',
       'public/icon-maskable-512x512.png',
@@ -43,6 +43,9 @@ describe('PWA configuration', () => {
     for (const asset of assets) expect(existsSync(resolve(root, asset)), asset).toBe(true)
     for (const obsoleteAsset of [
       'public/favicon.ico',
+      'public/icon-16x16.png',
+      'public/icon-32x32.png',
+      'public/icon-48x48.png',
       'public/pwa-192x192.png',
       'public/pwa-512x512.png',
       'public/pwa-maskable-512x512.png',
@@ -68,9 +71,9 @@ describe('PWA configuration', () => {
 
   it('favicon用PNGとManifest用PNGの実寸をファイル名に揃える', () => {
     const dimensions = [
-      ['public/icon-16x16.png', 16],
-      ['public/icon-32x32.png', 32],
-      ['public/icon-48x48.png', 48],
+      ['public/favicon-16x16.png', 16],
+      ['public/favicon-32x32.png', 32],
+      ['public/favicon-48x48.png', 48],
       ['public/icon-192x192.png', 192],
       ['public/icon-512x512.png', 512],
       ['public/icon-maskable-512x512.png', 512],
@@ -86,7 +89,7 @@ describe('PWA configuration', () => {
     for (const size of [16, 32, 48]) {
       const icon = html.querySelector(`link[rel="icon"][sizes="${size}x${size}"]`)
       expect(icon?.getAttribute('type')).toBe('image/png')
-      expect(icon?.getAttribute('href')).toBe(`/icon-${size}x${size}.png`)
+      expect(icon?.getAttribute('href')).toBe(`/favicon-${size}x${size}.png`)
     }
     expect(indexHtml).not.toContain('%BASE_URL%')
     expect(indexHtml).not.toContain('href="/youtube-quiz-battle/')
