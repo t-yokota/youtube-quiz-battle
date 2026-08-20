@@ -160,12 +160,14 @@ const handleButtonCheckToggle = () => {
   box-shadow: var(--toggle-track-shadow);
   transition:
     background var(--duration-base),
-    border-color var(--duration-base);
+    border-color var(--duration-base),
+    box-shadow var(--duration-base);
 }
 
 .check-toggle-track.on {
   background: var(--toggle-on-track);
   border-color: var(--toggle-on-border);
+  box-shadow: var(--toggle-on-track-shadow, var(--toggle-track-shadow));
 }
 
 .check-toggle-state {

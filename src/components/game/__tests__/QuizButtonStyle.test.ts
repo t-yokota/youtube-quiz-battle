@@ -56,6 +56,20 @@ describe('BUTTON CHECK toggle text', () => {
     )
   })
 
+  it('ON時はテーマ固有のトラックシャドウへ切り替える', () => {
+    const track = cssRule(quizButtonSource, '.check-toggle-track')
+    const onTrack = cssRule(quizButtonSource, '.check-toggle-track.on')
+    const previewTrack = cssRule(readSource('src/components/theme/ThemePreview.vue'), '.p-toggle')
+
+    expect(track).toContain('box-shadow: var(--toggle-track-shadow)')
+    expect(onTrack).toContain(
+      'box-shadow: var(--toggle-on-track-shadow, var(--toggle-track-shadow))',
+    )
+    expect(previewTrack).toContain(
+      'box-shadow: var(--toggle-on-track-shadow, var(--toggle-track-shadow))',
+    )
+  })
+
   it('テーマプレビューでもON/OFFをトラック中央へ揃える', () => {
     const rule = cssRule(readSource('src/components/theme/ThemePreview.vue'), '.p-toggle-state')
 

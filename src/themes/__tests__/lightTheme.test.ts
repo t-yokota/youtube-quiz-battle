@@ -168,7 +168,10 @@ describe('lightテーマ', () => {
     expect(answerTokens.get('--btn-primary-text')).toBe('#ffffff')
     expect(answerTokens.get('--panel-shadow')).toBe('0 0.125rem 0.375rem rgba(40, 42, 46, 0.06)')
     expect(toggleTokens.get('--color-accent')).toBe(uiAccent)
-    expect(toggleTokens.get('--toggle-on-border')).toBe(uiAccent)
+    expect(toggleTokens.get('--toggle-on-track-shadow')).toBe(
+      'inset 0 1px 2px rgba(171, 84, 10, 0.12)',
+    )
+    expect(toggleTokens.get('--toggle-on-border')).toBe('#e4c8ae')
     expect(toggleTokens.get('--toggle-on-knob')).toBe(uiAccent)
     expect(contrastRatio(uiAccent, '#ffffff')).toBeGreaterThanOrEqual(3)
 

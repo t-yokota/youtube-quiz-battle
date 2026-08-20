@@ -141,6 +141,6 @@ html[data-theme='dark'] .check-toggle,
 :is(.card-shell, .zoom-layer)[data-theme='dark'] .p-toggle-row {
   --color-accent: #e8b032;
   --toggle-on-track: rgba(232, 176, 50, 0.22);
-  --toggle-on-border: #e8b032;
+  --toggle-on-border: #574b30;
   --toggle-on-knob: #e8b032;
 }

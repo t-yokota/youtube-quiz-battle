@@ -392,7 +392,7 @@ withDefaults(defineProps<Props>(), {
   border-radius: 999px;
   background: var(--toggle-on-track);
   border: 1px solid var(--toggle-on-border);
-  box-shadow: var(--toggle-track-shadow);
+  box-shadow: var(--toggle-on-track-shadow, var(--toggle-track-shadow));
 }
 
 .p-toggle-state {

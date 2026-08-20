@@ -133,13 +133,13 @@ describe('dark theme', () => {
     })
   })
 
-  it('ボタンチェックトグルを芥子色にする', () => {
+  it('ボタンチェックトグルのノブを芥子、枠を暗色面になじむ薄い芥子にする', () => {
     expectOverrides(
       `html[data-theme='dark'] .check-toggle,\n${PREVIEW_THEME_SCOPE} .p-toggle-row`,
       {
         '--color-accent': '#e8b032',
         '--toggle-on-track': 'rgba(232, 176, 50, 0.22)',
-        '--toggle-on-border': '#e8b032',
+        '--toggle-on-border': '#574b30',
         '--toggle-on-knob': '#e8b032',
       },
     )
