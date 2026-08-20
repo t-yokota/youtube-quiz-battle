@@ -189,7 +189,7 @@ describe('flatテーマ', () => {
     expect(tokens.get('--toggle-on-track')).toBe('rgba(207, 73, 51, 0.15)')
   })
 
-  it('戦績チップの現在位置をグローのない細い外周線で囲む', () => {
+  it('戦績チップの現在位置をルート定義の細い外周線で囲む', () => {
     const rootTokens = tokenMap(ruleBody(flatTheme, ROOT_SELECTOR))
     const chipTokens = tokenMap(
       ruleBody(
@@ -199,23 +199,19 @@ describe('flatテーマ', () => {
     )
 
     expect(rootTokens.get('--chip-current-glow')).toBe(
-      'inset 0 0 0 0.0625rem rgba(207, 73, 51, 0.25), 0 0 0 0.09375rem rgba(207, 73, 51, 0.25)',
+      'inset 0 0 0 0.0625rem rgba(229, 118, 19, 0.25), 0 0 0 0.09375rem rgba(229, 118, 19, 0.25)',
     )
     expect(rootTokens.get('--chip-current-correct-glow')).toBe(
       'inset 0 0 0 0.0625rem rgba(23, 135, 88, 0.25), 0 0 0 0.09375rem rgba(23, 135, 88, 0.25)',
     )
     expect(rootTokens.get('--chip-current-wrong-glow')).toBe(
-      'inset 0 0 0 0.0625rem rgba(103, 86, 199, 0.25), 0 0 0 0.09375rem rgba(103, 86, 199, 0.25)',
-    )
-    expect(chipTokens.get('--chip-current-glow')).toBe(
-      'inset 0 0 0 0.0625rem rgba(229, 118, 19, 0.25), 0 0 0 0.09375rem rgba(229, 118, 19, 0.25)',
-    )
-    expect(chipTokens.get('--chip-current-correct-glow')).toBe(
-      'inset 0 0 0 0.0625rem rgba(23, 135, 88, 0.25), 0 0 0 0.09375rem rgba(23, 135, 88, 0.25)',
-    )
-    expect(chipTokens.get('--chip-current-wrong-glow')).toBe(
       'inset 0 0 0 0.0625rem rgba(204, 76, 57, 0.25), 0 0 0 0.09375rem rgba(204, 76, 57, 0.25)',
     )
+    expect(rootTokens.get('--chip-wrong-bg')).toBe('rgba(204, 76, 57, 0.12)')
+    expect(chipTokens.has('--chip-wrong-bg')).toBe(false)
+    expect(chipTokens.has('--chip-current-glow')).toBe(false)
+    expect(chipTokens.has('--chip-current-correct-glow')).toBe(false)
+    expect(chipTokens.has('--chip-current-wrong-glow')).toBe(false)
   })
 
   it('新しいlightの中立パレットと正解色を取り込む', () => {
@@ -250,7 +246,6 @@ describe('flatテーマ', () => {
       '--toggle-knob',
       '--timer-track',
       '--banner-correct-bg',
-      '--flash-correct-glow',
     ]) {
       expect(tokenValue(flatTheme, token), token).toBe(tokenValue(lightTheme, token))
     }
@@ -282,10 +277,7 @@ describe('flatテーマ', () => {
 
     expect(startTokens.get('--color-accent')).toBe(uiAccent)
     expect(chipTokens.get('--color-accent')).toBe(uiAccent)
-    expect(chipTokens.get('--color-answer-wrong')).toBe('#cc4c39')
     expect(answerTokens.get('--color-accent')).toBe(uiAccent)
-    expect(answerTokens.get('--color-answer-wrong')).toBe('#cc4c39')
-    expect(answerTokens.get('--color-urgent')).toBe('#cc4c39')
     expect(answerTokens.get('--btn-primary-bg')).toBe(uiAccent)
     expect(answerTokens.get('--btn-primary-bg-hover')).toBe('#f28f2f')
     expect(answerTokens.get('--btn-primary-text')).toBe('#ffffff')
@@ -293,6 +285,13 @@ describe('flatテーマ', () => {
     expect(toggleTokens.get('--toggle-on-track')).toBe('rgba(229, 118, 19, 0.16)')
     expect(toggleTokens.get('--toggle-on-border')).toBe(uiAccent)
     expect(toggleTokens.get('--toggle-on-knob')).toBe(uiAccent)
+    expect(tokenValue(flatTheme, '--color-answer-wrong')).toBe('#cc4c39')
+    expect(tokenValue(flatTheme, '--color-urgent')).toBe('#cc4c39')
+    expect(tokenValue(flatTheme, '--banner-wrong-bg')).toBe('rgba(204, 76, 57, 0.12)')
+    expect(chipTokens.has('--color-answer-wrong')).toBe(false)
+    expect(answerTokens.has('--color-answer-wrong')).toBe(false)
+    expect(answerTokens.has('--color-urgent')).toBe(false)
+    expect(answerTokens.has('--banner-wrong-bg')).toBe(false)
 
     const previewSelectors = [...flatTheme.matchAll(/([^{}]+)\{[^{}]*\}/g)]
       .map((match) => match[1].trim())

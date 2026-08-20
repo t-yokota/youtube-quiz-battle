@@ -98,9 +98,13 @@ describe('lightテーマ', () => {
     const wrong = '#cc4c39'
 
     expect(rootTokens.get('--color-answer-correct')).toBe(correct)
-    expect(chipTokens.get('--color-answer-wrong')).toBe(wrong)
-    expect(answerTokens.get('--color-answer-wrong')).toBe(wrong)
-    expect(answerTokens.get('--color-urgent')).toBe(wrong)
+    expect(rootTokens.get('--color-answer-wrong')).toBe(wrong)
+    expect(rootTokens.get('--color-urgent')).toBe(wrong)
+    expect(rootTokens.get('--banner-wrong-bg')).toBe('rgba(204, 76, 57, 0.12)')
+    expect(chipTokens.has('--color-answer-wrong')).toBe(false)
+    expect(answerTokens.has('--color-answer-wrong')).toBe(false)
+    expect(answerTokens.has('--color-urgent')).toBe(false)
+    expect(answerTokens.has('--banner-wrong-bg')).toBe(false)
     expect(contrastRatio(correct, '#ffffff')).toBeGreaterThanOrEqual(4.5)
     expect(contrastRatio(wrong, '#ffffff')).toBeGreaterThanOrEqual(4.5)
   })
@@ -112,7 +116,7 @@ describe('lightテーマ', () => {
     expect(lightTokens).toEqual(darkTokens)
   })
 
-  it('現在位置チップをリングではなくブラーで強調する', () => {
+  it('現在位置チップのグローをルートで一度だけ定義する', () => {
     const rootTokens = tokenMap(ruleBody(lightTheme, ROOT_SELECTOR))
     const chipTokens = tokenMap(
       ruleBody(
@@ -121,18 +125,16 @@ describe('lightテーマ', () => {
       ),
     )
 
-    expect(rootTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(207, 73, 51, 0.35)')
+    expect(rootTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(229, 118, 19, 0.35)')
     expect(rootTokens.get('--chip-current-correct-glow')).toBe(
       '0 0 0.375rem rgba(23, 135, 88, 0.35)',
     )
-    expect(rootTokens.get('--chip-current-wrong-glow')).toBe(
-      '0 0 0.375rem rgba(103, 86, 199, 0.35)',
-    )
-    expect(chipTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(229, 118, 19, 0.35)')
-    expect(chipTokens.get('--chip-current-correct-glow')).toBe(
-      '0 0 0.375rem rgba(23, 135, 88, 0.35)',
-    )
-    expect(chipTokens.get('--chip-current-wrong-glow')).toBe('0 0 0.375rem rgba(204, 76, 57, 0.35)')
+    expect(rootTokens.get('--chip-current-wrong-glow')).toBe('0 0 0.375rem rgba(204, 76, 57, 0.35)')
+    expect(rootTokens.get('--chip-wrong-bg')).toBe('rgba(204, 76, 57, 0.12)')
+    expect(chipTokens.has('--chip-wrong-bg')).toBe(false)
+    expect(chipTokens.has('--chip-current-glow')).toBe(false)
+    expect(chipTokens.has('--chip-current-correct-glow')).toBe(false)
+    expect(chipTokens.has('--chip-current-wrong-glow')).toBe(false)
   })
 
   it('ON時の早押しボタン外周をlightと同じブラーにする', () => {
@@ -146,18 +148,12 @@ describe('lightテーマ', () => {
 
   it('Result行・再プレイ・モーダル・更新通知ボタンに明色面向けのシャドウを付ける', () => {
     const rootTokens = tokenMap(ruleBody(lightTheme, ROOT_SELECTOR))
-    const modalTokens = tokenMap(
-      ruleBody(
-        lightTheme,
-        "html[data-theme='light'] :is(.modal-overlay, .dialog-overlay, .pwa-update-prompt)",
-      ),
-    )
 
     expect(rootTokens.get('--btn-replay-shadow')).toBe(
       '0 0.125rem 0.375rem rgba(125, 53, 40, 0.24)',
     )
     expect(rootTokens.get('--row-shadow')).toBe('0 0.0625rem 0.25rem rgba(40, 42, 46, 0.1)')
-    expect(modalTokens.get('--btn-primary-shadow')).toBe(
+    expect(rootTokens.get('--btn-primary-shadow')).toBe(
       '0 0.125rem 0.375rem rgba(40, 42, 46, 0.16)',
     )
   })
@@ -186,14 +182,11 @@ describe('lightテーマ', () => {
       ),
     )
 
-    expect(startTokens.get('--color-accent')).toBe(uiAccent)
+    expect(Object.fromEntries(startTokens)).toEqual({ '--color-accent': uiAccent })
     expect(chipTokens.get('--color-accent')).toBe(uiAccent)
     expect(answerTokens.get('--color-accent')).toBe(uiAccent)
     expect(answerTokens.get('--btn-primary-bg')).toBe(uiAccent)
     expect(answerTokens.get('--btn-primary-text')).toBe('#ffffff')
-    expect(answerTokens.get('--btn-primary-shadow')).toBe(
-      '0 0.125rem 0.375rem rgba(40, 42, 46, 0.16)',
-    )
     expect(answerTokens.get('--panel-shadow')).toBe('0 0.125rem 0.375rem rgba(40, 42, 46, 0.06)')
     expect(toggleTokens.get('--color-accent')).toBe(uiAccent)
     expect(toggleTokens.get('--toggle-on-border')).toBe(uiAccent)

@@ -29,8 +29,6 @@ const REQUIRED_TOKENS = [
   '--chip-current-wrong-glow',
   '--banner-correct-bg',
   '--banner-wrong-bg',
-  '--flash-correct-glow',
-  '--flash-wrong-glow',
 ] as const
 
 const DEPRECATED_TOKENS = [
@@ -47,6 +45,8 @@ const DEPRECATED_TOKENS = [
   '--banner-ng-bg',
   '--flash-ok-glow',
   '--flash-ng-glow',
+  '--flash-correct-glow',
+  '--flash-wrong-glow',
 ] as const
 
 function tokenValue(css: string, token: string): string | null {
@@ -83,6 +83,21 @@ describe('theme token contract', () => {
   it.each(Object.entries(themeFiles))('%s が用途別のカラートークンをすべて定義する', (_, css) => {
     for (const token of REQUIRED_TOKENS) {
       expect(tokenValue(css, token), `${token} should be defined`).not.toBeNull()
+    }
+  })
+
+  it.each(Object.entries(themeFiles))('%s が用途別トークンを一箇所だけで定義する', (_, css) => {
+    for (const token of [
+      '--btn-primary-shadow',
+      '--color-answer-wrong',
+      '--color-urgent',
+      '--banner-wrong-bg',
+      '--chip-wrong-bg',
+      '--chip-current-glow',
+      '--chip-current-correct-glow',
+      '--chip-current-wrong-glow',
+    ]) {
+      expect([...css.matchAll(new RegExp(`${token}:`, 'g'))], token).toHaveLength(1)
     }
   })
 

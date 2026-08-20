@@ -146,14 +146,11 @@
     3px 3px 6px #c3c9d6,
     -3px -3px 6px #ffffff;
 
-  /* --- タイマー・リザルト演出 --- */
+  /* --- タイマー・リザルト表示 --- */
   --timer-track: #cdd3e0;
   --timer-hole: #e3e7f0;
   --banner-correct-bg: rgba(47, 191, 143, 0.15);
   --banner-wrong-bg: rgba(232, 96, 76, 0.15);
-  --flash-correct-glow: 0 0 1.125rem rgba(47, 191, 143, 0.35);
-  --flash-wrong-glow: 0 0 1.125rem rgba(232, 96, 76, 0.35);
-
   /* --- 形状（丸みを強める） --- */
   --radius-sm: 0.625rem;
   --radius-md: 0.875rem;

@@ -24,10 +24,9 @@
   --color-on-accent: #210a04;
   --color-info: #4f8cff;
   --color-answer-correct: #43d68d;
-  /* 不正解（×・不正解バナー・不正解フラッシュ）。赤との混同を避けた青紫 */
-  --color-answer-wrong: #8b7cff;
+  --color-answer-wrong: #ef5340;
   --color-error: #e6402e;
-  --color-urgent: #e6402e;
+  --color-urgent: #ef5340;
 
   /* --- サーフェス（グラファイト基調のグレー階調） --- */
   --surface-app: #171b1e;
@@ -55,7 +54,7 @@
   --btn-primary-bg: var(--color-accent);
   --btn-primary-bg-hover: var(--color-accent-hover);
   --btn-primary-text: var(--color-on-accent);
-  --btn-primary-shadow: none;
+  --btn-primary-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
   --btn-replay-bg: #e6402e;
   --btn-replay-bg-hover: #f0523f;
   --btn-replay-text: #ffffff;
@@ -86,10 +85,10 @@
   /* --- 戦績チップ --- */
   --chip-bg: var(--surface-raised);
   --chip-correct-bg: rgba(67, 214, 141, 0.16);
-  --chip-wrong-bg: rgba(139, 124, 255, 0.16);
-  --chip-current-glow: 0 0 0.375rem rgba(255, 107, 79, 0.5);
+  --chip-wrong-bg: rgba(239, 83, 64, 0.14);
+  --chip-current-glow: 0 0 0.375rem rgba(232, 176, 50, 0.5);
   --chip-current-correct-glow: 0 0 0.375rem rgba(67, 214, 141, 0.5);
-  --chip-current-wrong-glow: 0 0 0.375rem rgba(139, 124, 255, 0.5);
+  --chip-current-wrong-glow: 0 0 0.375rem rgba(239, 83, 64, 0.5);
 
   /* --- トグル・スライダー --- */
   --toggle-track: var(--surface-raised);
@@ -103,18 +102,11 @@
   --slider-thumb: var(--color-accent);
   --slider-thumb-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
 
-  /* --- タイマー・リザルト演出 --- */
+  /* --- タイマー・リザルト表示 --- */
   --timer-track: var(--surface-raised);
   --timer-hole: var(--surface-panel);
   --banner-correct-bg: rgba(67, 214, 141, 0.15);
-  --banner-wrong-bg: rgba(139, 124, 255, 0.16);
-  --flash-correct-glow: 0 0 1.125rem rgba(67, 214, 141, 0.25);
-  --flash-wrong-glow: 0 0 1.125rem rgba(139, 124, 255, 0.3);
-}
-
-/* --- モーダル・更新通知のプライマリーボタン --- */
-html[data-theme='dark'] :is(.modal-overlay, .dialog-overlay, .pwa-update-prompt) {
-  --btn-primary-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
+  --banner-wrong-bg: rgba(239, 83, 64, 0.15);
 }
 
 /* --- 早押しボタン（実画面・テーマプレビュー） --- */
@@ -135,25 +127,16 @@ html[data-theme='dark'] :is(.start-gate-action, .final-rate .pct) {
 html[data-theme='dark'] :is(.score-chips, .result-list),
 :is(.card-shell, .zoom-layer)[data-theme='dark'] .p-chips {
   --color-accent: #e8b032;
-  --color-answer-wrong: #ef5340;
-  --chip-wrong-bg: rgba(239, 83, 64, 0.14);
-  --chip-current-glow: 0 0 0.375rem rgba(232, 176, 50, 0.5);
-  --chip-current-wrong-glow: 0 0 0.375rem rgba(239, 83, 64, 0.5);
 }
 
 /* --- 解答エリア（実画面・テーマプレビュー） --- */
 html[data-theme='dark'] .answer-area,
 :is(.card-shell, .zoom-layer)[data-theme='dark'] .p-panel {
   --color-accent: #e8b032;
-  --color-answer-wrong: #ef5340;
-  --color-urgent: #ef5340;
   --btn-primary-bg: #e8b032;
   --btn-primary-bg-hover: #f2bf4b;
   --btn-primary-text: #1a1204;
-  --btn-primary-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
   --panel-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.3);
-  --banner-wrong-bg: rgba(239, 83, 64, 0.15);
-  --flash-wrong-glow: 0 0 1.125rem rgba(239, 83, 64, 0.25);
 }
 
 /* --- ボタンチェックトグル（実画面・テーマプレビュー） --- */

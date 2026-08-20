@@ -25,9 +25,9 @@
   --color-on-accent: #ffffff;
   --color-info: #356fca;
   --color-answer-correct: #178758;
-  --color-answer-wrong: #6756c7;
+  --color-answer-wrong: #cc4c39;
   --color-error: #c83a2a;
-  --color-urgent: #c83a2a;
+  --color-urgent: #cc4c39;
 
   /* --- サーフェス（背景とパネルを同じ白い面へ統一） --- */
   --surface-app: #ffffff;
@@ -81,13 +81,13 @@
   /* --- 戦績チップ --- */
   --chip-bg: #ebebe8;
   --chip-correct-bg: rgba(23, 135, 88, 0.12);
-  --chip-wrong-bg: rgba(103, 86, 199, 0.12);
+  --chip-wrong-bg: rgba(204, 76, 57, 0.12);
   --chip-current-glow:
-    inset 0 0 0 0.0625rem rgba(207, 73, 51, 0.25), 0 0 0 0.09375rem rgba(207, 73, 51, 0.25);
+    inset 0 0 0 0.0625rem rgba(229, 118, 19, 0.25), 0 0 0 0.09375rem rgba(229, 118, 19, 0.25);
   --chip-current-correct-glow:
     inset 0 0 0 0.0625rem rgba(23, 135, 88, 0.25), 0 0 0 0.09375rem rgba(23, 135, 88, 0.25);
   --chip-current-wrong-glow:
-    inset 0 0 0 0.0625rem rgba(103, 86, 199, 0.25), 0 0 0 0.09375rem rgba(103, 86, 199, 0.25);
+    inset 0 0 0 0.0625rem rgba(204, 76, 57, 0.25), 0 0 0 0.09375rem rgba(204, 76, 57, 0.25);
 
   /* --- トグル・スライダー --- */
   --toggle-track: #e8e8e5;
@@ -101,13 +101,11 @@
   --slider-thumb: var(--color-accent);
   --slider-thumb-shadow: none;
 
-  /* --- タイマー・リザルト演出 --- */
+  /* --- タイマー・リザルト表示 --- */
   --timer-track: #dededa;
   --timer-hole: var(--surface-panel);
   --banner-correct-bg: rgba(23, 135, 88, 0.12);
-  --banner-wrong-bg: rgba(103, 86, 199, 0.12);
-  --flash-correct-glow: 0 0 1.125rem rgba(23, 135, 88, 0.2);
-  --flash-wrong-glow: 0 0 1.125rem rgba(103, 86, 199, 0.22);
+  --banner-wrong-bg: rgba(204, 76, 57, 0.12);
 }
 
 /* --- 早押しボタン（実画面・テーマプレビュー） --- */
@@ -128,27 +126,15 @@ html[data-theme='flat'] :is(.start-gate-action, .final-rate .pct) {
 html[data-theme='flat'] :is(.score-chips, .result-list),
 :is(.card-shell, .zoom-layer)[data-theme='flat'] .p-chips {
   --color-accent: #e57613;
-  --color-answer-wrong: #cc4c39;
-  --chip-wrong-bg: rgba(204, 76, 57, 0.12);
-  --chip-current-glow:
-    inset 0 0 0 0.0625rem rgba(229, 118, 19, 0.25), 0 0 0 0.09375rem rgba(229, 118, 19, 0.25);
-  --chip-current-wrong-glow:
-    inset 0 0 0 0.0625rem rgba(204, 76, 57, 0.25), 0 0 0 0.09375rem rgba(204, 76, 57, 0.25);
-  --chip-current-correct-glow:
-    inset 0 0 0 0.0625rem rgba(23, 135, 88, 0.25), 0 0 0 0.09375rem rgba(23, 135, 88, 0.25);
 }
 
 /* --- 解答エリア（実画面・テーマプレビュー） --- */
 html[data-theme='flat'] .answer-area,
 :is(.card-shell, .zoom-layer)[data-theme='flat'] .p-panel {
   --color-accent: #e57613;
-  --color-answer-wrong: #cc4c39;
-  --color-urgent: #cc4c39;
   --btn-primary-bg: #e57613;
   --btn-primary-bg-hover: #f28f2f;
   --btn-primary-text: #ffffff;
-  --banner-wrong-bg: rgba(204, 76, 57, 0.12);
-  --flash-wrong-glow: 0 0 1.125rem rgba(204, 76, 57, 0.2);
 }
 
 /* --- ボタンチェックトグル（実画面・テーマプレビュー） --- */

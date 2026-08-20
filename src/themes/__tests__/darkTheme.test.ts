@@ -37,7 +37,9 @@ describe('dark theme', () => {
   it('ダークの基本配色とブラウザUI色を定義する', () => {
     expect(rootTokens.get('--theme-color')).toBe('#14171a')
     expect(rootTokens.get('--color-accent')).toBe('#ff6b4f')
-    expect(rootTokens.get('--color-answer-wrong')).toBe('#8b7cff')
+    expect(rootTokens.get('--color-answer-wrong')).toBe('#ef5340')
+    expect(rootTokens.get('--color-urgent')).toBe('#ef5340')
+    expect(rootTokens.get('--banner-wrong-bg')).toBe('rgba(239, 83, 64, 0.15)')
     expect(rootTokens.get('--color-error')).toBe('#e6402e')
     expect(rootTokens.get('--btn-replay-bg')).toBe('#e6402e')
   })
@@ -79,7 +81,7 @@ describe('dark theme', () => {
     })
 
     expect(rootTokens.get('--panel-shadow')).toBe('0 0 rgba(0, 0, 0, 0)')
-    expect(rootTokens.get('--btn-primary-shadow')).toBe('none')
+    expect(rootTokens.get('--btn-primary-shadow')).toBe('0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)')
   })
 
   it('早押しボタンの太い外周を1pxの枠線へ置き換える', () => {
@@ -117,26 +119,37 @@ describe('dark theme', () => {
       `html[data-theme='dark'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
       {
         '--color-accent': '#e8b032',
-        '--color-answer-wrong': '#ef5340',
-        '--chip-wrong-bg': 'rgba(239, 83, 64, 0.14)',
-        '--chip-current-glow': '0 0 0.375rem rgba(232, 176, 50, 0.5)',
-        '--chip-current-wrong-glow': '0 0 0.375rem rgba(239, 83, 64, 0.5)',
       },
     )
+  })
+
+  it('現在位置チップのグローをルートで一度だけ定義する', () => {
+    const chipTokens = tokenMap(
+      ruleBody(
+        darkTheme,
+        `html[data-theme='dark'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
+      ),
+    )
+
+    expect(rootTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(232, 176, 50, 0.5)')
+    expect(rootTokens.get('--chip-current-correct-glow')).toBe(
+      '0 0 0.375rem rgba(67, 214, 141, 0.5)',
+    )
+    expect(rootTokens.get('--chip-current-wrong-glow')).toBe('0 0 0.375rem rgba(239, 83, 64, 0.5)')
+    expect(rootTokens.get('--chip-wrong-bg')).toBe('rgba(239, 83, 64, 0.14)')
+    expect(chipTokens.has('--chip-wrong-bg')).toBe(false)
+    expect(chipTokens.has('--chip-current-glow')).toBe(false)
+    expect(chipTokens.has('--chip-current-correct-glow')).toBe(false)
+    expect(chipTokens.has('--chip-current-wrong-glow')).toBe(false)
   })
 
   it('解答エリアを芥子と朱の配色にする', () => {
     expectOverrides(`html[data-theme='dark'] .answer-area,\n${PREVIEW_THEME_SCOPE} .p-panel`, {
       '--color-accent': '#e8b032',
-      '--color-answer-wrong': '#ef5340',
-      '--color-urgent': '#ef5340',
       '--btn-primary-bg': '#e8b032',
       '--btn-primary-bg-hover': '#f2bf4b',
       '--btn-primary-text': '#1a1204',
-      '--btn-primary-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)',
       '--panel-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.3)',
-      '--banner-wrong-bg': 'rgba(239, 83, 64, 0.15)',
-      '--flash-wrong-glow': '0 0 1.125rem rgba(239, 83, 64, 0.25)',
     })
   })
 
@@ -182,15 +195,6 @@ describe('dark theme', () => {
       '--toggle-on-knob': 'var(--color-accent)',
       '--slider-thumb': 'var(--color-accent)',
     })
-  })
-
-  it('モーダル系と更新通知のプライマリーボタンに暗色面向けのシャドウを付ける', () => {
-    expectOverrides(
-      "html[data-theme='dark'] :is(.modal-overlay, .dialog-overlay, .pwa-update-prompt)",
-      {
-        '--btn-primary-shadow': '0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)',
-      },
-    )
   })
 
   it('Qには局所上書きを追加しない', () => {
