@@ -82,12 +82,6 @@
   --chip-bg: #ebebe8;
   --chip-correct-bg: rgba(23, 135, 88, 0.12);
   --chip-wrong-bg: rgba(204, 76, 57, 0.12);
-  --chip-current-glow:
-    inset 0 0 0 0.0625rem rgba(229, 118, 19, 0.25), 0 0 0 0.09375rem rgba(229, 118, 19, 0.25);
-  --chip-current-correct-glow:
-    inset 0 0 0 0.0625rem rgba(23, 135, 88, 0.25), 0 0 0 0.09375rem rgba(23, 135, 88, 0.25);
-  --chip-current-wrong-glow:
-    inset 0 0 0 0.0625rem rgba(204, 76, 57, 0.25), 0 0 0 0.09375rem rgba(204, 76, 57, 0.25);
 
   /* --- トグル・スライダー --- */
   --toggle-track: #e8e8e5;

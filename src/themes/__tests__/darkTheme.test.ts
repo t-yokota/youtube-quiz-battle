@@ -123,26 +123,6 @@ describe('dark theme', () => {
     )
   })
 
-  it('現在位置チップのグローをルートで一度だけ定義する', () => {
-    const chipTokens = tokenMap(
-      ruleBody(
-        darkTheme,
-        `html[data-theme='dark'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
-      ),
-    )
-
-    expect(rootTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(232, 176, 50, 0.5)')
-    expect(rootTokens.get('--chip-current-correct-glow')).toBe(
-      '0 0 0.375rem rgba(67, 214, 141, 0.5)',
-    )
-    expect(rootTokens.get('--chip-current-wrong-glow')).toBe('0 0 0.375rem rgba(239, 83, 64, 0.5)')
-    expect(rootTokens.get('--chip-wrong-bg')).toBe('rgba(239, 83, 64, 0.14)')
-    expect(chipTokens.has('--chip-wrong-bg')).toBe(false)
-    expect(chipTokens.has('--chip-current-glow')).toBe(false)
-    expect(chipTokens.has('--chip-current-correct-glow')).toBe(false)
-    expect(chipTokens.has('--chip-current-wrong-glow')).toBe(false)
-  })
-
   it('解答エリアを芥子と朱の配色にする', () => {
     expectOverrides(`html[data-theme='dark'] .answer-area,\n${PREVIEW_THEME_SCOPE} .p-panel`, {
       '--color-accent': '#e8b032',

@@ -24,9 +24,6 @@ const REQUIRED_TOKENS = [
   '--btn-replay-shadow',
   '--chip-correct-bg',
   '--chip-wrong-bg',
-  '--chip-current-glow',
-  '--chip-current-correct-glow',
-  '--chip-current-wrong-glow',
   '--banner-correct-bg',
   '--banner-wrong-bg',
 ] as const
@@ -47,6 +44,9 @@ const DEPRECATED_TOKENS = [
   '--flash-ng-glow',
   '--flash-correct-glow',
   '--flash-wrong-glow',
+  '--chip-current-glow',
+  '--chip-current-correct-glow',
+  '--chip-current-wrong-glow',
 ] as const
 
 function tokenValue(css: string, token: string): string | null {
@@ -93,9 +93,6 @@ describe('theme token contract', () => {
       '--color-urgent',
       '--banner-wrong-bg',
       '--chip-wrong-bg',
-      '--chip-current-glow',
-      '--chip-current-correct-glow',
-      '--chip-current-wrong-glow',
     ]) {
       expect([...css.matchAll(new RegExp(`${token}:`, 'g'))], token).toHaveLength(1)
     }

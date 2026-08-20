@@ -68,6 +68,11 @@ describe('ThemePreview', () => {
     )
   })
 
+  it('現在位置チップにグローやシャドウを追加しない', () => {
+    expect(themePreviewSource).not.toContain('--chip-current')
+    expect(themePreviewSource).not.toMatch(/\.p-chip\.cur\s*{[^}]*box-shadow:/s)
+  })
+
   it('指定されたviewport寸法でレイアウトする', async () => {
     const markup = await renderToString(
       createSSRApp(ThemePreview, { previewWidth: 390, previewHeight: 667 }),

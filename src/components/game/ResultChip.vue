@@ -1,14 +1,14 @@
 <script setup lang="ts">
 // ResultChip コンポーネント
 // 1問分の戦績を外周円＋マークの一体 SVG で描画する（フォント非依存）
-// 種別: 正解(○) / 不正解(×) / スキップ(−) / 無解答(・) / 未実施(空) / 現在(点灯枠)
+// 種別: 正解(○) / 不正解(×) / スキップ(−) / 無解答(・) / 未実施(空) / 現在(強調枠)
 
 export type ChipVariant = 'correct' | 'incorrect' | 'skipped' | 'noanswer' | 'empty' | 'current'
 
 withDefaults(
   defineProps<{
     variant: ChipVariant
-    /** 現在の問題カーソル（結果色またはアクセントのリング + グロー）。variant と併用できる */
+    /** 現在の問題カーソル（結果色またはアクセントのリング）。variant と併用できる */
     current?: boolean
     /** 無解答を示す中黒点の半径 */
     noanswerMarkRadius?: number
@@ -60,27 +60,18 @@ withDefaults(
   color: var(--color-text-dim);
   --_chip-bg: var(--chip-bg);
   --_chip-line: var(--color-line);
-  --_chip-current-glow: var(--chip-current-glow);
 }
 
 .chip.correct {
   color: var(--color-answer-correct);
   --_chip-bg: var(--chip-correct-bg);
   --_chip-line: var(--color-answer-correct);
-  --_chip-current-glow: var(--chip-current-correct-glow);
 }
 
 .chip.incorrect {
   color: var(--color-answer-wrong);
   --_chip-bg: var(--chip-wrong-bg);
   --_chip-line: var(--color-answer-wrong);
-  --_chip-current-glow: var(--chip-current-wrong-glow);
-}
-
-/* 現在の問題カーソル: 正誤確定時は各結果色、それ以外はアクセントのグローを重ねる */
-.chip.current {
-  border-radius: 50%;
-  box-shadow: var(--_chip-current-glow);
 }
 
 /* 未確定（empty）・無解答（noanswer）の現在問題は枠線もアクセントにする */

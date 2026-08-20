@@ -189,31 +189,6 @@ describe('flatテーマ', () => {
     expect(tokens.get('--toggle-on-track')).toBe('rgba(207, 73, 51, 0.15)')
   })
 
-  it('戦績チップの現在位置をルート定義の細い外周線で囲む', () => {
-    const rootTokens = tokenMap(ruleBody(flatTheme, ROOT_SELECTOR))
-    const chipTokens = tokenMap(
-      ruleBody(
-        flatTheme,
-        `html[data-theme='flat'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
-      ),
-    )
-
-    expect(rootTokens.get('--chip-current-glow')).toBe(
-      'inset 0 0 0 0.0625rem rgba(229, 118, 19, 0.25), 0 0 0 0.09375rem rgba(229, 118, 19, 0.25)',
-    )
-    expect(rootTokens.get('--chip-current-correct-glow')).toBe(
-      'inset 0 0 0 0.0625rem rgba(23, 135, 88, 0.25), 0 0 0 0.09375rem rgba(23, 135, 88, 0.25)',
-    )
-    expect(rootTokens.get('--chip-current-wrong-glow')).toBe(
-      'inset 0 0 0 0.0625rem rgba(204, 76, 57, 0.25), 0 0 0 0.09375rem rgba(204, 76, 57, 0.25)',
-    )
-    expect(rootTokens.get('--chip-wrong-bg')).toBe('rgba(204, 76, 57, 0.12)')
-    expect(chipTokens.has('--chip-wrong-bg')).toBe(false)
-    expect(chipTokens.has('--chip-current-glow')).toBe(false)
-    expect(chipTokens.has('--chip-current-correct-glow')).toBe(false)
-    expect(chipTokens.has('--chip-current-wrong-glow')).toBe(false)
-  })
-
   it('新しいlightの中立パレットと正解色を取り込む', () => {
     for (const token of [
       '--theme-color',

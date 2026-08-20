@@ -57,7 +57,7 @@ interface ChipItem {
   isCurrent: boolean
 }
 
-// 問題区間の進行中か（QUESTIONING〜REVEALING）。REVEAL 終了（TALKING 等）でグローを消す
+// 問題区間の進行中か（QUESTIONING〜REVEALING）。REVEAL 終了後は現在位置の強調を外す
 const isQuestionActive = computed(() =>
   [GameState.QUESTIONING, GameState.ANSWERING, GameState.WAITING, GameState.REVEALING].includes(
     gameStore.currentState,
@@ -72,7 +72,7 @@ const chips = computed<ChipItem[]>(() => {
     // REVEALING 開始時 / スキップ = シーク消費時。
     // 未来の問題番号（前方シークで飛ばした問題）でも記録があれば表示する
     const variant: ChipVariant = resultMap.value.get(q) ?? 'empty'
-    // グローはマーク表示に関わらず現在の問題に重ね、REVEAL 終了で消灯
+    // 現在位置はマーク表示に関わらずREVEAL終了まで追跡する
     items.push({ q, variant, isCurrent: q === current.value && isQuestionActive.value })
   }
   return items

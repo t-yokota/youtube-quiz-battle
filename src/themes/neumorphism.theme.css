@@ -126,9 +126,6 @@
   --chip-bg: #dde2ec;
   --chip-correct-bg: rgba(47, 191, 143, 0.16);
   --chip-wrong-bg: rgba(232, 96, 76, 0.14);
-  --chip-current-glow: 0 0 0.375rem rgba(108, 99, 255, 0.5);
-  --chip-current-correct-glow: 0 0 0.375rem rgba(47, 191, 143, 0.5);
-  --chip-current-wrong-glow: 0 0 0.375rem rgba(232, 96, 76, 0.5);
 
   /* --- トグル・スライダー --- */
   --toggle-track: #e3e7f0;

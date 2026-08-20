@@ -116,27 +116,6 @@ describe('lightテーマ', () => {
     expect(lightTokens).toEqual(darkTokens)
   })
 
-  it('現在位置チップのグローをルートで一度だけ定義する', () => {
-    const rootTokens = tokenMap(ruleBody(lightTheme, ROOT_SELECTOR))
-    const chipTokens = tokenMap(
-      ruleBody(
-        lightTheme,
-        `html[data-theme='light'] :is(.score-chips, .result-list),\n${PREVIEW_THEME_SCOPE} .p-chips`,
-      ),
-    )
-
-    expect(rootTokens.get('--chip-current-glow')).toBe('0 0 0.375rem rgba(229, 118, 19, 0.35)')
-    expect(rootTokens.get('--chip-current-correct-glow')).toBe(
-      '0 0 0.375rem rgba(23, 135, 88, 0.35)',
-    )
-    expect(rootTokens.get('--chip-current-wrong-glow')).toBe('0 0 0.375rem rgba(204, 76, 57, 0.35)')
-    expect(rootTokens.get('--chip-wrong-bg')).toBe('rgba(204, 76, 57, 0.12)')
-    expect(chipTokens.has('--chip-wrong-bg')).toBe(false)
-    expect(chipTokens.has('--chip-current-glow')).toBe(false)
-    expect(chipTokens.has('--chip-current-correct-glow')).toBe(false)
-    expect(chipTokens.has('--chip-current-wrong-glow')).toBe(false)
-  })
-
   it('ON時の早押しボタン外周をlightと同じブラーにする', () => {
     const releasedShadow =
       tokenMap(ruleBody(lightTheme, ROOT_SELECTOR)).get('--quiz-btn-shadow-released') ?? ''

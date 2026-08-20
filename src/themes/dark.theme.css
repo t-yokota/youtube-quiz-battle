@@ -86,9 +86,6 @@
   --chip-bg: var(--surface-raised);
   --chip-correct-bg: rgba(67, 214, 141, 0.16);
   --chip-wrong-bg: rgba(239, 83, 64, 0.14);
-  --chip-current-glow: 0 0 0.375rem rgba(232, 176, 50, 0.5);
-  --chip-current-correct-glow: 0 0 0.375rem rgba(67, 214, 141, 0.5);
-  --chip-current-wrong-glow: 0 0 0.375rem rgba(239, 83, 64, 0.5);
 
   /* --- トグル・スライダー --- */
   --toggle-track: var(--surface-raised);

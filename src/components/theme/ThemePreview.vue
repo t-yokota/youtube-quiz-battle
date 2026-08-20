@@ -239,11 +239,6 @@ withDefaults(defineProps<Props>(), {
   stroke-width: 1.4;
 }
 
-.p-chip.cur {
-  border-radius: 50%;
-  box-shadow: var(--chip-current-glow);
-}
-
 .p-chip.cur .ring {
   stroke: var(--color-accent);
 }
