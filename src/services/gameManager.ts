@@ -36,6 +36,32 @@ export class GameManager {
 
   // ゲートのウォームアップ停止タイマー（ボタン押下と競合しないよう管理する）
   private warmupStopTimer: number | null = null
+  private buttonTimers = new Set<number>()
+  private destroyed = false
+
+  private scheduleButtonStep(callback: () => void, delay: number): void {
+    const expectedState = this.gameStore.currentState
+    const questionIndex = this.gameStore.currentQuestionIndex
+    const timer = window.setTimeout(() => {
+      this.buttonTimers.delete(timer)
+      if (
+        this.destroyed ||
+        this.gameStore.currentState !== expectedState ||
+        this.gameStore.currentQuestionIndex !== questionIndex
+      )
+        return
+      callback()
+    }, delay)
+    this.buttonTimers.add(timer)
+  }
+
+  private cancelPendingTimers(): void {
+    for (const timer of this.buttonTimers) window.clearTimeout(timer)
+    this.buttonTimers.clear()
+    this.clearWarmupStop(false)
+    this.answerFlow.stopAnswerCountdown()
+    this.timeManager.cancelInternalSeek()
+  }
 
   constructor(
     playerManager: YouTubePlayerManager,
@@ -73,6 +99,9 @@ export class GameManager {
    * 「もう一度プレイ」ボタン押下時に呼び出される
    */
   resetGame(): void {
+    if (this.destroyed) return
+    this.cancelPendingTimers()
+    this.externalPause.resetPauseState()
     // カウントダウンタイマーを停止
     this.answerFlow.stopAnswerCountdown()
 
@@ -96,6 +125,7 @@ export class GameManager {
    * FINISHED状態からゲームリセット → 動画を0秒にシーク → READY状態へ遷移
    */
   handleReplay(): void {
+    if (this.destroyed) return
     if (this.gameStore.currentState !== GameState.FINISHED) return
 
     logger.log('[GameManager] Replay requested')
@@ -118,6 +148,7 @@ export class GameManager {
    * 解答送信処理（App.vueから呼び出される）
    */
   handleAnswerSubmit(answer: string): void {
+    if (this.destroyed) return
     this.answerFlow.handleAnswerSubmit(answer)
   }
 
@@ -128,6 +159,8 @@ export class GameManager {
    * 許可させる。ウォームアップ中の PLAYING は無視され TALKING へは遷移しない
    */
   warmupVideoPlayback(): void {
+    if (this.destroyed) return
+    this.clearWarmupStop(false)
     this.externalPause.beginGateWarmup()
     this.playerControl.playVideo()
     this.warmupStopTimer = window.setTimeout(() => {
@@ -168,7 +201,7 @@ export class GameManager {
    * ボタン状態遷移・ゲーム状態遷移・動画制御を統合的に処理する
    */
   handleButtonPress(): void {
-    if (!this.gameStore.isButtonEnabled) return
+    if (this.destroyed || !this.gameStore.isButtonEnabled) return
 
     logger.log(`[GameManager] Button pressed in state: ${this.gameStore.currentState}`)
 
@@ -215,19 +248,19 @@ export class GameManager {
 
     // ボタン状態遷移: STANDBY -> PUSHED -> RELEASED
     this.gameStore.setButtonState(ButtonState.PUSHED)
-    setTimeout(() => {
+    this.scheduleButtonStep(() => {
       this.gameStore.setButtonState(ButtonState.RELEASED)
 
       if (stateAtPress === GameState.READY) {
         // ボタンチェック: BUTTON_CHECK_RELEASE_MS後にTALKING状態へ遷移し、動画再生開始
-        setTimeout(() => {
+        this.scheduleButtonStep(() => {
           this.gameStore.setButtonState(ButtonState.STANDBY)
           // ボタンチェック完了時の正解音（STANDBY復帰時）
           this.audioManager?.playSound(SOUND_TYPE.CORRECT)
           this.externalPause.completeReplayReset()
           this.gameStore.transitionToState(GameState.TALKING)
           // 動画再生開始は少し遅らせ、正解音と動画音声の重なりを避ける
-          setTimeout(() => {
+          this.scheduleButtonStep(() => {
             // 遅延中にタブ切替等で External Pause になった場合は再生しない
             // （復帰時の resumeExternal が再生を担う）。リセット等で TALKING を
             // 離れた場合も再生しない
@@ -324,6 +357,7 @@ export class GameManager {
    * @param current 現在の動画時間（秒）
    */
   updateVideoTime(current: number): void {
+    if (this.destroyed) return
     // External Pause中は時間更新をスキップ（ただし user 一時停止中はシーク検出のため通す）
     if (this.externalPause.shouldSkipTimeUpdate()) {
       return
@@ -386,6 +420,7 @@ export class GameManager {
    * @param isCorrect 正解かどうか
    */
   submitAnswer(questionIndex: number, isCorrect: boolean): void {
+    if (this.destroyed) return
     this.answerFlow.jumpToRevealIfConfigured(questionIndex, isCorrect)
   }
 
@@ -395,6 +430,9 @@ export class GameManager {
    * - setupVisibilityHandlers で登録した document/window リスナーを解除
    */
   destroy(): void {
+    if (this.destroyed) return
+    this.destroyed = true
+    this.cancelPendingTimers()
     if (this.warmupStopTimer !== null) {
       window.clearTimeout(this.warmupStopTimer)
       this.warmupStopTimer = null

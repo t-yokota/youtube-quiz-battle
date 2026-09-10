@@ -54,6 +54,7 @@ export class ExternalPauseController {
 
   // READY中に唯一許可する、開始ゲートの短いウォームアップ再生
   private gateWarmupActive: boolean = false
+  private destroyed = false
 
   // 登録済みイベントリスナーの参照（destroy() で解除するために保持）
   private visibilityChangeHandler: (() => void) | null = null
@@ -78,6 +79,7 @@ export class ExternalPauseController {
    * External Pauseのハンドリングを初期化
    */
   initialize(): void {
+    if (this.destroyed) return
     this.setupVisibilityHandlers()
     this.setupPlayerStateHandlers()
     this.lastWallMs = performance.now()
@@ -106,6 +108,7 @@ export class ExternalPauseController {
    * @param reason 一時停止の要因
    */
   pauseExternal(reason: ExternalPauseReason): void {
+    if (this.destroyed) return
     if (this.externalPaused && (this.externalPausedReason !== 'stall' || reason === 'stall')) return
 
     // 一時停止開始
@@ -139,6 +142,7 @@ export class ExternalPauseController {
    * External Pauseを解除
    */
   resumeExternal(): void {
+    if (this.destroyed) return
     if (!this.externalPaused) return
 
     // 一時停止解除
@@ -242,6 +246,7 @@ export class ExternalPauseController {
    * 可視性変化（visibility）イベントハンドラーを設定
    */
   setupVisibilityHandlers(): void {
+    if (this.destroyed || this.visibilityChangeHandler) return
     this.visibilityChangeHandler = () => {
       if (document.hidden) {
         this.pauseForVisibility()
@@ -310,8 +315,10 @@ export class ExternalPauseController {
    * プレイヤー状態変化イベントハンドラーを設定
    */
   setupPlayerStateHandlers(): void {
+    if (this.destroyed) return
     this.playerControl.syncPlaybackIntentFromPlayer()
     this.playerControl.onStateChange((state) => {
+      if (this.destroyed) return
       // 動画末尾（ENDED）に到達した場合: External Pause を解除し、
       // 未消費の残り問題をすべて確定させて FINISHED まで進める
       // （終端では時刻ベースのシーク検出が信用できないため、イベントで確定する）
@@ -404,6 +411,7 @@ export class ExternalPauseController {
    * @param currentVideoTime 現在の動画時間（秒）
    */
   checkStall(currentWallMs: number, currentVideoTime: number): void {
+    if (this.destroyed) return
     const wallDelta = currentWallMs - this.lastWallMs
     const videoDelta = currentVideoTime - this.lastVideoTime
 
@@ -500,12 +508,11 @@ export class ExternalPauseController {
   /**
    * 登録済みイベントリスナーを解除（リソースリーク防止）
    *
-   * 注意: setupPlayerStateHandlers が登録する onStateChange コールバックは
-   * YouTubePlayerManager 側に解除 API がないため、ここでは解除しない。
-   * App.vue の onUnmounted で destroy() の直後に playerManager.destroy() を呼び、
-   * プレイヤー本体ごと破棄することでコールバックも到達しなくなる。
+   * Playerの遅延通知もdestroyedガードで失効させる。
    */
   destroy(): void {
+    if (this.destroyed) return
+    this.destroyed = true
     if (this.visibilityChangeHandler) {
       document.removeEventListener('visibilitychange', this.visibilityChangeHandler)
       this.visibilityChangeHandler = null
