@@ -5,7 +5,7 @@
 // - カードは ThemePreview の実DOMを [data-theme] スコープで縮小描画（画像不要）
 // - タップでカード位置から全画面へズームしながらテーマを適用
 import { useModalLayer } from '@/composables/useModalLayer'
-import { nextTick, onUnmounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useTheme, type ThemeInfo } from '@/composables/useTheme'
 import { calculateCardGeometry } from './themeSwitcherLayout'
 import ThemePreview from './ThemePreview.vue'
@@ -23,7 +23,7 @@ const railRef = ref<HTMLElement | null>(null)
 useModalLayer(overlayRef, () => props.isOpen, {
   label: 'UIをえらぶ',
   priority: 2500,
-  close: () => emit('close'),
+  close: dismiss,
 })
 
 const CARD_BORDER_RADIUS = 10
@@ -39,6 +39,23 @@ let hasViewportListeners = false
 const zoomThemeId = ref<string | null>(null)
 const zoomStyle = ref<Record<string, string>>({})
 let zoomTimer: number | null = null
+let zoomCleanupTimer: number | null = null
+let zoomFrame: number | null = null
+let disposed = false
+let zoomGeneration = 0
+
+function cancelZoom() {
+  zoomGeneration++
+  if (zoomTimer !== null) window.clearTimeout(zoomTimer)
+  if (zoomCleanupTimer !== null) window.clearTimeout(zoomCleanupTimer)
+  if (zoomFrame !== null) cancelAnimationFrame(zoomFrame)
+  zoomTimer = zoomCleanupTimer = zoomFrame = null
+  zoomThemeId.value = null
+}
+function dismiss() {
+  cancelZoom()
+  emit('close')
+}
 
 function updateCardGeometry() {
   const overlayRect = overlayRef.value?.getBoundingClientRect()
@@ -85,14 +102,16 @@ watch(
   async (open) => {
     if (!open) {
       removeViewportListeners()
+      if (zoomCleanupTimer === null) cancelZoom()
       return
     }
+    cancelZoom()
     updateCardGeometry()
     await nextTick()
-    if (!props.isOpen) return
+    if (disposed || !props.isOpen) return
     updateCardGeometry()
     await nextTick()
-    if (!props.isOpen) return
+    if (disposed || !props.isOpen) return
     const rail = railRef.value
     const firstCard = rail?.querySelector<HTMLElement>('.card')
     const currentCard = rail?.querySelector<HTMLElement>(`[data-card='${currentThemeId.value}']`)
@@ -104,13 +123,16 @@ watch(
   { immediate: true },
 )
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
+  disposed = true
+  cancelZoom()
   removeViewportListeners()
 })
 
 function pick(theme: ThemeInfo, event: MouseEvent) {
   const shell = (event.currentTarget as HTMLElement).querySelector<HTMLElement>('.card-shell')
-  if (!shell || zoomThemeId.value !== null) return
+  if (disposed || !props.isOpen || !shell || zoomThemeId.value !== null) return
+  const generation = zoomGeneration
 
   const rect = shell.getBoundingClientRect()
   const overlayRect = overlayRef.value?.getBoundingClientRect()
@@ -127,8 +149,11 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   }
 
   // 2) 次フレームで等倍へ遷移 → カードが画面全体に迫る
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
+  zoomFrame = requestAnimationFrame(() => {
+    if (generation !== zoomGeneration) return
+    zoomFrame = requestAnimationFrame(() => {
+      zoomFrame = null
+      if (generation !== zoomGeneration) return
       zoomStyle.value = {
         ...zoomStyle.value,
         transform: 'translate(0px, 0px) scale(1)',
@@ -142,12 +167,14 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   // 3) 遷移完了後に実テーマを適用してスイッチャーを閉じ、レイヤーを剥がす
   if (zoomTimer !== null) window.clearTimeout(zoomTimer)
   zoomTimer = window.setTimeout(() => {
+    zoomTimer = null
+    if (generation !== zoomGeneration || disposed || !props.isOpen) return
     setTheme(theme.id)
-    emit('close')
-    window.setTimeout(() => {
+    zoomCleanupTimer = window.setTimeout(() => {
+      zoomCleanupTimer = null
       zoomThemeId.value = null
     }, 80)
-    zoomTimer = null
+    emit('close')
   }, 470)
 }
 </script>
@@ -160,7 +187,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
         ref="overlayRef"
         class="switcher-overlay"
         :style="{ '--card-width': cardWidth + 'px' }"
-        @click="emit('close')"
+        @click="dismiss"
       >
         <div class="switcher-heading">
           <p class="switcher-title">UIをえらぶ</p>

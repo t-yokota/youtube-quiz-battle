@@ -250,4 +250,26 @@ describe('ThemeSwitcher', () => {
     expect(themeMock.setTheme).toHaveBeenCalledWith('light')
     expect(close).toHaveBeenCalledOnce()
   })
+  it('テーマ選択の演出中にEscapeで閉じると適用を取り消す', async () => {
+    vi.useFakeTimers()
+    document.querySelector<HTMLElement>('.card')!.click()
+    await nextTick()
+    document.activeElement!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    )
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(themeMock.setTheme).not.toHaveBeenCalled()
+    expect(document.querySelector('.zoom-layer')).toBeNull()
+  })
+  it('演出中のunmountでテーマを適用せず遅延処理を解除する', async () => {
+    vi.useFakeTimers()
+    document.querySelector<HTMLElement>('.card')!.click()
+    await nextTick()
+    app.unmount()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(themeMock.setTheme).not.toHaveBeenCalled()
+    expect(close).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
+  })
 })
