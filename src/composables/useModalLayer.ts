@@ -65,6 +65,8 @@ function updateBackground() {
   restoreBackground()
   const top = topLayer()
   if (!top) return
+  // 背景をaria-hiddenにする前にフォーカスを移し、動的な要素削除にも追従する。
+  if (!top.element.contains(document.activeElement)) focusLayer(top)
   function visit(parent: HTMLElement) {
     for (const element of [...parent.children]) {
       if (!(element instanceof HTMLElement) || element === top!.element) continue

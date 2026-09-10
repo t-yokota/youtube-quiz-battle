@@ -120,3 +120,26 @@ it('unmountで背景の既存属性を復元する', async () => {
   expect(opener.hasAttribute('inert')).toBe(false)
   expect(opener.getAttribute('aria-hidden')).toBe('false')
 })
+
+it('フォーカス中の要素が取り除かれたらダイアログ内へ移し直す', async () => {
+  mount()
+  open.value = true
+  await flush()
+  document.getElementById('first')!.remove()
+  await flush()
+  expect(document.activeElement?.id).toBe('last')
+})
+it('上位警告の表示中に下位を閉じてもフォーカスを背面へ戻さない', async () => {
+  mount()
+  open.value = true
+  await flush()
+  warning.value = true
+  await flush()
+  const top = document.activeElement
+  open.value = false
+  await flush()
+  expect(document.activeElement).toBe(top)
+  warning.value = false
+  await flush()
+  expect(document.activeElement).toBe(opener)
+})
