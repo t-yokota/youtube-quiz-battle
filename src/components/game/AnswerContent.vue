@@ -52,6 +52,13 @@ const timerProgress = computed(() =>
 // 残り3秒以下で赤 + 脈動
 const isUrgent = computed(() => gameStore.answerTimeRemaining <= TIMER_URGENT_THRESHOLD_SEC)
 
+const isComposing = ref(false)
+
+const handleEnter = (event: KeyboardEvent) => {
+  if (isComposing.value || event.isComposing || event.keyCode === 229) return
+  handleSubmit()
+}
+
 const handleSubmit = () => {
   if (isSubmitDisabled()) return
   emit('submit', gameStore.answerInput)
@@ -128,9 +135,16 @@ watch(
         :value="gameStore.answerInput"
         :disabled="gameStore.isInputDisabled"
         @input="handleInput"
-        @keydown.enter="handleSubmit"
+        @compositionstart="isComposing = true"
+        @compositionend="isComposing = false"
+        @keydown.enter="handleEnter"
       />
-      <button type="button" class="submit-button" :disabled="isSubmitDisabled()" @click="handleSubmit">
+      <button
+        type="button"
+        class="submit-button"
+        :disabled="isSubmitDisabled()"
+        @click="handleSubmit"
+      >
         送信
       </button>
     </div>
