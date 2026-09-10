@@ -89,3 +89,40 @@ describe('YouTube Player lifecycle', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 })
+
+it('loadVideo待機中のdestroyでタイマーを解除しPromiseを終了する', async () => {
+  const loadVideoById = vi.fn()
+  Object.assign(player, { loadVideoById })
+  const promise = create()
+  ready()
+  const manager = await promise
+  const load = manager.loadVideo('next-video')
+  const rejected = expect(load).rejects.toMatchObject({ name: 'AbortError' })
+  manager.destroy()
+  await rejected
+  expect(loadVideoById).toHaveBeenCalledWith('next-video')
+  expect(vi.getTimerCount()).toBe(0)
+})
+it('共有スクリプトの一方の待機をabortしても、もう一方は成功する', async () => {
+  const loadedYT = window.YT
+  vi.stubGlobal('YT', undefined)
+  const controller = new AbortController()
+  const canceled = loadYouTubeIframeAPI(controller.signal)
+  const rejected = expect(canceled).rejects.toMatchObject({ name: 'AbortError' })
+  const successful = loadYouTubeIframeAPI()
+  controller.abort()
+  await rejected
+  expect(document.head.querySelectorAll('script[src*="youtube.com/iframe_api"]')).toHaveLength(1)
+  vi.stubGlobal('YT', loadedYT)
+  await vi.advanceTimersByTimeAsync(100)
+  await successful
+  expect(vi.getTimerCount()).toBe(0)
+})
+it('API待機が期限切れになってもポーリングを残さない', async () => {
+  vi.stubGlobal('YT', undefined)
+  const promise = loadYouTubeIframeAPI()
+  const rejected = expect(promise).rejects.toThrow('failed to load')
+  await vi.advanceTimersByTimeAsync(10000)
+  await rejected
+  expect(vi.getTimerCount()).toBe(0)
+})
