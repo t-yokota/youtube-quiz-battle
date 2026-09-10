@@ -5,6 +5,7 @@ import { InternalPlayerControl } from '../internalPlayerControl'
 import { ThresholdEngine } from '../thresholdEngine'
 import { TimeManager } from '../timeManager'
 import { createAnswerFlowController } from '../answerFlowController'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { useGameStore } from '@/stores/gameStore'
 import { useDebugStore } from '@/stores/debugStore'
 import { GameState, ButtonState } from '@/types'
@@ -1897,7 +1898,9 @@ describe('consumed リセット（skipped考慮）', () => {
     // リプレイでリセット
     gm.handleReplay()
 
-    // Q1を再度通過 → QUESTIONINGに入れることを確認
+    // リプレイ後のREADYから開始操作を行ってからQ1を再度通過する。
+    useSettingsStore().setButtonCheckEnabled(false)
+    gm.handleButtonPress()
     simulatePlayback(gm, 11, 0)
     expect(store.currentState).toBe(GameState.QUESTIONING)
   })
