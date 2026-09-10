@@ -171,7 +171,8 @@ export class ThresholdEngine {
 
     // start 閾値
     if (
-      prev + TIME_EPSILON_SEC < question.startTime &&
+      (prev + TIME_EPSILON_SEC < question.startTime ||
+        (question.startTime === 0 && prev === 0 && !c.start)) &&
       curr + TIME_EPSILON_SEC >= question.startTime
     ) {
       // currentQuestionIndexを更新（動画再生位置ベースの表示用）
@@ -303,6 +304,10 @@ export class ThresholdEngine {
       question.answers[0],
       userAnswers,
       isSkip && !hasAttempted,
+      {
+        timesUntilPress: isCurrentQuestion ? [...this.gameStore.pendingTimesUntilPress] : [],
+        submissionTypes: isCurrentQuestion ? [...this.gameStore.pendingSubmissionTypes] : [],
+      },
     )
 
     logger.log(

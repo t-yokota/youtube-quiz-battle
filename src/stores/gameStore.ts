@@ -187,6 +187,10 @@ export const useGameStore = defineStore('game', () => {
     correctAnswer: string,
     userAnswers: string[],
     skipped: boolean,
+    attempts: Pick<QuestionResult, 'timesUntilPress' | 'submissionTypes'> = {
+      timesUntilPress: pendingTimesUntilPress.value,
+      submissionTypes: pendingSubmissionTypes.value,
+    },
   ): void {
     // 既に記録済みの場合はスキップ
     if (results.value.some((r) => r.questionNumber === questionNumber)) return
@@ -204,8 +208,8 @@ export const useGameStore = defineStore('game', () => {
       correctAnswer,
       userAnswers,
       skipped,
-      timesUntilPress: [...pendingTimesUntilPress.value],
-      submissionTypes: [...pendingSubmissionTypes.value],
+      timesUntilPress: [...attempts.timesUntilPress],
+      submissionTypes: [...attempts.submissionTypes],
     })
   }
 
