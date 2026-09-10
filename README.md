@@ -39,9 +39,10 @@ WSL2上の開発画面を同一ネットワークのスマートフォンから�
 | 開発サーバー | `npm run dev` |
 | 型チェック | `npm run type-check` |
 | テスト | `npm test` |
+| 全ソースのカバレッジと下限検査 | `npm run test:coverage` |
 | テストを監視実行 | `npm run test:watch` |
 | Lint（自動修正あり） | `npm run lint` |
-| Lint（検査のみ） | `npx --no-install eslint .` |
+| Lint（検査のみ） | `npm run lint:check` |
 | フォーマット（srcを書き換え） | `npm run format` |
 | 本番ビルド（型チェックを含む） | `npm run build` |
 | ビルド結果のプレビュー | `npm run preview` |
@@ -50,10 +51,7 @@ WSL2上の開発画面を同一ネットワークのスマートフォンから�
 テストから未参照のソースも含めてカバレッジを確認する場合:
 
 ```sh
-npm test -- --coverage \
-  --coverage.include='src/**/*.{ts,vue}' \
-  --coverage.exclude='src/**/__tests__/**' \
-  --coverage.exclude='src/types/**'
+npm run test:coverage
 ```
 
 ## クイズデータの追加

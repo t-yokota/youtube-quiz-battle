@@ -2,18 +2,37 @@
 
 旧改善サイクルの主要実装は完了し、計画・実行spec・完了タスクを履歴へ移動した（2026-09-10）。直近の文書整備状況を2026-09-11に更新した。
 
-## 現在の作業（2026-09-11承認）
+## A〜Cの実施記録（2026-09-11完了）
 
-[改善計画](project-review-and-refactoring-plan.md)のA〜Cを連続実施する。段階ではなく修正範囲ごとにコミットする。D〜Fは今回の実行対象外。単体作業を基本とする。
+[改善計画](project-review-and-refactoring-plan.md)のA〜Cを連続実施し、修正範囲ごとにコミットした。D〜Fは今回の実行対象外。追加依頼以降はサブエージェントを使わず単体で実施した。
 
 - [x] 品質基盤: 全ソースcoverage下限、非破壊Lint、PR検証、デプロイ権限分離
-- [ ] 開始ゲート・overlay操作遮断とIME確定Enter
-- [ ] 内部シーク・0秒開始・問題別の結果記録
-- [ ] 継続した再生停滞の検出・復帰
-- [ ] Playerの初期化期限・実行時エラー・途中終了
-- [ ] JSON検証・保存領域が使えない場合の復旧
-- [ ] タイマーと音声のreset/destroy時の後始末
-- [ ] 全体テスト・型・Lint・build・coverage・設計同期
+- [x] 開始ゲート・overlay操作遮断とIME確定Enter
+- [x] 内部シーク・0秒開始・問題別の結果記録
+- [x] 継続した再生停滞の検出・復帰
+- [x] Playerの初期化期限・実行時エラー・途中終了
+- [x] JSON検証・保存領域が使えない場合の復旧
+- [x] タイマーと音声のreset/destroy時の後始末
+- [x] 全体テスト・型・Lint・build・coverage・設計同期
+
+### 最終チェック
+
+| 項目 | 結果 |
+|---|---|
+| Vitest | 38ファイル・541件成功（開始前484件） |
+| 全ソースcoverage | Statements 85.93% / Branches 74.83% / Functions 82.19% / Lines 88.78%。Aの全下限を通過 |
+| 型チェック・本番build | 成功 |
+| `npm run lint:check`・`git diff --check` | 成功 |
+| `npm audit --offline` | 0件。ローカル監査結果であり、最新オンラインDBとの照合は未実施 |
+| GitHub Actions | workflowの整備まで。リモート実行・push・デプロイは未実施 |
+
+### 次回に残す項目
+
+- D: AppのAnalytics・初期化/セッション管理の抽出
+- E: ダイアログのフォーカス閉じ込め・復元、共通基盤（F-12）
+- F: 全指標80%（現時点ではBranchesが未達）、未使用資産の整理、実機・PWAの確認
+- 実機確認: iOS/AndroidのIME・音声unlock、内部シークの許可ON/OFF、停滞/タブ/横画面からの復帰、2周目、PWA更新
+
 
 保留: エージェント向けルール同期、設計同期スキル。旧計画からの必須持ち越しなし。
 
@@ -27,7 +46,7 @@
 
 | 文書 | 用途 |
 |---|---|
-| [全体レビューとリファクタリング計画案](project-review-and-refactoring-plan.md) | 独立した草案。旧残件の採否を反映済み。コード変更の実行指示ではない |
+| [全体レビューとリファクタリング計画](project-review-and-refactoring-plan.md) | A〜C実装完了。D〜Fの構造変更・最終検証は未着手 |
 | [Phase R/3/D/4のタスク履歴](archive/improvement-202606/tasks.md) | 実施済み作業と当時の確認記録 |
 | [Phase 1〜2のタスク履歴](archive/improvement-202606/tasks-phase1-2.md) | 初期実装の完了記録 |
 | [旧改善計画の索引](archive/improvement-202606/00-overview.md) | 過去の計画・spec・裁定 |

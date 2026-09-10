@@ -163,6 +163,8 @@ LOADING → [⏰ リソース読み込み完了] → READY
   → [⏰ 最初の問読み区間開始] → QUESTIONING
 ```
 
+**操作遮断**: ゲート・設定・テーマ・横画面・エラー表示中は、Appの共通判定で早押しと手動解答送信（Spaceを含む）を受け付けない。AnswerContentはcompositionイベント・`KeyboardEvent.isComposing`・IME互換のkeyCode 229を確認し、変換確定Enterでは送信しない。通常Enterでは1回送信する。
+
 **開始ゲート**: LOADING中から画面全体に表示されるオーバーレイ（`start-gate`）。READY到達後のみタップを受け付ける。タップ内で以下を同期実行する:
 
 - `GameManager.warmupVideoPlayback()`: `GATE_WARMUP_PLAY_MS` だけ動画を実再生してから停止し先頭へ戻す（iOSにユーザー操作由来の再生実績を作り、以後の遅延`playVideo()`を許可させる）
@@ -454,6 +456,8 @@ currentVideoTimeの値を更新したあとで、"更新後のcurrentVideoTime�
 - **シーク判定方法**: `|currentVideoTime - previousVideoTime| > SEEK_TOLERANCE_SEC` を満たすとき
 - **監視頻度**: currentVideoTimeの更新ごと
 
+**内部シーク**: 正解発表へのシークは`TimeManager.beginInternalSeek()`で目標を登録してから発行する。目標±`SEEK_TOLERANCE_SEC`へ到達するまで古い時刻通知を保留し、到達時にpreviousVideoTimeを目標へ同期するため、ユーザーシークとして処理しない。`INTERNAL_SEEK_TIMEOUT_MS`（10秒）で待機を打ち切り、通常監視へ戻す。コマンド失敗・reset/destroyでも待機を解除する。
+
 シーク検出の許容幅の設定:
 
 ```typescript
@@ -500,7 +504,8 @@ function applyThresholds(prev: number, curr: number, q: QuizQuestion) {
   const c = consumed[q.index] ?? (consumed[q.index] = { start: false, reveal: false, end: false })
 
   // start閾値
-  if (prev + TIME_EPSILON_SEC < q.startTime && curr + TIME_EPSILON_SEC >= q.startTime) {
+  if ((prev + TIME_EPSILON_SEC < q.startTime || (q.startTime === 0 && prev === 0 && !c.start))
+      && curr + TIME_EPSILON_SEC >= q.startTime) {
     // currentQuestionIndexは常に更新（動画再生位置ベースの表示用）
     gameStore.setCurrentQuestionIndex(q.index)
 
@@ -584,6 +589,10 @@ function recordSkippedQuestion(questionIndex: number, isSkip: boolean) {
     question.answers[0],      // correctAnswer
     userAnswers,               // userAnswers（解答権を残していた場合は履歴を引き継ぐ）
     isSkip && !hasAttempted,   // skipped
+    {
+      timesUntilPress: isCurrentQuestion ? [...gameStore.pendingTimesUntilPress] : [],
+      submissionTypes: isCurrentQuestion ? [...gameStore.pendingSubmissionTypes] : [],
+    },
   )
 }
 ```
@@ -637,9 +646,11 @@ private processTimeWindow(prev: number, curr: number): void {
 
 ### VideoTime Update Logic
 
+READY中は時間更新を処理しない。0秒開始の問題も開始操作後に一度だけ開始する（reset後は再度開始できる）。
+
 #### VideoTime更新処理のフローチャート
 
-以下の流れでcurrentVideoTimeの更新、シーク検出、consumedフラグの消費、状態遷移、previousVideoTimeの更新処理を行う。
+破棄済み・READY・FINISHED・外部一時停止（user以外）・内部シークの到達待機中は先にreturnする。内部シーク到達時の時刻同期後、以下の流れでcurrentVideoTimeの更新、シーク検出、consumedフラグの消費、状態遷移、previousVideoTimeの更新処理を行う。
 
 
 ```mermaid
@@ -719,34 +730,10 @@ function tick(): void {
 
 setInterval(tick, TIME_UPDATE_INTERVAL_MS)
 
-// --- ExternalPauseController.checkStall(): 停滞検出（lastWallMs/lastVideoTimeを内部保持） ---
-function checkStall(currentWallMs: number, currentVideoTime: number): void {
-  const wallDelta = currentWallMs - this.lastWallMs
-  const videoDelta = currentVideoTime - this.lastVideoTime
-  const playerState = this.playerControl.getPlayerState()
-  const playbackIntended =
-    playerState === YouTubePlayerState.PLAYING || playerState === YouTubePlayerState.BUFFERING
 
-  if (
-    !this.externalPaused &&
-    playbackIntended &&
-    wallDelta >= STALL_WALL_MS &&
-    videoDelta < STALL_VIDEO_DELTA_SEC
-  ) {
-    this.pauseExternal('stall')
-  }
-  if (
-    this.externalPaused &&
-    this.externalPausedReason === 'stall' &&
-    videoDelta >= STALL_VIDEO_DELTA_SEC
-  ) {
-    this.resumeExternal()
-  }
-
-  this.lastWallMs = currentWallMs
-  this.lastVideoTime = currentVideoTime
-}
 ```
+
+停滞の基準は毎tickで更新せず、最後に0.05秒以上の進行を観測した時刻から積算する。再生対象のゲーム状態かつPLAYING/BUFFERINGで1200ms以上進まない場合、ゲームの時刻処理を保留する。stallでは`pauseVideo()`を呼ばず、時刻の進行またはPLAYING通知で復帰できるようにする。動画の逆行・非再生状態では比較基準を更新する。stall中のvisibility/orientation/user停止を優先し、それ以降の時刻進行だけでは解除しない。
 
 ### External Pause Handling（外部一時停止対応）
 
@@ -754,7 +741,7 @@ function checkStall(currentWallMs: number, currentVideoTime: number): void {
 
 **実装方針:**
 
-- 外部一時停止検知時に `player.pauseVideo()` を明示的に呼び出す（ANSWERING中はボタン押下時点で既に停止済みのため、カウントダウン停止のみ行う）
+- visibility/orientation検知時に `player.pauseVideo()` を明示的に呼び出す（ANSWERING中はボタン押下時点で既に停止済みのため、カウントダウン停止のみ行う）
 - 動画停止中は `getCurrentTime()` が進まないため、TimeManagerへの影響はない
 - GameManager（実体はExternalPauseController）側で状態管理を実施。UI表示への専用フックはない
 - TimeManagerに外部一時停止関連のコードは持たせない
@@ -765,7 +752,7 @@ function checkStall(currentWallMs: number, currentVideoTime: number): void {
 
 **検出ポイント:**
 
-- 可視性: `document.hidden` による検出（`visibilitychange`/`pagehide`/`pageshow）。動画再生状態（TALKING/QUESTIONING/WAITING/REVEALING）のPLAYING、またはANSWERING中のみExternal Pauseにする。READY/LOADING/FINISHEDで残留したPLAYINGは停止だけ行い、復帰対象にはしない
+- 可視性: `document.hidden` による検出（`visibilitychange`/`pagehide`/`pageshow）。動画再生状態（TALKING/QUESTIONING/WAITING/REVEALING）のPLAYING/BUFFERING、またはANSWERING中のみExternal Pauseにする。READY/LOADING/FINISHEDで残留したPLAYINGは停止だけ行い、復帰対象にはしない
 - プレイヤー状態: `onStateChange(PAUSED/PLAYING/ENDED)`。`InternalPlayerControl`が保持する再生意図と比較し、非同期の内部操作通知とPlayer UIなどによる外部操作を区別する
 - 再生停滞: TimeUpdate内で `wallDelta` と `videoDelta` を比較（前述）
 - 画面向き: `useOrientationGuard`がタッチデバイスの横画面を検出すると`pauseExternalForOrientation()`を呼ぶ
@@ -774,7 +761,7 @@ function checkStall(currentWallMs: number, currentVideoTime: number): void {
 **一時停止時の動作:**
 
 - ANSWERING中: `player.pauseVideo()`は呼ばない（既に停止済み）。解答カウントダウンのみ停止
-- 動画再生状態: `player.pauseVideo()`で動画を明示的に停止し、再開対象を`video`として記録
+- 動画再生状態: visibility/orientationでは`player.pauseVideo()`で動画を明示的に停止し、再開対象を`video`として記録。stallは動画を停止せず時刻処理を保留する
 - ユーザーがPlayer UIで一時停止した場合: 既に停止済みのため`pauseVideo()`は重ねず、再開対象を`none`として記録
 
 **再開時の動作:**
@@ -853,6 +840,7 @@ setupPlayerStateHandlers(): void {
         this.playerControl.pauseVideo()
         return
       }
+      if (this.externalPausedReason === 'stall') { this.resumeExternal(); return }
       if (expected) return
 
       this.playerControl.acceptExternalPlaybackState(state)
@@ -1150,6 +1138,7 @@ interface YouTubePlayerManager {
 
   // イベント処理
   onStateChange(callback: (state: YouTubePlayerState) => void): void
+  onError?(callback: (error: Error) => void): void // 実装はready後のエラーも通知する
 
   // クリーンアップ
   destroy(): void
@@ -1170,11 +1159,11 @@ export enum YouTubePlayerState {
 
 #### IFrame API の動的読み込み（`loadYouTubeIframeAPI`）
 
-`window.YT.Player`が既に存在すれば即resolve。APIスクリプトタグが既に存在する場合は`YT_API_POLL_INTERVAL_MS`（100ms）間隔でポーリングし、`YT_API_LOAD_TIMEOUT_MS`（10秒）でタイムアウト・reject。スクリプトが存在しない場合は動的に`<script>`タグを追加し、`window.onYouTubeIframeAPIReady`とタイムアウトの両方でresolve/rejectを制御する。
+`window.YT.Player`が既に存在すれば即resolve。それ以外は、未配置の場合のみ共有スクリプトを追加し、`YT_API_POLL_INTERVAL_MS`（100ms）間隔でポーリング、`YT_API_LOAD_TIMEOUT_MS`（10秒）でタイムアウト・rejectする。任意の`AbortSignal`を受け取り、キャンセル時はその呼び出しのタイマーとabortリスナーを解除する。共有スクリプトは他の待機処理のために残す。
 
 #### プレイヤー生成とPlayerVars
 
-`createYouTubePlayerManager(elementId, videoId, settings)`がPromiseでYouTubePlayerManagerを解決する。`host`は常に`https://www.youtube-nocookie.com`（設定による分岐はない）。`playerVars`は初期化時のみ設定し、実行中の切替は行わない:
+`createYouTubePlayerManager(elementId, videoId, settings, signal?)`がPromiseでYouTubePlayerManagerを解決する。`host`は常に`https://www.youtube-nocookie.com`（設定による分岐はない）。`playerVars`は初期化時のみ設定し、実行中の切替は行わない:
 
 ```typescript
 function buildStrictPlayerVars(settings: QuizSettings): YouTubePlayerVars {
@@ -1201,7 +1190,7 @@ const player = new YT.Player(elementId, {
 })
 ```
 
-`onError`はプレイヤー初期化中のエラーとしてPromiseをrejectする（`VideoPlayer.vue`が`YOUTUBE_LOAD_FAILED`として処理する）。`loadVideo()`は`loadVideoById()`呼び出し後、`LOAD_VIDEO_SETTLE_MS`（1000ms）の簡易待機でresolveする暫定実装（`onStateChange(CUED)`ベースへの置き換えが将来課題）。
+`onError`は初期化中ならPromiseをrejectし、ready後なら登録されたエラー通知先へ送る。`VideoPlayer.vue`からAppの`YOUTUBE_LOAD_FAILED`表示へ接続し、ゲームループ・Manager・動画・効果音を停止する。Playerのready待機には`YT_PLAYER_READY_TIMEOUT_MS`（10秒）を設け、期限切れ・初期化エラー・abortではPlayerを破棄する。destroyは冪等で、遅れて届くready/state/errorを無視する。`loadVideo()`は`loadVideoById()`呼び出し後、`LOAD_VIDEO_SETTLE_MS`（1000ms）の簡易待機でresolveする暫定実装（`onStateChange(CUED)`ベースへの置き換えが将来課題）。待機中のdestroyはタイマーを解除し、loadVideoのPromiseをAbortErrorでrejectする。
 
 `modestbranding`は2023年8月にYouTube側で廃止済み（指定しても無視される）のため使用しない。
 
@@ -1217,6 +1206,11 @@ class TimeManager {
   updateCurrentVideoTime(time: number): void
   updatePreviousVideoTime(time: number): void
   resetTimeValues(): void  // currentVideoTime, previousVideoTimeを0にリセット
+
+  // 内部シークの到達待機・キャンセル
+  beginInternalSeek(target: number): void
+  cancelInternalSeek(): void
+  shouldWaitForInternalSeek(time: number): boolean
 
   // シーク検出
   isSeekDetected(newTime: number): boolean
@@ -1237,6 +1231,7 @@ class AudioManager {
   // 初期化・解錠
   init(): Promise<void> // スプライト読み込み。失敗時 Error('AUDIO_LOAD_FAILED') をthrow
   unlock(): void // 開始ゲートのタップ内で呼ぶiOS向けアンロック（後述）
+  dispose(): void // 音声資源の解放と非同期処理の失効
 
   // 音声制御（fire-and-forget。Promiseは返さない）
   playSound(soundType: SOUND_TYPE): void
@@ -1268,6 +1263,10 @@ function createAudioManager(options?: AudioManagerOptions): AudioManager
 - フォールバック: `AudioContext`未定義環境（`window.AudioContext`も`webkitAudioContext`も無い場合）でHTML Audio（音ごとに個別`<audio>`要素。スプライトのシーク遅延を避けるため頭から再生）
 - 音量は線形ではなく2乗カーブ（`volume * volume`）を`GainNode.gain.value`/`HTMLAudioElement.volume`に適用し、聴感上の段差を体感に合わせる
 - 役割分担: AudioManagerは再生制御のみ、設定値の永続化は`settingsStore`が担う
+
+#### 音声のライフサイクル
+
+Appが単一AudioManagerを所有し、unmount時にdisposeする。disposeは冪等で、fetchをabort、効果音と無音ループを停止し、GainNode/AudioContext/バッファ参照を解放する。decode完了が遅れても破棄後に初期化を再開しない。初期化失敗時も作成済みContextを閉じる。stopSound・次の効果音・disposeは世代番号を進め、古いresume完了からの再生を無効化する。resumeのrejectは警告として処理する。
 
 #### iOS向け音声再生対策
 
@@ -1943,8 +1942,8 @@ public/
 #### 検証項目
 
 - **必須フィールド**: videoId, questions（非空配列）, settings
-  - settings内の必須: answerTimeLimit（>0の数値）, maxAttempts（>0の数値）
-  - settings内の任意項目の型検証: buttonCheckEnabled（boolean）, debug（boolean）
+  - settings内の必須: answerTimeLimit（>0の有限数）, maxAttempts（正の整数）
+  - settings内の任意項目の型検証: disableSeekbar / jumpToRevealPeriod / hideVideoPlayerDuringAnswer / buttonCheckEnabled / debug（すべてboolean）
   - 各questionの必須: answers（非空配列。各要素は空文字でない文字列）, startTime/revealTime/endTime（いずれも0以上の数値）, questionText（指定時は文字列）
 - **時間データ妥当性**: `startTime < revealTime < endTime`（各問題内）、`questions[i].endTime <= questions[i+1].startTime`（問題間の非重複、時間順に整列済み前提）
 - **othersAnsweringPeriods**: 各期間`startTime < endTime`、問題区間内（`period.startTime >= question.startTime && period.endTime <= question.revealTime`）に収まること、複数期間は昇順・非重複（`periods[i].endTime <= periods[i+1].startTime`）
@@ -1952,6 +1951,13 @@ public/
 - 違反時は問題番号・違反箇所を含む`QUIZ_DATA_INVALID`エラーをthrowする
 
 ## Error Handling
+
+### 外部データ・保存領域の失敗時の扱い
+
+クイズJSONはunknownとして受け取り、root/settings/question/他プレイヤー期間の構造、文字列・真偽値・有限数、正の整数maxAttempts、時刻の前後関係を検証してから内部型へ変換する。不正データは`QUIZ_DATA_INVALID`として扱う。
+
+settingsStore/useThemeは`browserStorage`を通じてlocalStorageを読み書きする。アクセス禁止・容量超過等は警告を残し、読み取り失敗では既定値、書き込み失敗では現在のメモリ上の設定を維持してアプリを続行する。保存に失敗した値は再読み込み後には引き継がれない。
+
 
 ### Error Classification
 
@@ -2044,6 +2050,10 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 - **Audio System Integration**: 音声再生システムのテスト
 - **State Management Integration**: 状態管理システムの統合テスト
 
+### 品質ゲート
+
+`npm run lint:check`、`npm run build`、`npm run test:coverage`をPRとdevelop pushで実行する。全`src/**/*.{ts,vue}`（テスト・型定義を除く）をcoverage対象とし、Statements 66%、Branches 57.65%、Functions 59.85%、Lines 68.21%を現状維持の下限とする。全指標80%は改善計画Fの目標。PlayerフェイクはseekとcurrentTime、再生操作と状態を連動させ、遅延通知を個別に発火できる。
+
 ### End-to-End Testing
 
 **不採用**（tasks.md裁定）。アプリ規模に対してPlaywright導入の維持コストが見合わないと判断し、E2Eテストスイートの整備は見送った。ゲームフロー・エラーシナリオ・モバイル動作確認は、services/storesのユニットテスト（Vitest）と手動の実機チェックリストでカバーする。
@@ -2051,7 +2061,7 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 ### Testing Tools
 
 - **Unit Tests**: Vitest（`src/services/__tests__/`・`src/stores/__tests__/`・`src/utils/__tests__/`にco-location）
-- **Component Tests**: 未導入（`@vue/test-utils`等は依存関係に含まれない）。UIロジックの大半はgameStore/servicesのユニットテストでカバーする方針
+- **Component Tests**: Vueの`createApp`でApp/VideoPlayer/AnswerContentをmountし、ゲート・IME・Playerエラー・途中unmountを検証する。`@vue/test-utils`等の追加依存はない
 - **E2E Tests**: 不採用（上記参照）
 - **Mobile Testing**: 実機での手動確認
 
@@ -2318,7 +2328,7 @@ src/
 
 - onReady: プレイヤー準備完了時の初期化（`YouTubePlayerManager`インスタンスをresolve）
 - onStateChange: 再生状態変更の検出（`ExternalPauseController`が主に消費）
-- onError: エラー発生時の処理（初期化中のPromiseをreject）
+- onError: 初期化中はPromiseをreject、ready後はVideoPlayer経由でAppへ通知
 
 **時間管理の責務所在**
 
@@ -2332,7 +2342,8 @@ src/
 **Vue.js Approach**
 
 - onMounted: プレイヤー初期化とリソース読み込み（`VideoPlayer.vue`は`onMounted`で1回のみプレイヤーを生成する）
-- onUnmounted: タイマーやイベントリスナーのクリーンアップ（`gameLoop.stop()` → `gameManager.destroy()` → `playerManager.destroy()`の順）
+- onBeforeUnmount: Appがループ・画面向き監視・GameManager・音声を停止し、子VideoPlayerが初期化をabortして所有Playerを破棄する。Appはデータ取得のfetchと再試行待機もabortし、遅れたデータロード結果やエラーでストアを更新しない。スクロール補正のanimation frameも解除する
+- GameManagerのreset/destroy: ボタン演出の全タイマー・ウォームアップ・解答カウントダウン・内部シーク待機・効果音の保留再生を解除する。ボタン演出は実行時の状態と問題番号を照合し、古い操作を継続しない。destroy後のPlayer通知は失効する
 - `VideoPlayer.vue`に`videoId`のwatchはない（動的な動画差し替えは現状の要件にないため、1動画=1ページロードの前提）
 
 #### Audio System Implementation
