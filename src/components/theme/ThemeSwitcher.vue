@@ -4,6 +4,7 @@
 // - useTheme() が検出した全テーマを2列グリッドのカードとして表示（自動追加）
 // - カードは ThemePreview の実DOMを [data-theme] スコープで縮小描画（画像不要）
 // - タップでカード位置から全画面へズームしながらテーマを適用
+import { useModalLayer } from '@/composables/useModalLayer'
 import { nextTick, onUnmounted, ref, watch } from 'vue'
 import { useTheme, type ThemeInfo } from '@/composables/useTheme'
 import { calculateCardGeometry } from './themeSwitcherLayout'
@@ -19,6 +20,11 @@ const { themes, currentThemeId, setTheme } = useTheme()
 
 const overlayRef = ref<HTMLElement | null>(null)
 const railRef = ref<HTMLElement | null>(null)
+useModalLayer(overlayRef, () => props.isOpen, {
+  label: 'UIをえらぶ',
+  priority: 2500,
+  close: () => emit('close'),
+})
 
 const CARD_BORDER_RADIUS = 10
 const cardWidth = ref(148)
@@ -166,6 +172,8 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
             v-for="t in themes"
             :key="t.id"
             :data-card="t.id"
+            :aria-label="t.label"
+            :aria-pressed="t.id === currentThemeId"
             type="button"
             class="card"
             :class="{ current: t.id === currentThemeId }"

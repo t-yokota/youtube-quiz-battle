@@ -22,6 +22,7 @@ const handleSettingsClick = () => {
         class="settings-button"
         @click="handleSettingsClick"
         aria-label="設定を開く"
+        data-dialog-return-focus
         title="設定"
       >
         <SettingsIcon class="settings-icon" />

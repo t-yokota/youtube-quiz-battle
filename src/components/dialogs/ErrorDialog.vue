@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useModalLayer } from '@/composables/useModalLayer'
 // ErrorDialog コンポーネント
 // エラー表示ダイアログ
 
@@ -12,7 +14,6 @@ interface Props {
   showClose?: boolean
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const props = withDefaults(defineProps<Props>(), {
   isOpen: false,
   title: 'エラーが発生しました',
@@ -35,12 +36,21 @@ const handleAction = () => {
 const handleClose = () => {
   emit('close')
 }
+
+const overlayRef = ref<HTMLElement | null>(null)
+useModalLayer(overlayRef, () => props.isOpen, {
+  label: () => props.title,
+  priority: 5000,
+  close: () => {
+    if (props.showClose) handleClose()
+  },
+})
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="dialog-fade">
-      <div v-if="isOpen" class="dialog-overlay">
+      <div v-if="isOpen" ref="overlayRef" class="dialog-overlay">
         <div class="dialog-container">
           <!-- Error Icon -->
           <div class="error-icon">
@@ -92,7 +102,7 @@ const handleClose = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 5000;
   padding: 1rem;
 }
 

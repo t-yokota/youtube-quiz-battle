@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useModalLayer } from '@/composables/useModalLayer'
 // OrientationDialog コンポーネント
 // 横画面警告ダイアログ
 
@@ -7,15 +9,21 @@ interface Props {
   isOpen?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   isOpen: false,
+})
+
+const overlayRef = ref<HTMLElement | null>(null)
+useModalLayer(overlayRef, () => props.isOpen, {
+  label: '画面を縦向きにしてください',
+  priority: 4000,
 })
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="dialog-fade">
-      <div v-if="isOpen" class="dialog-overlay">
+      <div v-if="isOpen" ref="overlayRef" class="dialog-overlay">
         <div class="dialog-container">
           <!-- Rotation Icon -->
           <div class="rotation-icon">

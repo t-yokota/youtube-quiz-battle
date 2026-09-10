@@ -270,6 +270,7 @@ onBeforeUnmount(() => {
       v-if="!isGateDismissed && gameStore.currentState !== GameState.FINISHED"
       type="button"
       class="start-gate"
+      data-dialog-return-focus="gate"
       :disabled="gameStore.currentState !== GameState.READY"
       @click="handleGateTap"
     >

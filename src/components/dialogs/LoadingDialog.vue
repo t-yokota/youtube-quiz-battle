@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useModalLayer } from '@/composables/useModalLayer'
 // LoadingDialog コンポーネント
 // ローディング中のダイアログ表示
 
@@ -8,16 +10,19 @@ interface Props {
   message?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   isOpen: false,
   message: '読み込み中...',
 })
+
+const overlayRef = ref<HTMLElement | null>(null)
+useModalLayer(overlayRef, () => props.isOpen, { label: '読み込み中', priority: 2000 })
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="dialog-fade">
-      <div v-if="isOpen" class="dialog-overlay">
+      <div v-if="isOpen" ref="overlayRef" class="dialog-overlay">
         <div class="dialog-container">
           <!-- Loading Spinner -->
           <div class="spinner"></div>

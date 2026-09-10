@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { useModalLayer } from '@/composables/useModalLayer'
 // SettingsModal コンポーネント
 // 設定画面のモーダル表示
 
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useDebugStore } from '@/stores/debugStore'
@@ -19,7 +20,6 @@ interface Props {
   volumeLevel?: number // 0: Mute, 1-4: 音量レベル
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const props = withDefaults(defineProps<Props>(), {
   isOpen: false,
   volumeLevel: 3,
@@ -124,12 +124,15 @@ const handleOverlayClick = (event: MouseEvent) => {
     handleClose()
   }
 }
+
+const overlayRef = ref<HTMLElement | null>(null)
+useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000, close: handleClose })
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="modal-fade">
-      <div v-if="isOpen" class="modal-overlay" @click="handleOverlayClick">
+      <div v-if="isOpen" ref="overlayRef" class="modal-overlay" @click="handleOverlayClick">
         <div class="modal-container">
           <!-- Modal Header -->
           <div class="modal-header">
@@ -158,7 +161,12 @@ const handleOverlayClick = (event: MouseEvent) => {
               </svg>
             </button>
             <h2 class="modal-title">設定</h2>
-            <button class="close-button" aria-label="設定を閉じる" @click="handleClose">
+            <button
+              class="close-button"
+              data-dialog-autofocus
+              aria-label="設定を閉じる"
+              @click="handleClose"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -634,7 +642,6 @@ const handleOverlayClick = (event: MouseEvent) => {
   border-color: var(--toggle-on-border);
 }
 
-
 .ui-switch-knob {
   position: absolute;
   top: 50%;
@@ -851,5 +858,4 @@ const handleOverlayClick = (event: MouseEvent) => {
 .modal-fade-leave-to {
   opacity: 0;
 }
-
 </style>
