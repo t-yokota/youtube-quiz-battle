@@ -971,7 +971,10 @@ timeline
 
 ```mermaid
 graph LR
-  APP[App.vue] --> GM[GameManager<br/>ファサード]
+  APP[App.vue] --> SESSION[useQuizSession]
+  SESSION --> GM[GameManager<br/>ファサード]
+  APP --> ANALYTICS[useQuizAnalytics]
+  ANALYTICS --> AS[AnalyticsService]
   GM --> IPC[InternalPlayerControl]
   GM --> TE[ThresholdEngine]
   GM --> AFC[AnswerFlowController]
@@ -1107,7 +1110,7 @@ YouTube巻き戻り補正でskipped結果をクリアする用途で、`gameStor
 
 1. ユーザーがリザルト画面で「もう一度プレイ」ボタンを押下
 2. `ResultActions` コンポーネントが `replay` イベントを emit
-3. `App.vue` が `replay` イベントをハンドル → `gameManager.handleReplay()` を呼び出し
+3. `App.vue` が `replay` イベントをハンドル → `useQuizSession.replay()` 経由で `gameManager.handleReplay()` を呼び出し
 4. `handleReplay()` 内で以下を実行:
    - `currentState !== FINISHED` の場合は何もせず終了（FINISHED以外からの誤呼び出しガード）
    - `externalPause.resetPauseState()` でExternal Pause状態をクリアし、リプレイ準備中フラグを設定
@@ -1266,7 +1269,7 @@ function createAudioManager(options?: AudioManagerOptions): AudioManager
 
 #### 音声のライフサイクル
 
-Appが単一AudioManagerを所有し、unmount時にdisposeする。disposeは冪等で、fetchをabort、効果音と無音ループを停止し、GainNode/AudioContext/バッファ参照を解放する。decode完了が遅れても破棄後に初期化を再開しない。初期化失敗時も作成済みContextを閉じる。stopSound・次の効果音・disposeは世代番号を進め、古いresume完了からの再生を無効化する。resumeのrejectは警告として処理する。
+Appのスコープで`useQuizSession`が単一AudioManagerを所有し、unmount時にdisposeする。disposeは冪等で、fetchをabort、効果音と無音ループを停止し、GainNode/AudioContext/バッファ参照を解放する。decode完了が遅れても破棄後に初期化を再開しない。初期化失敗時も作成済みContextを閉じる。stopSound・次の効果音・disposeは世代番号を進め、古いresume完了からの再生を無効化する。resumeのrejectは警告として処理する。
 
 #### iOS向け音声再生対策
 
@@ -2131,11 +2134,11 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 
 ### 実装範囲と参照元
 
-2026-09-10時点のアプリ実装を記録する。GA4へ`gtag.js`で直接送信し、Firebase SDKは使用しない。イベント設計の現行参照先は本節とし、[Task 25の旧仕様書](archive/improvement-202606/specs/task25-firebase-analytics.md)は当時の検討履歴として扱う。
+2026-09-11のD実施後のアプリ実装を記録する。GA4へ`gtag.js`で直接送信し、Firebase SDKは使用しない。イベント設計の現行参照先は本節とし、[Task 25の旧仕様書](archive/improvement-202606/specs/task25-firebase-analytics.md)は当時の検討履歴として扱う。
 
 | 責務 | 実装 |
 |---|---|
-| 発火条件・イベントの組み立て | [App.vue](../src/App.vue) の状態・結果件数・実効設定のwatcher |
+| 発火条件・イベントの組み立て | [useQuizAnalytics.ts](../src/composables/useQuizAnalytics.ts) の状態・結果件数・実効設定のwatcher |
 | 初期化・パラメータ変換・gtag呼び出し | [analyticsService.ts](../src/services/analyticsService.ts) |
 | 測定ID・文字列上限 | [constants/analytics.ts](../src/constants/analytics.ts) の`GA_MEASUREMENT_ID`、`ANALYTICS_PARAM_MAX_LENGTH` |
 | 解答履歴・正誤・集計値 | [gameStore.ts](../src/stores/gameStore.ts)、[thresholdEngine.ts](../src/services/thresholdEngine.ts) |
@@ -2145,7 +2148,7 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 
 ### 初期化と送信のライフサイクル
 
-1. Appが単一のAnalyticsServiceを作る。初期状態は`disabled`で、この時点のlog呼び出しは破棄される。
+1. Appから呼ぶ`useQuizAnalytics`が単一のAnalyticsServiceを作る。初期状態は`disabled`で、この時点のlog呼び出しは破棄される。
 2. クイズデータ読込後、`settings.debug`をサービスへ設定する。
 3. 開始ゲートをタップすると`init()`を呼ぶ。測定IDが空なら、GA用のスクリプト・gtag・dataLayerを設置せず終了する。
 4. 測定IDがある場合、`window.dataLayer`と`window.gtag`を設置し、`gtag('js', …)`、`gtag('config', measurementId)`を呼び、gtag.jsを動的に読み込む。同じURLのスクリプトは重複挿入しない。
@@ -2278,7 +2281,7 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 
 ### 検証と分析用途
 
-[analyticsService.test.ts](../src/services/__tests__/analyticsService.test.ts)で、5イベントの送信呼び出し、キー変換、boolean/undefined、初期化前・IDなしの無送信、スクリプト挿入、debugフラグ、マスク・切り詰めを検証している。Appのwatcherから実GA4受信までの自動統合テストではない。
+[analyticsService.test.ts](../src/services/__tests__/analyticsService.test.ts)で、5イベントの送信呼び出し、キー変換、boolean/undefined、初期化前・IDなしの無送信、スクリプト挿入、debugフラグ、マスク・切り詰めを検証している。[App.test.ts](../src/__tests__/App.test.ts)ではAppをmountし、実効設定・試行明細・問題結果・完走集計・リプレイのセッションIDと送信回数をAnalyticsService境界で検証する。unmount後の送信停止も対象とする。実GA4受信までの自動統合テストではない。
 
 実装済みデータから、クイズ・問題別の正誤、試行回数、早押しのタイミング、設定別の結果、解答の表記揺れを分析できる。レポート自体は未実装であり、正確な離脱時刻・入力所要時間は収集していない。
 
@@ -2315,7 +2318,7 @@ src/
 1. YouTube IFrame APIスクリプトの動的読み込み（`loadYouTubeIframeAPI()`。ポーリング + タイムアウト付き）
 2. プレイヤーインスタンスの作成（`createYouTubePlayerManager()`。`host`は常に`youtube-nocookie.com`）
 3. イベントハンドラーの設定（`onReady`/`onStateChange`/`onError`）
-4. `App.vue`側で`useGameLoop.start()`を呼び、時間追跡ループを開始（プレイヤー自身はポーリングを持たない）
+4. `useQuizSession.handlePlayerReady()`から`useGameLoop.start()`を呼び、時間追跡ループを開始（プレイヤー自身はポーリングを持たない）
 
 **プレイヤー設定（playerVars）**
 
@@ -2342,9 +2345,22 @@ src/
 **Vue.js Approach**
 
 - onMounted: プレイヤー初期化とリソース読み込み（`VideoPlayer.vue`は`onMounted`で1回のみプレイヤーを生成する）
-- onBeforeUnmount: Appがループ・画面向き監視・GameManager・音声を停止し、子VideoPlayerが初期化をabortして所有Playerを破棄する。Appはデータ取得のfetchと再試行待機もabortし、遅れたデータロード結果やエラーでストアを更新しない。スクロール補正のanimation frameも解除する
+- onBeforeUnmount: `useQuizSession`がループ・GameManager・音声を停止し、データ取得のfetchと再試行待機をabortする。遅れたデータロード結果やエラーでストアを更新しない。Appは画面向き監視・キーリスナー・スクロール補正のanimation frameを解除し、子VideoPlayerが初期化をabortして所有Playerを破棄する
 - GameManagerのreset/destroy: ボタン演出の全タイマー・ウォームアップ・解答カウントダウン・内部シーク待機・効果音の保留再生を解除する。ボタン演出は実行時の状態と問題番号を照合し、古い操作を継続しない。destroy後のPlayer通知は失効する
 - `VideoPlayer.vue`に`videoId`のwatchはない（動的な動画差し替えは現状の要件にないため、1動画=1ページロードの前提）
+
+#### Appとセッション・分析の責務（D）
+
+| 所有者 | 責務 |
+|---|---|
+| App.vue | 画面構成、overlayと入力ガード、同期focus、ゲート表示、画面向き監視と操作の接続 |
+| useQuizSession | quizId解決、データ取得、GameManagerとループ、音声初期化・設定同期、エラー停止、セッション操作、終了処理 |
+| useQuizAnalytics | AnalyticsService、セッションID・動画タイトル・送信済み件数、実効設定のスナップショット、5イベントの組み立てと送信 |
+| VideoPlayer | Player生成・通知・abort・破棄 |
+
+`useQuizSession`はデータ・エラー・Player参照を読み取り用refとして公開し、GameManagerは外へ公開しない。クラスインスタンスの参照はshallowRefで保持する。`primeMedia()`はREADY時にwarmup→unlockを同期実行し、Appは成功時だけゲートを解除してAnalyticsを初期化する。App内の同期focusも維持する。
+
+両composableはAppのsetupスコープで作成し、watcherはunmountで解除する。セッション側はライフサイクルテストで取得途中のabort・遅延通知の無視・音声設定・操作委譲を検証する。分析側は共通IDとタイトル、シーク設定の解決を集約し、既存の送信項目・正誤判定・送信タイミングを維持する。
 
 #### Audio System Implementation
 
