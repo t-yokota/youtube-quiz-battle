@@ -108,3 +108,6 @@ export const RETRY_BACKOFF_MS = [1000, 2000, 4000]
 
 /** 内部シークの到達待機期限（ミリ秒）。 */
 export const INTERNAL_SEEK_TIMEOUT_MS = 10000
+
+/** Playerのready通知を待つ期限（ミリ秒）。 */
+export const YT_PLAYER_READY_TIMEOUT_MS = 10000

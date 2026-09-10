@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // YouTube Quiz Battle - メインアプリケーション
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import VideoPlayer from './components/common/VideoPlayer.vue'
 import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue'
@@ -39,6 +39,8 @@ type StartGateConceptStyle = 'accent-only' | 'white-fill'
 // const START_GATE_CONCEPT_STYLE: StartGateConceptStyle = 'accent-only'
 const START_GATE_CONCEPT_STYLE: StartGateConceptStyle = 'white-fill'
 
+let disposed = false
+let scrollFrame: number | null = null
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
 
@@ -163,6 +165,7 @@ const audioManager = createAudioManager()
 audioManager.setSoundEnabled(settingsStore.soundEnabled)
 audioManager.setVolume(settingsStore.volumeLevel / MAX_VOLUME_LEVEL)
 audioManager.init().catch((error: unknown) => {
+  if (disposed) return
   logger.error('[App] Failed to initialize AudioManager:', error)
   initError.value = getErrorInfo(error)
 })
@@ -189,11 +192,14 @@ const currentQuizId = extractQuizIdFromUrl()
 async function initQuizData() {
   try {
     logger.log(`[App] Loading quiz data for quizId: ${currentQuizId}`)
-    quizData.value = await loadQuizData(currentQuizId)
+    const data = await loadQuizData(currentQuizId)
+    if (disposed) return
+    quizData.value = data
     gameStore.setQuizData(quizData.value)
     analyticsService.setDebugMode(quizData.value.settings.debug)
     logger.log(`[App] Quiz data loaded: ${quizData.value.questions.length} questions`)
   } catch (error) {
+    if (disposed) return
     logger.error('[App] Failed to load quiz data:', error)
     initError.value = getErrorInfo(error)
   }
@@ -204,7 +210,7 @@ initQuizData()
 
 // VideoPlayer 初期化完了時のハンドラ
 function handlePlayerReady(playerManager: YouTubePlayerManager) {
-  if (!quizData.value) return
+  if (disposed || initError.value || !quizData.value) return
 
   // GameManager を作成して初期化
   const manager = createGameManager(
@@ -230,6 +236,12 @@ function handlePlayerReady(playerManager: YouTubePlayerManager) {
 // VideoPlayer からは生の内部メッセージ（例: "YouTube Player Error: 2"）が渡ってくるため、
 // YOUTUBE_LOAD_FAILED として分類されるようコード接頭辞を付与してから変換する
 function handlePlayerError(message: string) {
+  if (disposed) return
+  gameLoop.stop()
+  gameManager.value?.destroy()
+  gameManager.value = null
+  playerManagerRef.value?.pauseVideo()
+  audioManager.stopSound()
   logger.error('[App] VideoPlayer error:', message)
   initError.value = getErrorInfo(new Error(`YOUTUBE_LOAD_FAILED: ${message}`))
 }
@@ -440,7 +452,10 @@ const shouldCollapseForKeyboard = computed(
 // キーボード表示に伴う iOS の自動スクロールを打ち消す（解答エリアの押し出し防止）
 watch(shouldCollapseForKeyboard, (collapsed) => {
   if (!collapsed) return
-  requestAnimationFrame(() => {
+  if (scrollFrame !== null) cancelAnimationFrame(scrollFrame)
+  scrollFrame = requestAnimationFrame(() => {
+    scrollFrame = null
+    if (disposed) return
     window.scrollTo(0, 0)
     const main = document.querySelector('.main-content')
     if (main) main.scrollTop = 0
@@ -477,14 +492,16 @@ const handleErrorAction = () => {
 }
 
 // --- クリーンアップ ---
-onUnmounted(() => {
+onBeforeUnmount(() => {
+  disposed = true
+  if (scrollFrame !== null) cancelAnimationFrame(scrollFrame)
   window.removeEventListener('keydown', handleKeyDown)
 
-  // 時間更新ループ停止 → GameManager 破棄 → Player 破棄 の順でリソースを解放
+  // 子VideoPlayerがPlayerを破棄する前にゲーム処理を止める。
   gameLoop.stop()
   stopOrientationGuard()
   gameManager.value?.destroy()
-  playerManagerRef.value?.destroy()
+  gameManager.value = null
   playerManagerRef.value = null
 })
 </script>

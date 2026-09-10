@@ -36,6 +36,8 @@ export interface YouTubePlayerManager {
   // イベント処理
   onStateChange(callback: (state: YouTubePlayerState) => void): void
 
+  onError?(callback: (error: Error) => void): void
+
   // クリーンアップ
   destroy(): void
 }

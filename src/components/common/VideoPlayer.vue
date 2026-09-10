@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { loadYouTubeIframeAPI, createYouTubePlayerManager } from '@/services/youtubePlayer'
 import type { YouTubePlayerManager, QuizSettings } from '@/types'
 import { GameState } from '@/types'
@@ -33,24 +33,44 @@ const showThumbnailMask = computed(
   () => gameStore.currentState === GameState.LOADING || gameStore.currentState === GameState.READY,
 )
 
+const lifetime = new AbortController()
+let ownedPlayer: YouTubePlayerManager | null = null
+function reportError(error: Error) {
+  if (lifetime.signal.aborted) return
+  logger.error('[VideoPlayer] Player failed:', error)
+  errorMessage.value = error.message
+  isLoading.value = false
+  emit('error', error.message)
+}
+onBeforeUnmount(() => {
+  lifetime.abort()
+  ownedPlayer?.destroy()
+  ownedPlayer = null
+})
+
 onMounted(async () => {
   try {
     // YouTube Player を作成
-    await loadYouTubeIframeAPI()
+    await loadYouTubeIframeAPI(lifetime.signal)
+    if (lifetime.signal.aborted) return
     const playerManager = await createYouTubePlayerManager(
       'youtube-player-element',
       props.videoId,
       props.settings,
+      lifetime.signal,
     )
 
+    if (lifetime.signal.aborted) {
+      playerManager.destroy()
+      return
+    }
+    ownedPlayer = playerManager
+    playerManager.onError?.(reportError)
+    if (errorMessage.value) return
     isLoading.value = false
     emit('ready', playerManager)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    logger.error('[VideoPlayer] Failed to initialize:', error)
-    errorMessage.value = message
-    isLoading.value = false
-    emit('error', message)
+    reportError(error instanceof Error ? error : new Error('Unknown error'))
   }
 })
 </script>

@@ -7,52 +7,47 @@ import {
   YT_API_LOAD_TIMEOUT_MS,
   YT_API_POLL_INTERVAL_MS,
   LOAD_VIDEO_SETTLE_MS,
+  YT_PLAYER_READY_TIMEOUT_MS,
 } from '@/constants/timing'
 
 /**
  * YouTube IFrame APIを動的に読み込み
  */
-export function loadYouTubeIframeAPI(): Promise<void> {
+export function loadYouTubeIframeAPI(signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    // 既にAPIが読み込まれている場合
-    if (window.YT && window.YT.Player) {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'))
+      return
+    }
+    if (window.YT?.Player) {
       resolve()
       return
     }
-
-    // APIスクリプトが既に存在する場合
-    if (document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-      // APIの読み込み完了を待つ（タイムアウトで打ち切り、リークを防止）
-      const startedAt = Date.now()
-      const checkInterval = window.setInterval(() => {
-        if (window.YT && window.YT.Player) {
-          clearInterval(checkInterval)
-          resolve()
-          return
-        }
-        if (Date.now() - startedAt >= YT_API_LOAD_TIMEOUT_MS) {
-          clearInterval(checkInterval)
-          reject(new Error('YouTube IFrame API failed to load'))
-        }
-      }, YT_API_POLL_INTERVAL_MS)
-      return
+    const cleanup = () => {
+      window.clearInterval(interval)
+      window.clearTimeout(timeout)
+      signal?.removeEventListener('abort', abort)
     }
-
-    // APIスクリプトを動的に追加
-    const tag = document.createElement('script')
-    tag.src = 'https://www.youtube.com/iframe_api'
-    const firstScriptTag = document.getElementsByTagName('script')[0]
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
-
-    // タイムアウト処理（成功時は clearTimeout でタイマーを解放する）
-    const timeoutId = window.setTimeout(() => {
+    const abort = () => {
+      cleanup()
+      reject(new DOMException('Aborted', 'AbortError'))
+    }
+    // スクリプトは共有し、各呼び出しの待機だけをキャンセルできるようにする。
+    const interval = window.setInterval(() => {
+      if (window.YT?.Player) {
+        cleanup()
+        resolve()
+      }
+    }, YT_API_POLL_INTERVAL_MS)
+    const timeout = window.setTimeout(() => {
+      cleanup()
       reject(new Error('YouTube IFrame API failed to load'))
     }, YT_API_LOAD_TIMEOUT_MS)
-
-    // グローバルコールバックを設定
-    window.onYouTubeIframeAPIReady = () => {
-      clearTimeout(timeoutId)
-      resolve()
+    signal?.addEventListener('abort', abort, { once: true })
+    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+      const tag = document.createElement('script')
+      tag.src = 'https://www.youtube.com/iframe_api'
+      document.head.appendChild(tag)
     }
   })
 }
@@ -81,20 +76,63 @@ export function createYouTubePlayerManager(
   elementId: string,
   videoId: string,
   settings: QuizSettings,
+  signal?: AbortSignal,
 ): Promise<YouTubePlayerManager> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'))
+      return
+    }
     let player: YT.Player | null = null
+    let disposed = false
+    let ready = false
+    let errorCallback: ((error: Error) => void) | null = null
+    let lastError: Error | null = null
+    const pendingLoads = new Map<number, (error: Error) => void>()
+    const cleanupReady = () => window.clearTimeout(readyTimeout)
+    const dispose = () => {
+      if (disposed) return
+      disposed = true
+      cleanupReady()
+      signal?.removeEventListener('abort', abort)
+      stateChangeCallback = null
+      errorCallback = null
+      for (const [timer, rejectLoad] of pendingLoads) {
+        window.clearTimeout(timer)
+        rejectLoad(new DOMException('Aborted', 'AbortError'))
+      }
+      pendingLoads.clear()
+      const instance = player
+      player = null
+      instance?.destroy()
+    }
+    const fail = (error: Error) => {
+      dispose()
+      reject(error)
+    }
+    const abort = () => fail(new DOMException('Aborted', 'AbortError'))
+    const readyTimeout = window.setTimeout(() => {
+      fail(new Error('YouTube Player ready timed out'))
+    }, YT_PLAYER_READY_TIMEOUT_MS)
+    signal?.addEventListener('abort', abort, { once: true })
     let stateChangeCallback: ((state: YouTubePlayerState) => void) | null = null
 
     // プレイヤーの初期化
     const onReady = () => {
+      if (disposed || ready) return
+      ready = true
+      cleanupReady()
       const manager: YouTubePlayerManager = {
         loadVideo: async (newVideoId: string) => {
           if (!player) throw new Error('Player not initialized')
-          return new Promise((loadResolve) => {
+          return new Promise((loadResolve, loadReject) => {
             player!.loadVideoById(newVideoId)
             // 読み込み完了を待つ（簡易実装）
-            setTimeout(loadResolve, LOAD_VIDEO_SETTLE_MS)
+            const timer = window.setTimeout(() => {
+              pendingLoads.delete(timer)
+              loadResolve()
+            }, LOAD_VIDEO_SETTLE_MS)
+            pendingLoads.set(timer, loadReject)
           })
         },
 
@@ -138,15 +176,15 @@ export function createYouTubePlayerManager(
         },
 
         onStateChange: (callback: (state: YouTubePlayerState) => void) => {
-          stateChangeCallback = callback
+          if (!disposed) stateChangeCallback = callback
         },
 
-        destroy: () => {
-          if (player) {
-            player.destroy()
-            player = null
-          }
+        onError: (callback) => {
+          if (disposed) return
+          errorCallback = callback
+          if (lastError) callback(lastError)
         },
+        destroy: dispose,
       }
 
       resolve(manager)
@@ -159,7 +197,13 @@ export function createYouTubePlayerManager(
     }
 
     const onError = (event: YT.OnErrorEvent) => {
-      reject(new Error(`YouTube Player Error: ${event.data}`))
+      if (disposed) return
+      const error = new Error(`YouTube Player Error: ${event.data}`)
+      if (!ready) fail(error)
+      else {
+        lastError = error
+        errorCallback?.(error)
+      }
     }
 
     // プレイヤー作成
@@ -177,7 +221,7 @@ export function createYouTubePlayerManager(
         },
       })
     } catch (error) {
-      reject(error)
+      fail(error instanceof Error ? error : new Error(String(error)))
     }
   })
 }
