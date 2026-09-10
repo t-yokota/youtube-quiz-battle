@@ -5,14 +5,9 @@ import { useModalLayer } from '@/composables/useModalLayer'
 
 import { computed, ref } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
-import { useSettingsStore } from '@/stores/settingsStore'
+import SettingsGeneral from './SettingsGeneral.vue'
+import SettingsDebug from './SettingsDebug.vue'
 import { useDebugStore } from '@/stores/debugStore'
-import {
-  DEBUG_ANSWER_TIME_LIMIT_MIN,
-  DEBUG_ANSWER_TIME_LIMIT_MAX,
-  DEBUG_MAX_ATTEMPTS_MIN,
-  DEBUG_MAX_ATTEMPTS_MAX,
-} from '@/constants/debug'
 
 // Props定義（Phase 2で状態管理と連携予定）
 interface Props {
@@ -26,7 +21,6 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const gameStore = useGameStore()
-const settingsStore = useSettingsStore()
 const debugStore = useDebugStore()
 
 // デバッグモード対応データかどうか（クイズデータの settings.debug）
@@ -39,70 +33,6 @@ const handleDebugMenuToggle = () => {
   debugStore.setMenuVisible(!debugStore.isMenuVisible)
 }
 
-// 上書きコントロールは常に実効値（上書き > データ値）を表示する。
-// 変更で上書き設定、リセットでデータ値表示に戻る。
-// 数値は確定（change = blur/Enter）時のみ反映し、タイピング途中に clamp で丸めない
-const effectiveAnswerTimeLimit = computed(
-  () => debugStore.answerTimeLimitOverride ?? gameStore.quizData?.settings.answerTimeLimit ?? null,
-)
-const effectiveMaxAttempts = computed(
-  () => debugStore.maxAttemptsOverride ?? gameStore.quizData?.settings.maxAttempts ?? null,
-)
-
-const handleAnswerTimeLimitOverrideChange = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  // 空欄で確定した場合は上書き解除（データ値表示に戻す）
-  debugStore.setAnswerTimeLimitOverride(input.value === '' ? null : input.valueAsNumber)
-  input.value = effectiveAnswerTimeLimit.value?.toString() ?? ''
-}
-
-const handleMaxAttemptsOverrideChange = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  debugStore.setMaxAttemptsOverride(input.value === '' ? null : input.valueAsNumber)
-  input.value = effectiveMaxAttempts.value?.toString() ?? ''
-}
-
-// boolean 上書き: トグルスイッチ（クイズ画面右下と同型）。表示は実効値、タップで上書き設定
-const effectiveJumpToRevealPeriod = computed(
-  () =>
-    debugStore.jumpToRevealPeriodOverride ??
-    gameStore.quizData?.settings.jumpToRevealPeriod ??
-    false,
-)
-const effectiveHideVideoPlayerDuringAnswer = computed(
-  () =>
-    debugStore.hideVideoPlayerDuringAnswerOverride ??
-    gameStore.quizData?.settings.hideVideoPlayerDuringAnswer ??
-    false,
-)
-
-const handleJumpToRevealPeriodOverrideToggle = () => {
-  debugStore.setJumpToRevealPeriodOverride(!effectiveJumpToRevealPeriod.value)
-}
-
-const handleHideVideoPlayerDuringAnswerOverrideToggle = () => {
-  debugStore.setHideVideoPlayerDuringAnswerOverride(!effectiveHideVideoPlayerDuringAnswer.value)
-}
-
-const handleResetOverrides = () => {
-  debugStore.resetOverrides()
-}
-
-// シーク許可の実効値（ユーザー上書き > クイズデータの設定。Task 19-3）
-const isSeekAllowed = computed(
-  () =>
-    !(settingsStore.disableSeekbarOverride ?? gameStore.quizData?.settings.disableSeekbar ?? true),
-)
-
-// トグル操作でユーザー上書きを設定（許可 = disableSeekbar false）
-const handleSeekToggle = () => {
-  settingsStore.setDisableSeekbarOverride(isSeekAllowed.value)
-}
-
-const handleButtonCheckToggle = () => {
-  settingsStore.setButtonCheckEnabled(!gameStore.isButtonCheckEnabled)
-}
-
 // イベント定義
 const emit = defineEmits<{
   close: []
@@ -112,10 +42,6 @@ const emit = defineEmits<{
 
 const handleClose = () => {
   emit('close')
-}
-
-const handleVolumeChange = (level: number) => {
-  emit('updateVolume', level)
 }
 
 // オーバーレイクリックで閉じる
@@ -182,215 +108,12 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
 
           <!-- Modal Content -->
           <div class="modal-content">
-            <!-- Audio Settings -->
-            <section class="settings-section">
-              <div class="setting-row">
-                <span class="setting-label">効果音の音量</span>
-                <div class="volume-slider">
-                  <!-- Volume Icon SVG -->
-                  <svg
-                    :class="['volume-icon', { muted: volumeLevel === 0 }]"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <!-- Speaker Base -->
-                    <path
-                      d="M11 5L6 9H2v6h4l5 4V5z"
-                      fill="currentColor"
-                      stroke="currentColor"
-                      stroke-width="1"
-                      stroke-linejoin="round"
-                    />
-
-                    <!-- Mute X (volumeLevel === 0) -->
-                    <path
-                      v-if="volumeLevel === 0"
-                      class="mute-x"
-                      d="M23 9l-6 6m0-6l6 6"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                    />
-
-                    <!-- Sound Wave 1 (volumeLevel >= 1) -->
-                    <path
-                      v-if="volumeLevel >= 1"
-                      d="M14 10a3 3 0 010 4"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                    />
-
-                    <!-- Sound Wave 2 (volumeLevel >= 2) -->
-                    <path
-                      v-if="volumeLevel >= 2"
-                      d="M16 8a6 6 0 010 8"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                    />
-
-                    <!-- Sound Wave 3 (volumeLevel >= 3) -->
-                    <path
-                      v-if="volumeLevel >= 3"
-                      d="M18 6a9 9 0 010 12"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                    />
-
-                    <!-- Sound Wave 4 (volumeLevel === 4) -->
-                    <path
-                      v-if="volumeLevel === 4"
-                      d="M20 4a12 12 0 010 16"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-
-                  <input
-                    type="range"
-                    min="0"
-                    max="4"
-                    :value="volumeLevel"
-                    :style="{
-                      background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${(volumeLevel / 4) * 100}%, var(--slider-track) ${(volumeLevel / 4) * 100}%, var(--slider-track) 100%)`,
-                    }"
-                    class="slider"
-                    @input="handleVolumeChange(($event.target as HTMLInputElement).valueAsNumber)"
-                  />
-                </div>
-              </div>
-              <p class="seek-description">早押しボタンと正誤判定の効果音に適用されます。</p>
-            </section>
-
-            <!-- Seek Settings -->
-            <section class="settings-section">
-              <div class="setting-row">
-                <span class="setting-label">シークバーの操作を許可する</span>
-                <button
-                  type="button"
-                  class="ui-switch"
-                  role="switch"
-                  :aria-checked="isSeekAllowed"
-                  aria-label="シークバーの操作を許可する"
-                  @click="handleSeekToggle"
-                >
-                  <span class="ui-switch-track" :class="{ on: isSeekAllowed }">
-                    <span class="ui-switch-knob"></span>
-                  </span>
-                </button>
-              </div>
-              <p class="seek-description">
-                許可すると、シークで飛ばした問題は不参加（スキップ）扱いになります。
-              </p>
-            </section>
-
-            <!-- Button Check Settings -->
-            <section class="settings-section">
-              <div class="setting-row">
-                <span class="setting-label">ボタンチェック演出を行う</span>
-                <button
-                  type="button"
-                  class="ui-switch"
-                  role="switch"
-                  :aria-checked="gameStore.isButtonCheckEnabled"
-                  aria-label="ボタンチェック演出を行う"
-                  @click="handleButtonCheckToggle"
-                >
-                  <span class="ui-switch-track" :class="{ on: gameStore.isButtonCheckEnabled }">
-                    <span class="ui-switch-knob"></span>
-                  </span>
-                </button>
-              </div>
-              <p class="seek-description">
-                クイズを始める（動画の再生を開始する）前にボタンチェックの演出を行います。
-              </p>
-            </section>
-
-            <!-- UI Theme -->
-            <section class="settings-section">
-              <div class="setting-row">
-                <span class="setting-label">UIテーマ</span>
-                <button type="button" class="theme-button" @click="emit('openThemeSwitcher')">
-                  えらぶ
-                </button>
-              </div>
-              <p class="seek-description">アプリ全体の見た目を切り替えます。</p>
-            </section>
-
-            <!-- Debug Settings（Task 29: debug データかつメニュー表示ONの時のみ） -->
-            <section v-if="isDebugSectionVisible" class="settings-section">
-              <h3 class="section-title debug-section-title">デバッグ</h3>
-              <p class="seek-description">クイズ設定を一時的に上書きします（リロードで解除）</p>
-
-              <div class="debug-row">
-                <span class="seek-label">解答制限時間（秒）</span>
-                <input
-                  type="number"
-                  class="debug-input"
-                  :min="DEBUG_ANSWER_TIME_LIMIT_MIN"
-                  :max="DEBUG_ANSWER_TIME_LIMIT_MAX"
-                  :value="effectiveAnswerTimeLimit ?? ''"
-                  @change="handleAnswerTimeLimitOverrideChange"
-                />
-              </div>
-
-              <div class="debug-row">
-                <span class="seek-label">解答回数</span>
-                <input
-                  type="number"
-                  class="debug-input"
-                  :min="DEBUG_MAX_ATTEMPTS_MIN"
-                  :max="DEBUG_MAX_ATTEMPTS_MAX"
-                  :value="effectiveMaxAttempts ?? ''"
-                  @change="handleMaxAttemptsOverrideChange"
-                />
-              </div>
-
-              <div class="debug-row">
-                <span class="seek-label">正解発表ジャンプ</span>
-                <button
-                  type="button"
-                  class="ui-switch"
-                  role="switch"
-                  :aria-checked="effectiveJumpToRevealPeriod"
-                  aria-label="正解発表ジャンプ"
-                  @click="handleJumpToRevealPeriodOverrideToggle"
-                >
-                  <span class="ui-switch-track" :class="{ on: effectiveJumpToRevealPeriod }">
-                    <span class="ui-switch-knob"></span>
-                  </span>
-                </button>
-              </div>
-
-              <div class="debug-row">
-                <span class="seek-label">解答中の動画非表示</span>
-                <button
-                  type="button"
-                  class="ui-switch"
-                  role="switch"
-                  :aria-checked="effectiveHideVideoPlayerDuringAnswer"
-                  aria-label="解答中の動画非表示"
-                  @click="handleHideVideoPlayerDuringAnswerOverrideToggle"
-                >
-                  <span
-                    class="ui-switch-track"
-                    :class="{ on: effectiveHideVideoPlayerDuringAnswer }"
-                  >
-                    <span class="ui-switch-knob"></span>
-                  </span>
-                </button>
-              </div>
-
-              <button type="button" class="debug-reset-button" @click="handleResetOverrides">
-                すべてリセット
-              </button>
-            </section>
-
-            <!-- Privacy Info -->
+            <SettingsGeneral
+              :volume-level="volumeLevel"
+              @update-volume="emit('updateVolume', $event)"
+              @open-theme-switcher="emit('openThemeSwitcher')"
+            />
+            <SettingsDebug v-if="isDebugSectionVisible" />
             <section class="settings-section">
               <h3 class="section-title">データ収集について</h3>
               <div class="privacy-text">
@@ -552,19 +275,20 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   gap: calc(1.125 * var(--settings-layout-unit));
 }
 
+/* 子コンポーネントの表示トークンと共通コントロールを設定画面で統一する。 */
 /* Settings Section（セクション間に罫線） */
-.settings-section {
+:deep(.settings-section) {
   display: flex;
   flex-direction: column;
   gap: calc(0.5 * var(--settings-layout-unit));
 }
 
-.settings-section + .settings-section {
+:deep(.settings-section + .settings-section) {
   border-top: 1px solid var(--color-line);
   padding-top: var(--settings-layout-unit);
 }
 
-.section-title {
+:deep(.section-title) {
   margin: 0;
   font-size: var(--settings-font-unit);
   font-weight: 700;
@@ -572,7 +296,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
 }
 
 /* 設定行（1段目: 見出しを兼ねるラベル + 右揃えの操作 UI） */
-.setting-row {
+:deep(.setting-row) {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -580,7 +304,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   min-height: var(--settings-control-height);
 }
 
-.theme-button {
+:deep(.theme-button) {
   min-height: var(--settings-control-height);
   padding: 0 calc(1.25 * var(--settings-layout-unit));
   background: var(--btn-primary-bg);
@@ -593,26 +317,26 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   cursor: pointer;
 }
 
-.setting-label {
+:deep(.setting-label) {
   font-size: var(--settings-font-unit);
   font-weight: 700;
   color: var(--color-text-main);
 }
 
-.seek-label {
+:deep(.seek-label) {
   font-size: calc(0.875 * var(--settings-font-unit));
   color: var(--color-text-main);
   font-weight: 500;
 }
 
-.seek-description {
+:deep(.seek-description) {
   margin: 0;
   font-size: calc(0.875 * var(--settings-font-unit));
   color: var(--color-text-dim);
 }
 
 /* トグルスイッチ（ゲーム画面のボタンチェックトグルと同型・青系） */
-.ui-switch {
+:deep(.ui-switch) {
   display: flex;
   align-items: center;
   min-height: var(--settings-control-height);
@@ -623,7 +347,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   -webkit-tap-highlight-color: transparent;
 }
 
-.ui-switch-track {
+:deep(.ui-switch-track) {
   position: relative;
   width: calc(2.75 * var(--settings-layout-unit));
   height: calc(1.625 * var(--settings-layout-unit));
@@ -637,12 +361,12 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
     border-color var(--duration-base);
 }
 
-.ui-switch-track.on {
+:deep(.ui-switch-track.on) {
   background: var(--toggle-on-track);
   border-color: var(--toggle-on-border);
 }
 
-.ui-switch-knob {
+:deep(.ui-switch-knob) {
   position: absolute;
   top: 50%;
   left: calc(0.1875 * var(--settings-layout-unit));
@@ -656,18 +380,18 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
     background var(--duration-base);
 }
 
-.ui-switch-track.on .ui-switch-knob {
+:deep(.ui-switch-track.on .ui-switch-knob) {
   left: calc(100% - 1.25 * var(--settings-layout-unit) - 0.1875 * var(--settings-layout-unit));
   background: var(--toggle-on-knob);
 }
 
-.volume-slider {
+:deep(.volume-slider) {
   display: flex;
   align-items: center;
   gap: calc(0.75 * var(--settings-layout-unit));
 }
 
-.volume-icon {
+:deep(.volume-icon) {
   width: calc(1.375 * var(--settings-layout-unit));
   height: calc(1.375 * var(--settings-layout-unit));
   flex-shrink: 0;
@@ -675,16 +399,16 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   transition: color 0.2s;
 }
 
-.volume-icon.muted {
+:deep(.volume-icon.muted) {
   color: var(--color-text-dim);
 }
 
-.volume-icon .mute-x {
+:deep(.volume-icon .mute-x) {
   stroke: var(--color-text-dim);
 }
 
 /* Range Slider */
-.slider {
+:deep(.slider) {
   width: calc(6.875 * var(--settings-layout-unit));
   height: calc(0.375 * var(--settings-layout-unit));
   border-radius: calc(0.1875 * var(--settings-layout-unit));
@@ -693,21 +417,21 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   appearance: none;
 }
 
-.slider::-webkit-slider-track {
+:deep(.slider::-webkit-slider-track) {
   width: 100%;
   height: calc(0.375 * var(--settings-layout-unit));
   border-radius: calc(0.1875 * var(--settings-layout-unit));
   background: transparent;
 }
 
-.slider::-moz-range-track {
+:deep(.slider::-moz-range-track) {
   width: 100%;
   height: calc(0.375 * var(--settings-layout-unit));
   border-radius: calc(0.1875 * var(--settings-layout-unit));
   background: transparent;
 }
 
-.slider::-webkit-slider-thumb {
+:deep(.slider::-webkit-slider-thumb) {
   -webkit-appearance: none;
   appearance: none;
   width: calc(1.25 * var(--settings-layout-unit));
@@ -719,7 +443,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   transition: transform 0.2s;
 }
 
-.slider::-moz-range-thumb {
+:deep(.slider::-moz-range-thumb) {
   width: calc(1.25 * var(--settings-layout-unit));
   height: calc(1.25 * var(--settings-layout-unit));
   border-radius: 50%;
@@ -730,28 +454,28 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   transition: transform 0.2s;
 }
 
-.slider::-webkit-slider-thumb:hover {
+:deep(.slider::-webkit-slider-thumb:hover) {
   transform: scale(1.2);
 }
 
-.slider::-moz-range-thumb:hover {
+:deep(.slider::-moz-range-thumb:hover) {
   transform: scale(1.2);
 }
 
-.slider:active::-webkit-slider-thumb {
+:deep(.slider:active::-webkit-slider-thumb) {
   transform: scale(1.1);
 }
 
-.slider:active::-moz-range-thumb {
+:deep(.slider:active::-moz-range-thumb) {
   transform: scale(1.1);
 }
 
 /* Debug Section（Task 29-4） */
-.debug-section-title {
+:deep(.debug-section-title) {
   color: var(--color-accent);
 }
 
-.debug-row {
+:deep(.debug-row) {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -760,7 +484,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   min-height: max(32px, calc(2.25 * var(--settings-layout-unit)));
 }
 
-.debug-input {
+:deep(.debug-input) {
   width: calc(3.5 * var(--settings-layout-unit));
   height: calc(1.875 * var(--settings-layout-unit));
   padding: 0 calc(0.5 * var(--settings-layout-unit));
@@ -772,11 +496,11 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   text-align: right;
 }
 
-.debug-input:disabled {
+:deep(.debug-input:disabled) {
   opacity: 0.45;
 }
 
-.debug-reset-button {
+:deep(.debug-reset-button) {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
@@ -794,7 +518,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   transition: border-color 0.2s;
 }
 
-.debug-reset-button:hover {
+:deep(.debug-reset-button:hover) {
   border-color: var(--color-accent);
 }
 

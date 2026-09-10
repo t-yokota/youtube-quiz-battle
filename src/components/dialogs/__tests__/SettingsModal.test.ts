@@ -6,14 +6,12 @@ const source = readFileSync(
   resolve(process.cwd(), 'src/components/dialogs/SettingsModal.vue'),
   'utf8',
 )
-const template = source.slice(
-  source.indexOf('<template>') + '<template>'.length,
-  source.indexOf('</template>'),
-)
 
 function selectorBlock(selector: string): string {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const block = source.match(new RegExp(`^\\s*${escapedSelector}\\s*\\{([^}]*)\\}`, 'ms'))?.[1]
+  const block = source
+    .replace(/:deep\(([^)]+)\)/g, '$1')
+    .match(new RegExp(`^\\s*${escapedSelector}\\s*\\{([^}]*)\\}`, 'ms'))?.[1]
 
   if (!block) throw new Error(`${selector} is not defined`)
 
@@ -21,25 +19,6 @@ function selectorBlock(selector: string): string {
 }
 
 describe('SettingsModal', () => {
-  it('UIテーマ・デバッグ・データ収集の順で設定項目の下部に置く', () => {
-    const parsedTemplate = document.createElement('template')
-    parsedTemplate.innerHTML = template
-    const sections = [...parsedTemplate.content.querySelectorAll<HTMLElement>('.settings-section')]
-    const themeSections = sections.filter((section) => section.textContent?.includes('UIテーマ'))
-    const themeSection = themeSections[0]
-    const privacySection = sections.find((section) =>
-      section.textContent?.includes('データ収集について'),
-    )
-    const debugSection = sections.find((section) => section.hasAttribute('v-if'))
-
-    expect(themeSections).toHaveLength(1)
-    expect(themeSection).toBeDefined()
-    expect(privacySection).toBeDefined()
-    expect(debugSection).toBeDefined()
-    expect(themeSection?.nextElementSibling).toBe(debugSection)
-    expect(debugSection?.nextElementSibling).toBe(privacySection)
-  })
-
   it('設定画面専用のレイアウト・文字・操作部unitを定義する', () => {
     const overlay = selectorBlock('.modal-overlay')
     const compactOverlay = overlay.replace(/\s+/g, '')
@@ -77,42 +56,26 @@ describe('SettingsModal', () => {
   })
 
   it('設定変更UIと項目間隔を専用レイアウトunitで縮尺する', () => {
-    expect(selectorBlock('.modal-content')).toContain(
-      'padding: var(--settings-layout-unit)',
-    )
+    expect(selectorBlock('.modal-content')).toContain('padding: var(--settings-layout-unit)')
     expect(selectorBlock('.modal-content')).toContain(
       'gap: calc(1.125 * var(--settings-layout-unit))',
     )
-    expect(selectorBlock('.setting-row')).toContain(
-      'min-height: var(--settings-control-height)',
-    )
-    expect(selectorBlock('.ui-switch')).toContain(
-      'min-height: var(--settings-control-height)',
-    )
+    expect(selectorBlock('.setting-row')).toContain('min-height: var(--settings-control-height)')
+    expect(selectorBlock('.ui-switch')).toContain('min-height: var(--settings-control-height)')
     expect(selectorBlock('.ui-switch-track')).toContain(
       'width: calc(2.75 * var(--settings-layout-unit))',
     )
     expect(selectorBlock('.ui-switch-track')).toContain(
       'height: calc(1.625 * var(--settings-layout-unit))',
     )
-    expect(selectorBlock('.slider')).toContain(
-      'width: calc(6.875 * var(--settings-layout-unit))',
-    )
+    expect(selectorBlock('.slider')).toContain('width: calc(6.875 * var(--settings-layout-unit))')
     expect(selectorBlock('.slider::-webkit-slider-thumb')).toContain(
       'width: calc(1.25 * var(--settings-layout-unit))',
     )
-    expect(selectorBlock('.theme-button')).toContain(
-      'min-height: var(--settings-control-height)',
-    )
-    expect(selectorBlock('.primary-button')).toContain(
-      'min-height: var(--settings-control-height)',
-    )
-    expect(selectorBlock('.close-button')).toContain(
-      'width: var(--settings-control-height)',
-    )
-    expect(selectorBlock('.close-button')).toContain(
-      'height: var(--settings-control-height)',
-    )
+    expect(selectorBlock('.theme-button')).toContain('min-height: var(--settings-control-height)')
+    expect(selectorBlock('.primary-button')).toContain('min-height: var(--settings-control-height)')
+    expect(selectorBlock('.close-button')).toContain('width: var(--settings-control-height)')
+    expect(selectorBlock('.close-button')).toContain('height: var(--settings-control-height)')
     expect(selectorBlock('.ui-switch-knob')).toContain(
       'width: calc(1.25 * var(--settings-layout-unit))',
     )
