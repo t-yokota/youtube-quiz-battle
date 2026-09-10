@@ -30,15 +30,17 @@ YouTubeクイズ動画を視聴しながらリアルタイムで早押し解答�
 
 ```
 src/
-├── components/     # Vue SFC（common/dialogs/game/result サブディレクトリ）
+├── components/     # Vue SFC（common/dialogs/game/result/theme）
 ├── services/       # ビジネスロジック
 │                   #   answerValidator / gameManager / quizDataLoader
-│                   #   timeManager / youtubePlayer
+│                   #   timeManager / youtubePlayer、音声・Analytics、各コントローラ
+├── composables/    # ゲームループ・画面向き・テーマ
 ├── stores/         # Pinia ストア（gameStore.ts が状態の単一の真実の源）
 ├── types/          # 共通型定義（any 禁止のための集約点）
 ├── constants/      # 定数（マジックナンバー禁止）
 ├── utils/          # 純粋関数ユーティリティ
 ├── assets/         # 画像・CSS
+├── themes/         # テーマCSSとメタデータ
 ├── App.vue         # ルートコンポーネント
 └── main.ts         # エントリポイント
 ```
@@ -55,7 +57,7 @@ src/
 - ファイル構造の変更（新規作成・削除・移動）
 - 複数ファイルにまたがる大規模な変更
 
-**例外（即座に実行してよい）**: タイポ修正、ユーザーが「すぐに修正して」と指示した場合、docs/improvement/ の指示書および docs/tasks.md に記載済みのタスク（合意済みとみなす）
+**例外（即座に実行してよい）**: タイポ修正、ユーザーが実行を指示した場合、docs/tasks.md に採用済みとして記載されたタスク。docs/archive/ の旧計画と、採否未決定の草案は実行許可の根拠にしない。
 
 ### 自律実行の原則
 
@@ -67,8 +69,8 @@ src/
 - 確認待ちでブロックされたら、質問を提示した上で依存しない次のタスクへ進む
 - 実装上のバグ（テスト失敗・型エラー・明白な誤り）は自律的に修正する。
   進行中のタスクと無関係な修正は別コミットに分ける
-- 対象ファイル・完了条件（test / type-check / lint のパス）を spawn プロンプトに含める。diff のレビューとコミットはオーケストレーターが行い、サブエージェントはコミットしない（担当ルーティングの詳細: docs/improvement/00-overview.md「実行体制」）
-- オーケストレーターがインラインで実行してよいのは **docs/improvement/specs/ に設計済み spec があるタスクのみ**。spec の無い設計作業（分割設計・仕様裁定・デザイン方針）は着手前にユーザーへ方針を提案する
+- 対象ファイル・完了条件（test / type-check / lint のパス）を spawn プロンプトに含める。diff のレビューとコミットはオーケストレーターが行い、サブエージェントはコミットしない。旧計画にある期間限定のモデル割当は履歴として扱う。
+- 実行対象と仕様の参照先は docs/tasks.md と現在のユーザー指示で確認する。旧specは背景資料であり、完了済みの手順を再実行したり、草案を合意済みと解釈したりしない。
 
 ### コミットメッセージ規約
 
@@ -102,5 +104,5 @@ src/
 | タスク進捗・次にやること | [docs/tasks.md](docs/tasks.md) |
 | 詳細設計（状態遷移・時間管理等） | [docs/design.md](docs/design.md) |
 | 要件定義 | [docs/requirements.md](docs/requirements.md) |
-| ワイヤーフレーム | [docs/assets/wireframe.html](docs/assets/wireframe.html) |
+| 採用ワイヤーフレーム（ケース1） | [docs/assets/wireframe-v2-case1.html](docs/assets/wireframe-v2-case1.html) |
 | デプロイ手順 | [docs/deployment.md](docs/deployment.md) |

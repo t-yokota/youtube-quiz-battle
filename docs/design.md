@@ -1383,28 +1383,9 @@ Unicode Property Escapes未対応環境向けのフォールバック正規表�
 
 ### Analytics Service
 
-匿名利用分析はGA4（`gtag.js`直接連携。Firebase SDKは使用しない）で実施する。`src/services/analyticsService.ts`が実装本体。詳細仕様（イベント定義・パラメータ一覧・送信タイミング・PII対策の設計判断）は[improvement/specs/task25-firebase-analytics.md](./improvement/specs/task25-firebase-analytics.md)を参照し、本節では要点のみ記す（詳細は同specへの参照で済ませ、重複記述を避ける）。
+GA4への送信は`src/services/analyticsService.ts`、イベントの発火と組み立てはApp.vueが担当する。`gtag.js`を使用し、Firebase SDKは使用しない。
 
-**送信イベント（5種）:**
-
-| イベント名 | 発火タイミング |
-|---|---|
-| `quiz_session_started` | READY→TALKING遷移時（クイズ開始時） |
-| `question_answered` | 1問の最終結果確定時（正解/最終不正解/REVEALING到達時のスキップ・未解答確定） |
-| `answer_submitted` | 解答1試行ごと（1行=1試行。BigQuery分析用の明細） |
-| `setting_changed` | セッション進行中（started送信後〜FINISHED前）の設定変更時。シーク許可・ボタンチェック・デバッグ上書き4項目が対象 |
-| `quiz_session_completed` | FINISHED到達時 |
-
-**実装上のポイント:**
-
-- パラメータ名はTypeScriptのcamelCaseフィールド名から機械的にsnake_case変換して送信する（例: `quizSessionId` → `quiz_session_id`）
-- boolean値は`1`/`0`に変換して送信する（GA4のパラメータ型に合わせるため）
-- セッションID（`quizSessionId`）はUUID v4で、READY→TALKING遷移時に生成する（ページロード時ではない。リプレイは新規セッションとして再発行）
-- 自由入力文字列（解答内容・問題文・動画タイトル）は`sanitizeAndTruncate()`でURL/メール/電話番号らしき文字列を`[masked]`に置換した上で100文字（`ANALYTICS_PARAM_MAX_LENGTH`）に切り詰める
-- `GA_MEASUREMENT_ID`が空文字の環境では`init()`が完全にno-opになる（外部リクエストを一切発生させない）
-- 初期化（`gtag.js`の動的注入）は開始ゲートのタップ直後（`AnalyticsService.init()`）に行い、ゲート通過前は外部リクエストを発生させない
-- 開発ビルド（`import.meta.env.DEV`）またはクイズデータの`settings.debug`時は、全イベントにGA4標準の`debug_mode: 1`を付与し、本番レポートを汚さないようにする
-- doc旧稿にあった`accuracy_rate`/`completion_time`/`correct_answer`/`answer_time`という単独パラメータや、専用の「エラー追跡イベント」は実装に存在しない
+実装済みのカスタムイベントは`quiz_session_started`、`answer_submitted`、`question_answered`、`setting_changed`、`quiz_session_completed`の5種。パラメータ・実際の送信タイミング・集計条件は本書の[Analytics and Monitoring](#analytics-and-monitoring)を正とする。特に解答明細は各試行の入力直後ではなく、問題結果の確定後に送信する。
 
 ## UI Architecture
 
@@ -2095,7 +2076,7 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 
 ### 最低限の対策
 
-- **入力処理**: ユーザー入力はローカル処理のみ（サーバー送信なし）
+- **入力処理**: 正誤判定はローカルで行う。解答内容はAnalytics有効時にマスク・切り詰め後、GA4へ送信する（[イベント設計](#analytics-and-monitoring)参照）
 - **クイズデータ**: 自作データのため信頼できるソース
 - **YouTube API**: 公式APIの適切な使用
 - **URL Parameter**: videoIdの基本的な検証
@@ -2138,95 +2119,158 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 
 ## Analytics and Monitoring
 
-### 基本方針
+### 実装範囲と参照元
 
-個人プロジェクトのため、最低限の利用分析のみ実施する。**GA4（`gtag.js`直接連携）を使用し、Firebase SDKは使用しない。** 実装詳細・パラメータの設計判断は[improvement/specs/task25-firebase-analytics.md](./improvement/specs/task25-firebase-analytics.md)を参照（実装は同specの改訂どおりgtag.js直接方式）。サービス実装の要点はCore Components章の「Analytics Service」節を参照。
+2026-09-10時点のアプリ実装を記録する。GA4へ`gtag.js`で直接送信し、Firebase SDKは使用しない。イベント設計の現行参照先は本節とし、[Task 25の旧仕様書](archive/improvement-202606/specs/task25-firebase-analytics.md)は当時の検討履歴として扱う。
+
+| 責務 | 実装 |
+|---|---|
+| 発火条件・イベントの組み立て | [App.vue](../src/App.vue) の状態・結果件数・実効設定のwatcher |
+| 初期化・パラメータ変換・gtag呼び出し | [analyticsService.ts](../src/services/analyticsService.ts) |
+| 測定ID・文字列上限 | [constants/analytics.ts](../src/constants/analytics.ts) の`GA_MEASUREMENT_ID`、`ANALYTICS_PARAM_MAX_LENGTH` |
+| 解答履歴・正誤・集計値 | [gameStore.ts](../src/stores/gameStore.ts)、[thresholdEngine.ts](../src/services/thresholdEngine.ts) |
+| セッションID生成 | [uuid.ts](../src/utils/uuid.ts) |
+
+アプリ側で実装済みの範囲は、ユーザーの認識に基づき動作確認済みとして扱う。今回の文書整理でGA4管理画面や実送信を再確認したわけではない。カスタムディメンション登録・BigQuery連携・レポート作成はアプリコードの実装範囲に含めない。
+
+### 初期化と送信のライフサイクル
+
+1. Appが単一のAnalyticsServiceを作る。初期状態は`disabled`で、この時点のlog呼び出しは破棄される。
+2. クイズデータ読込後、`settings.debug`をサービスへ設定する。
+3. 開始ゲートをタップすると`init()`を呼ぶ。測定IDが空なら、GA用のスクリプト・gtag・dataLayerを設置せず終了する。
+4. 測定IDがある場合、`window.dataLayer`と`window.gtag`を設置し、`gtag('js', …)`、`gtag('config', measurementId)`を呼び、gtag.jsを動的に読み込む。同じURLのスクリプトは重複挿入しない。
+5. サービスはスクリプト読込完了を待たず`enabled`になる。以降のカスタムイベントは`gtag('event', eventName, params)`へ渡され、読込前はdataLayerに保持される。`enabled`はGA4での受信確認を意味しない。
+6. 同期的な初期化例外では`disabled`へ戻る。スクリプト読込失敗は警告ログのみで、アプリ独自の再送・受信確認・永続キューは実装していない。
+
+開始ゲート前に抑制しているのは、このサービスによるGA用通信である。YouTube・音声等の初期ロードまで抑制する意味ではない。GAの自動収集項目をこのアプリで列挙・制御する実装はなく、以下はアプリが明示的に送るカスタムイベント5種を示す。
+
+### 共通パラメータと変換規約
+
+| パラメータ | 送信型 | 適用・意味 |
+|---|---|---|
+| `quiz_session_id` | string | 全5イベント。1プレイを結ぶUUID v4形式のID。GA自身のセッションIDとは別 |
+| `quiz_id` | string | 全5イベント。`?quiz=`から得たクイズ識別子。省略時は`sample` |
+| `video_id` | string | 全5イベント。読み込んだクイズのYouTube動画ID |
+| `video_title` | string（省略可） | `setting_changed`以外。プレイ開始時に取得したタイトル。空なら送らない |
+| `debug_mode` | number（条件付き） | DEVビルドまたはクイズの`settings.debug=true`のとき、全5イベントに`1`を付与。それ以外は省略 |
+
+- TypeScriptのcamelCaseキーをsnake_caseへ機械変換する。以下の表は実際の送信キー。
+- booleanはnumberの`1`/`0`へ変換する。`undefined`の値は省略する。
+- `question_index`は0始まり、`attempt_index`は1始まり。表示用の問題番号とは区別する。
+- `debug_mode`の付与は実装済みだが、GA4のレポートから除外されるかは管理側の設定を含む。本コードだけで除外を保証しない。
 
 ### 送信イベント一覧（5種）
 
-**quiz_session_started**（READY→TALKING遷移時。クイズ開始のスナップショット）
+| イベント | データの単位 | 実際の発火条件 |
+|---|---|---|
+| `quiz_session_started` | 1プレイ | 状態watcherが`READY → TALKING`を観測したとき。ゲートのタップ時やページロード時ではない |
+| `answer_submitted` | 解答1試行 | `results.length`増加を観測したとき、追加された問題結果の`userAnswers`を順に送信する。解答ボタン押下の瞬間ではない |
+| `question_answered` | 確定した1問 | 上記と同じ結果watcherで、各問の試行明細の後に1件送信する |
+| `setting_changed` | 実効設定の変更 | セッションIDがあり、状態が`LOADING`/`READY`/`FINISHED`以外で、対象設定の変化をwatcherが観測したとき |
+| `quiz_session_completed` | 完了時の1プレイ集計 | 状態watcherが`FINISHED`への遷移を観測したとき |
 
-| パラメータ | 内容 |
+#### quiz_session_started
+
+共通パラメータに、開始時点の実効設定を追加する。
+
+| パラメータ | 送信型 | 内容 |
+|---|---|---|
+| `total_questions` | number | クイズの総問題数 |
+| `button_check_enabled` | number（1/0） | ボタンチェック演出。ユーザー上書きがデータ設定に優先 |
+| `seek_allowed` | number（1/0） | シーク許可。ユーザー上書きを反映した`disableSeekbar`の反転 |
+| `jump_to_reveal_period` | number（1/0） | 解答確定後に正解発表へジャンプする実効設定 |
+| `hide_video_player_during_answer` | number（1/0） | 解答中に動画を隠す実効設定 |
+| `answer_time_limit` | number | 解答制限時間（秒）の実効値 |
+| `max_attempts` | number | 最大解答試行回数の実効値 |
+
+後半4項目にはデバッグ上書きも反映する。READY中の設定変更は個別送信せず、このスナップショットへ反映する。
+
+#### answer_submitted
+
+共通パラメータに次を追加する。
+
+| パラメータ | 送信型 | 内容 |
+|---|---|---|
+| `question_index` | number | `result.questionNumber - 1` |
+| `attempt_index` | number | 当該問題の解答履歴の位置+1 |
+| `answer` | string | 試行の解答文字列。マスク・切り詰め対象。タイムアウト時は空文字の場合もある |
+| `is_correct` | number（1/0） | 履歴の解答と問題の正解候補を`validate()`で再判定した値 |
+| `is_final_attempt` | number（1/0） | 確定結果の解答履歴で最後の要素かどうか。最大試行回数に達したという意味ではない |
+| `submission_type` | string | `manual`または`timeout`。記録が欠けた場合は`manual` |
+| `time_until_press_sec` | number | 問題開始から早押しまでの動画時刻差（秒）。押下時に0以上へ補正し、小数1桁に丸める。解答入力に要した時間ではない |
+| `question_text` | string（省略可） | データの問題文。空・未指定なら省略。マスク・切り詰め対象 |
+
+試行に対応する押下時刻が欠けている場合、その`answer_submitted`だけを送らず警告する。問題集計自体は送るため、明細の件数と`attempts_used`が一致しない場合がある。
+
+#### question_answered
+
+共通パラメータに次を追加する。正解・最終不正解は判定時に結果を記録し、試行回数を残した不正解や無解答は正解発表開始等で確定する。シーク消費、問題終了、動画終了による確定も対象になる。
+
+| パラメータ | 送信型 | 内容 |
+|---|---|---|
+| `question_index` | number | 問題インデックス（0始まり） |
+| `result` | string | 下表の`correct` / `incorrect` / `skipped` / `unanswered` |
+| `attempts_used` | number | `userAnswers.length`。空文字のタイムアウトも1試行 |
+| `answers` | string | 解答履歴を`\|`で連結してからマスク・切り詰め。試行なしは空文字 |
+| `times_until_press_sec` | string | 押下時刻配列の各値を小数1桁にし、`\|`で連結。例: `2.4\|5.1` |
+| `first_time_until_press_sec` | number（省略可） | 押下時刻配列の先頭。値がない場合は省略 |
+| `question_text` | string（省略可） | 問題文。空・未指定なら省略。マスク・切り詰め対象 |
+
+| result | 判定（上から優先） |
 |---|---|
-| `quiz_session_id` | セッションID（UUID v4） |
-| `quiz_id` | URLの`?quiz=`パラメータ値 |
-| `video_id` | YouTube動画ID |
-| `video_title` | 動画タイトル（PIIマスク・100文字切り詰め） |
-| `total_questions` | 総問題数 |
-| `button_check_enabled` | ボタンチェック演出の実効値 |
-| `seek_allowed` | シーク許可の実効値（`!disableSeekbar`実効値） |
-| `jump_to_reveal_period` | 実効設定値 |
-| `hide_video_player_during_answer` | 実効設定値 |
-| `answer_time_limit` | 実効設定値（秒） |
-| `max_attempts` | 実効設定値 |
+| `skipped` | 結果の`skipped=true` |
+| `correct` | 上記以外で`isCorrect=true` |
+| `unanswered` | 上記以外で解答履歴が0件 |
+| `incorrect` | 上記以外（解答試行があり不正解） |
 
-**question_answered**（1問の最終結果確定時: 正解/解答権0の不正解=判定時、解答権残しの不正解・無解答=REVEALING開始時、スキップ=シーク消費時）
+未入力のままタイムアウトすると`userAnswers=['']`が記録され、`unanswered`ではなく`incorrect`になる。試行後にシークして確定した現在問も、解答履歴を持つため単純なスキップにはしない。
 
-| パラメータ | 内容 |
-|---|---|
-| `quiz_session_id` / `quiz_id` / `video_id` / `video_title` | 共通識別子 |
-| `question_index` | 問題インデックス（0-indexed） |
-| `result` | `'correct' \| 'incorrect' \| 'skipped' \| 'unanswered'` |
-| `attempts_used` | 解答試行回数 |
-| `answers` | 解答履歴（`\|`区切り。PIIマスク・切り詰め） |
-| `times_until_press_sec` | 各試行の押下タイミング（`\|`区切り、小数1桁） |
-| `first_time_until_press_sec` | 最初の試行の押下タイミング |
-| `question_text` | 問題文（データが持つ場合のみ。PIIマスク・切り詰め） |
+#### setting_changed
 
-**answer_submitted**（解答1試行ごと。1行=1試行のBigQuery分析用明細）
+共通パラメータのうち`video_title`は送らず、次を追加する。
 
-| パラメータ | 内容 |
-|---|---|
-| `quiz_session_id` / `quiz_id` / `video_id` / `video_title` | 共通識別子 |
-| `question_index` | 問題インデックス |
-| `attempt_index` | 試行番号（1-indexed） |
-| `answer` | 解答内容（PIIマスク・切り詰め） |
-| `is_correct` | 正誤結果 |
-| `is_final_attempt` | この試行で確定したか |
-| `submission_type` | `'manual' \| 'timeout'` |
-| `time_until_press_sec` | 押下タイミング（秒） |
-| `question_text` | 問題文（データが持つ場合のみ） |
+| パラメータ | 送信型 | 内容 |
+|---|---|---|
+| `setting_name` | string | `seek_allowed` / `button_check_enabled` / `jump_to_reveal_period` / `hide_video_player_during_answer` / `answer_time_limit` / `max_attempts` |
+| `setting_value` | number | 変更後の実効値。boolean設定は1/0、時間・回数は数値 |
+| `question_index` | number | 変更時点の現在問。最初の問題開始前は-1、問題間は直前の問題位置 |
 
-**setting_changed**（セッション進行中＝started送信後〜FINISHED前のみ。READYでの変更は次回startedのスナップショットに反映されるため送らない）
+音声ON/OFF・音量・UIテーマ・デバッグメニューの開閉は送信対象ではない。一時停止中でも上記のセッション・状態条件を満たせば送信する。未定義から設定値への初期化は、デバッグ上書き4項目のwatcherで除外する。
 
-| パラメータ | 内容 |
-|---|---|
-| `quiz_session_id` / `quiz_id` / `video_id` | 共通識別子 |
-| `setting_name` | `'seek_allowed' \| 'button_check_enabled' \| 'jump_to_reveal_period' \| 'hide_video_player_during_answer' \| 'answer_time_limit' \| 'max_attempts'` |
-| `setting_value` | 変更後の値（boolean値は1/0に変換） |
-| `question_index` | 変更時点の問題位置（問題間は直前の問題のindex、開始前は-1） |
+#### quiz_session_completed
 
-**quiz_session_completed**（FINISHED到達時）
+共通パラメータに次を追加する。
 
-| パラメータ | 内容 |
-|---|---|
-| `quiz_session_id` / `quiz_id` / `video_id` / `video_title` | 共通識別子 |
-| `total_questions` | 総問題数 |
-| `correct_count` / `incorrect_count` / `skipped_count` / `unanswered_count` | 内訳 |
-| `total_attempts` | 総解答試行回数 |
+| パラメータ | 送信型 | 集計元 |
+|---|---|---|
+| `total_questions` | number | クイズデータの問題数 |
+| `correct_count` | number | gameStoreの正解問題数 |
+| `incorrect_count` | number | スキップではなく、解答試行があった不正解問題数。空文字タイムアウトを含む |
+| `skipped_count` | number | 結果配列の`skipped=true`の件数 |
+| `unanswered_count` | number | 非スキップ・不正解・解答履歴0件の結果数 |
+| `total_attempts` | number | 全結果の`userAnswers.length`の合計 |
 
-旧稿にあった`play_session_id`/`accuracy_rate`/`completion_time`/`correct_answer`/`answer_time`/`attempt_count`という単独パラメータ名や、専用の「エラー追跡イベント」は実装に存在しない（`quiz_session_id`という名称、`question_answered`内の集計値で代替）。
+### セッション・順序・途中離脱の扱い
 
-### セッションIDとタイミング
+- IDは`READY → TALKING`で生成する。通常は`crypto.randomUUID()`、利用できなければ`getRandomValues()`、Web Crypto自体がなければ擬似乱数でUUID v4形式を作る。リプレイで再発行し、ページをまたいだ永続化はしない。
+- 結果watcherは`lastSentResultCount`より後ろの結果を処理する。1問については試行1→試行2→…→`question_answered`の呼び出し順になる。完了イベントは別の状態watcherなので、最終問のイベントより後に届く保証は設けていない。
+- 例: 1回目不正解でリトライ可能な時点では明細を送らず、2回目正解で結果確定後、`answer_submitted`を2件（`is_final_attempt=0,1`）、続いて`question_answered`を1件送る。
+- 確定前の問題で離脱すると、その問題の保留中の試行明細は送信されない。確定済みの問題イベントは送信済みでも、途中離脱には`quiz_session_completed`を送らない。離脱専用イベントもない。
+- 送信済み件数による増分処理であり、イベントIDによる重複排除・結果削除時の取消送信・到達保証は実装していない。結果を削除・再追加する補正経路までexactly-onceを保証するものではない。
 
-- **生成タイミング**: READY→TALKING遷移時（ページロード時ではない）。リプレイは新しいセッションとして再発行する
-- **形式**: UUID v4（通常は`crypto.randomUUID()`、HTTPのLANアクセスなど未対応環境では`crypto.getRandomValues()`、Web Crypto自体がない場合のみ擬似乱数へフォールバック）
-- **初期化タイミング**: 開始ゲートのタップ直後に`AnalyticsService.init()`を呼ぶ（ゲート通過前は外部リクエストを一切発生させない）
+### 文字列処理と未実装範囲
 
-### PII対策と送信抑制
+- `answer`・`answers`・`question_text`・`video_title`は、URL・メール・一部の電話番号に一致する文字列を`[masked]`に置換し、`ANALYTICS_PARAM_MAX_LENGTH=100`で切る。実装はJavaScriptの`length`/`slice`によるUTF-16コード単位で、すべての個人情報を識別・匿名化する処理ではない。
+- `answers`は連結後に100コード単位へ切るため、履歴の末尾が欠落し得る。区切り文字のエスケープはない。試行ごとの分析は`answer_submitted`を利用する。
+- `times_until_press_sec`にはこの切り詰め処理を適用していない。共通IDや設定名もマスク対象外。
+- `accuracy_rate`・`completion_time`・`correct_answer`・`answer_time`・`attempt_count`・`play_session_id`という送信パラメータはない。押下・問題開始・一時停止・エラー・離脱の専用イベントもない。
+- 同意バナー・送信を切り替える設定UI・独自の永続キュー・再送処理は実装していない。設定画面には解答内容を含むデータ収集の説明がある。
 
-- 自由入力文字列（解答内容・問題文・動画タイトル）はURL/メールアドレス/電話番号らしき文字列を`[masked]`に置換した上で100文字に切り詰める（`sanitizeAndTruncate()`）
-- `GA_MEASUREMENT_ID`が空文字の環境では`init()`が完全no-op（外部リクエストなし）
-- 開発ビルド、またはクイズデータの`settings.debug=true`時は全イベントに`debug_mode: 1`を付与し、本番のGA4レポートに混入しないようにする
+### 検証と分析用途
 
-### 収集データの活用
+[analyticsService.test.ts](../src/services/__tests__/analyticsService.test.ts)で、5イベントの送信呼び出し、キー変換、boolean/undefined、初期化前・IDなしの無送信、スクリプト挿入、debugフラグ、マスク・切り詰めを検証している。Appのwatcherから実GA4受信までの自動統合テストではない。
 
-- **個別プレイ分析**: 1プレイ内での問題ごとの解答パターン
-- **動画別難易度分析**: 各動画の平均正解率
-- **問題別難易度分析**: 各問題の正解率ランキング
-- **解答パターン分析**: よくある間違いや表記揺れの特定
-- **ユーザー体験改善**: 離脱率の高い問題の特定
-- **正規化処理改善**: 不正解になった解答の分析による正規化ルール改善
+実装済みデータから、クイズ・問題別の正誤、試行回数、早押しのタイミング、設定別の結果、解答の表記揺れを分析できる。レポート自体は未実装であり、正確な離脱時刻・入力所要時間は収集していない。
 
 ## Technical Implementation Details
 

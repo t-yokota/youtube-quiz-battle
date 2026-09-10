@@ -1,6 +1,6 @@
 # Tasks Archive（完了済み: Phase 1〜2）
 
-> 完了済みタスクのアーカイブ。現役のタスクリストは [tasks.md](tasks.md) を参照。
+> 完了済みタスクのアーカイブ。現役のタスクリストは [tasks.md](../../tasks.md) を参照。
 > 本ファイルは履歴の参照用であり、更新しない。
 
 ## Phase 1: UI基盤とコンポーネント実装
@@ -180,7 +180,7 @@ Task 15以降は、変更後の`previousVideoTime`ベースの仕様を前提と
 - シーク閾値は `SEEK_TOLERANCE_SEC = 1秒固定`（当初の動的算出から変更済み）
 - `watchedVideoTime` ではなく `previousVideoTime`（直前の再生位置）ベース
 - `RESUME_GRACE_MS` は削除済み（タブ切り替え時のシーク誤検出が発生しなかったため）
-- 詳細設計: [design.md - Seek Detection via previousVideoTime](design.md#seek-detection-via-previousvideotime)
+- 詳細設計: [design.md - Seek Detection via previousVideoTime](../../design.md#seek-detection-via-previousvideotime)
 
 ---
 

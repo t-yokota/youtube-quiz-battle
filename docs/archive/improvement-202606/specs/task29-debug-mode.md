@@ -1,5 +1,7 @@
 # Task 29 実行spec: デバッグモード（クイズ設定の実行時上書き）
 
+> **履歴資料（2026-09-10整理）**: 当時の計画・記録を保存したものです。未チェック項目も現在の未完了を意味しません。実行指示として使用せず、[現役タスク](../../../tasks.md)を参照してください。
+
 > 作成: 2026-07-05（Fable 5 による設計・ユーザー裁定済み）。
 > 裁定: **上書き対象は A = クイズ設定 4 項目のみ**（answerTimeLimit / maxAttempts / jumpToRevealPeriod / hideVideoPlayerDuringAnswer）。演出タイミング（B）・状態ジャンプ（C）は対象外。**上書き値はセッション限り（非永続）**。
 > 完了条件: `npm run test` / `type-check` / `lint` / `build` パス + 手動確認。

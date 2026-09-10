@@ -1,7 +1,9 @@
 # 05. デザインレビューと改善提案
 
+> **履歴資料（2026-09-10整理）**: 当時の計画・記録を保存したものです。未チェック項目も現在の未完了を意味しません。実行指示として使用せず、[現役タスク](../../tasks.md)を参照してください。
+
 > 対象: 現行 UI（`src/components/` + `docs/assets/wireframe.html`）
-> 成果物: [wireframe-v2-case1.html](../assets/wireframe-v2-case1.html)（構成維持・CSS 刷新）/ [wireframe-v2-case2.html](../assets/wireframe-v2-case2.html)(構造変更案)
+> 成果物: [wireframe-v2-case1.html](../../assets/wireframe-v2-case1.html)（構成維持・CSS 刷新）/ [wireframe-v2-case2.html](../../assets/wireframe-v2-case2.html)(構造変更案)
 > どちらも単一 HTML で、右側のデモコントロールから全ゲーム状態を切り替えて確認できる（現行 wireframe.html と同じ操作系）。
 >
 > **決定（2026-06-12）: ケース1を採用。ケース2は不採用**（wireframe-v2-case2.html はアーカイブ参考資料として保持）。

@@ -1,6 +1,8 @@
 # 04. 実装タスク再計画（docs/tasks.md 置き換え案）
 
-> 本書は `docs/tasks.md` の Phase 3 以降を置き換える再計画案。承認後、tasks.md へ反映する（Phase 1〜2 の完了タスクは `docs/tasks-archive.md` へ移動。D-17 参照）。
+> **履歴資料（2026-09-10整理）**: 当時の計画・記録を保存したものです。未チェック項目も現在の未完了を意味しません。実行指示として使用せず、[現役タスク](../../tasks.md)を参照してください。
+
+> 本書は `docs/tasks.md` の Phase 3 以降を置き換える再計画案。承認後、tasks.md へ反映する（Phase 1〜2 の完了タスクは `docs/archive/improvement-202606/tasks-phase1-2.md` へ移動。D-17 参照）。
 > 旧 Task 19〜27 は新番号体系に再配置済み。**旧番号との対応は各タスク末尾の（旧: XX）で示す。**
 
 ## 再計画の方針
@@ -111,5 +113,5 @@ Phase R (R-0〜R-9) ──┬─→ Phase 3 (機能完成) ──→ Phase 4 (�
 
 - 冒頭の「次のタスク」を `R-0` に変更する
 - 旧 Task 19〜27 のセクションは本書の新定義で置き換える（旧 24 は廃止確定。Phase D に注記を残す）
-- Phase 1〜2 は `docs/tasks-archive.md` へ移動し、tasks.md 冒頭にアーカイブへのリンクを置く
+- Phase 1〜2 は `docs/archive/improvement-202606/tasks-phase1-2.md` へ移動し、tasks.md 冒頭にアーカイブへのリンクを置く
 - 各タスク着手時は本書ではなく tasks.md を正とする（本書は計画のスナップショット）

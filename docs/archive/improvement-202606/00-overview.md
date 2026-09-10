@@ -1,5 +1,7 @@
 # プロジェクト改善計画 — マスタープラン
 
+> **履歴資料（2026-09-10整理）**: 当時の計画・記録を保存したものです。未チェック項目も現在の未完了を意味しません。実行指示として使用せず、[現役タスク](../../tasks.md)を参照してください。
+
 > 作成日: 2026-06-11 / 基準: ブランチ `develop`（旧 develop/claude-code、2026-07-04 改名）, HEAD `2b66c0b`（Task 18-3 完了、次タスク 19 の時点）
 > 更新: 2026-06-12 — ユーザー決定を反映（ケース1採用・ケース2不採用 / スタイル方針A / button.webp 不使用 / 旧 Task 24 廃止 / 実行ルールを自律実行型へ改定）。詳細は「決定事項」参照
 > 目的: 本ディレクトリ（`docs/improvement/`）は、AI エージェントが引き継いで実行できる粒度でプロジェクト全体の改善を指示するドキュメント群である。**各ドキュメントが指示書、本書が索引と実行順序の定義。**
@@ -13,8 +15,8 @@
 | 03 | [03-claude-assets-plan.md](03-claude-assets-plan.md) | `.claude/`（settings / rules / skills / agents / hooks）整備計画（C-1〜C-8） |
 | 04 | [04-task-replan.md](04-task-replan.md) | docs/tasks.md の置き換え案（Phase R / 3 / D / 4 の新タスク体系） |
 | 05 | [05-design-review.md](05-design-review.md) | デザインレビュー（V-1〜V-10）とワイヤーフレーム 2 案の解説 |
-| - | [../assets/wireframe-v2-case1.html](../assets/wireframe-v2-case1.html) | ケース1: 構成維持・CSS 刷新案 — **採用**。FINISHED リザルト・タイマー2案・チップページャ等を反復改善済み（ブラウザで開いて状態切替可能） |
-| - | [../assets/wireframe-v2-case2.html](../assets/wireframe-v2-case2.html) | ケース2: 構造変更案 — **不採用（2026-06-12）**。アーカイブ参考資料として保持 |
+| - | [../assets/wireframe-v2-case1.html](../../assets/wireframe-v2-case1.html) | ケース1: 構成維持・CSS 刷新案 — **採用**。FINISHED リザルト・タイマー2案・チップページャ等を反復改善済み（ブラウザで開いて状態切替可能） |
+| - | [../assets/wireframe-v2-case2.html](../../assets/wireframe-v2-case2.html) | ケース2: 構造変更案 — **不採用（2026-06-12）**。アーカイブ参考資料として保持 |
 
 ## 主要な発見（要約）
 

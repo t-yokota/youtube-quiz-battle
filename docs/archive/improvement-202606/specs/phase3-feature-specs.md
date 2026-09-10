@@ -1,5 +1,7 @@
 # Phase 3 実行spec: 機能完成タスク（19 / 20 / 21 系）
 
+> **履歴資料（2026-09-10整理）**: 当時の計画・記録を保存したものです。未チェック項目も現在の未完了を意味しません。実行指示として使用せず、[現役タスク](../../../tasks.md)を参照してください。
+
 > 作成: 2026-07-02（Fable 5 による事前設計）。04-task-replan.md の Phase 3 タスクを、実装者が設計判断なしで実行できる粒度に落とした spec。
 > 各タスクの共通完了条件: `npm run test` / `npm run type-check` / `npm run lint` パス + 1 タスク 1 コミット（`Task XX:` 形式）。
 > **前提: R-6 完了後に着手**（音声トリガ・エラー分岐は answerFlowController / externalPauseController に接続するため）。R-6 未完了で着手する場合はトリガ接続先を現行 gameManager の対応メソッドに読み替える。

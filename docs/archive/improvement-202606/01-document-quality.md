@@ -1,5 +1,7 @@
 # 01. ドキュメント品質向上計画（指示書）
 
+> **履歴資料（2026-09-10整理）**: 当時の計画・記録を保存したものです。未チェック項目も現在の未完了を意味しません。実行指示として使用せず、[現役タスク](../../tasks.md)を参照してください。
+
 > 対象: `docs/design.md` / `docs/requirements.md` / `docs/tasks.md` / `README.md` / `docs/design-sync-handoff.md`
 > 実行者への前提: 本書の指摘はすべて 2026-06-11 時点の実装（ブランチ `develop/claude-code`, HEAD `2b66c0b`）との突き合わせに基づく。修正前に必ず該当箇所を再確認すること（行番号は目安。編集により前後する）。
 
@@ -156,7 +158,7 @@ External Pause Handling セクションに「仕様最終確定時に記述整�
 
 ### D-17: tasks.md Phase 1〜2 の完了タスクのアーカイブ
 
-tasks.md は 450 行のうち 350 行が完了済みタスク。`docs/tasks-archive.md` へ Phase 1〜2 を移動し、tasks.md は「次のタスク + Phase 3 以降」のみにする（`04-task-replan.md` の新タスク表で置き換える際に同時実施）。
+tasks.md は 450 行のうち 350 行が完了済みタスク。`docs/archive/improvement-202606/tasks-phase1-2.md` へ Phase 1〜2 を移動し、tasks.md は「次のタスク + Phase 3 以降」のみにする（`04-task-replan.md` の新タスク表で置き換える際に同時実施）。
 
 ---
 
@@ -178,4 +180,4 @@ tasks.md は 450 行のうち 350 行が完了済みタスク。`docs/tasks-arch
 - [ ] D-14 button.webp の削除（処遇は確認済み: 不使用）
 - [ ] D-15 Analytics プライバシー記述整合（Task 25 実装時）
 - [x] D-16 External Pause の注記を確定化
-- [x] D-17 tasks.md の Phase 1〜2 を tasks-archive.md へ移動（04 案による置き換えと同時に実施）
+- [x] D-17 tasks.md の Phase 1〜2 を `archive/improvement-202606/tasks-phase1-2.md` へ移動（04 案による置き換えと同時に実施）
