@@ -21,8 +21,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { extractQuizIdFromUrl, loadQuizData } from './services/quizDataLoader'
 import { createGameManager, type GameManager } from './services/gameManager'
 import { createAudioManager } from './services/audioManager'
-import { createAnalyticsService, type ChangeableSettingName } from './services/analyticsService'
-import { validate } from './services/answerValidator'
+import { useQuizAnalytics } from './composables/useQuizAnalytics'
 import { getErrorInfo } from './services/errorHandler'
 import { MAX_VOLUME_LEVEL } from './constants/audio'
 import { useGameLoop } from './composables/useGameLoop'
@@ -31,7 +30,6 @@ import { GameState } from './types'
 import type { QuizData, YouTubePlayerManager } from './types'
 import { shouldHandleSpaceKey } from './utils/keyboardHandler'
 import { logger } from './utils/logger'
-import { createUuid } from './utils/uuid'
 
 type StartGateConceptStyle = 'accent-only' | 'white-fill'
 
@@ -57,86 +55,6 @@ const quizData = ref<QuizData | null>(null)
 
 // 初期化エラー
 const initError = ref<{ title: string; message: string } | null>(null)
-
-// Analytics（App レベルで単一インスタンスを保持。ストア・サービスの純度を保つため
-// 送信フックはこのファイルの watcher に集約する）
-const analyticsService = createAnalyticsService()
-const quizSessionId = ref('')
-const videoTitle = ref('')
-
-// セッション進行中（started 送信後〜FINISHED 前）のみ設定変更イベントを送る
-const isSessionActive = computed(
-  () =>
-    quizSessionId.value !== '' &&
-    gameStore.currentState !== GameState.READY &&
-    gameStore.currentState !== GameState.LOADING &&
-    gameStore.currentState !== GameState.FINISHED,
-)
-
-// クイズ中に作用する設定の変更を記録する（READY での変更は次セッションの
-// quiz_session_started スナップショットに反映されるため送らない）
-function logSettingChange(settingName: ChangeableSettingName, value: boolean | number) {
-  if (!isSessionActive.value) return
-  analyticsService.logSettingChanged({
-    quizSessionId: quizSessionId.value,
-    quizId: currentQuizId,
-    videoId: quizData.value?.videoId ?? '',
-    settingName,
-    settingValue: value,
-    questionIndex: gameStore.currentQuestionIndex,
-  })
-}
-
-watch(
-  () => settingsStore.disableSeekbarOverride ?? quizData.value?.settings.disableSeekbar ?? true,
-  (disabled, prevDisabled) => {
-    if (disabled === prevDisabled) return
-    logSettingChange('seek_allowed', !disabled)
-  },
-)
-
-watch(
-  () => gameStore.isButtonCheckEnabled,
-  (enabled, prevEnabled) => {
-    if (enabled === prevEnabled) return
-    logSettingChange('button_check_enabled', enabled)
-  },
-)
-
-// デバッグ上書きで変わる実効設定の変更も記録する（debug データ中のみ変化し得る）
-watch(
-  () => gameStore.effectiveSettings?.jumpToRevealPeriod,
-  (value, prev) => {
-    if (value === undefined || prev === undefined || value === prev) return
-    logSettingChange('jump_to_reveal_period', value)
-  },
-)
-
-watch(
-  () => gameStore.effectiveSettings?.hideVideoPlayerDuringAnswer,
-  (value, prev) => {
-    if (value === undefined || prev === undefined || value === prev) return
-    logSettingChange('hide_video_player_during_answer', value)
-  },
-)
-
-watch(
-  () => gameStore.effectiveSettings?.answerTimeLimit,
-  (value, prev) => {
-    if (value === undefined || prev === undefined || value === prev) return
-    logSettingChange('answer_time_limit', value)
-  },
-)
-
-watch(
-  () => gameStore.effectiveSettings?.maxAttempts,
-  (value, prev) => {
-    if (value === undefined || prev === undefined || value === prev) return
-    logSettingChange('max_attempts', value)
-  },
-)
-// results への送信済み件数（gameStore.results は push 追記のため length を監視する）
-const lastSentResultCount = ref(0)
 
 // モーダル・ダイアログの表示状態
 const isSettingsOpen = ref(false)
@@ -189,6 +107,11 @@ watch(
 
 // クイズデータをロード（?quiz= で指定、未指定時は sample）
 const currentQuizId = extractQuizIdFromUrl()
+const { initialize: initializeAnalytics } = useQuizAnalytics(
+  currentQuizId,
+  quizData,
+  playerManagerRef,
+)
 
 async function initQuizData() {
   try {
@@ -197,7 +120,6 @@ async function initQuizData() {
     if (disposed) return
     quizData.value = data
     gameStore.setQuizData(quizData.value)
-    analyticsService.setDebugMode(quizData.value.settings.debug)
     logger.log(`[App] Quiz data loaded: ${quizData.value.questions.length} questions`)
   } catch (error) {
     if (disposed) return
@@ -256,134 +178,6 @@ watch(
   { flush: 'sync' },
 )
 
-// --- Analytics フック ---
-
-// READY -> TALKING でセッション開始（リプレイは別セッションとして新規発行する）
-watch(
-  () => gameStore.currentState,
-  (next, prev) => {
-    if (prev === GameState.READY && next === GameState.TALKING) {
-      quizSessionId.value = createUuid()
-      lastSentResultCount.value = 0
-      videoTitle.value = playerManagerRef.value?.getVideoTitle() ?? ''
-
-      // ゲーム開始時点の実効設定（ユーザー上書き・デバッグ上書き適用後）をスナップショット
-      const effective = gameStore.effectiveSettings
-      analyticsService.logQuizSessionStarted({
-        quizSessionId: quizSessionId.value,
-        quizId: currentQuizId,
-        videoId: quizData.value?.videoId ?? '',
-        videoTitle: videoTitle.value || undefined,
-        totalQuestions: gameStore.totalQuestions,
-        buttonCheckEnabled: gameStore.isButtonCheckEnabled,
-        seekAllowed: !(
-          settingsStore.disableSeekbarOverride ??
-          quizData.value?.settings.disableSeekbar ??
-          true
-        ),
-        jumpToRevealPeriod: effective?.jumpToRevealPeriod ?? false,
-        hideVideoPlayerDuringAnswer: effective?.hideVideoPlayerDuringAnswer ?? false,
-        answerTimeLimit: effective?.answerTimeLimit ?? 0,
-        maxAttempts: effective?.maxAttempts ?? 0,
-      })
-    }
-
-    if (next === GameState.FINISHED) {
-      const results = gameStore.results
-      const skippedCount = results.filter((r) => r.skipped).length
-      const unansweredCount = results.filter(
-        (r) => !r.skipped && !r.isCorrect && r.userAnswers.length === 0,
-      ).length
-      const totalAttempts = results.reduce((sum, r) => sum + r.userAnswers.length, 0)
-
-      analyticsService.logQuizSessionCompleted({
-        quizSessionId: quizSessionId.value,
-        quizId: currentQuizId,
-        videoId: quizData.value?.videoId ?? '',
-        videoTitle: videoTitle.value || undefined,
-        totalQuestions: gameStore.totalQuestions,
-        correctCount: gameStore.correctCount,
-        incorrectCount: gameStore.incorrectCount,
-        skippedCount,
-        unansweredCount,
-        totalAttempts,
-      })
-    }
-  },
-)
-
-// results は push 追記のため length を監視し、増分の各 QuestionResult を送信する
-watch(
-  () => gameStore.results.length,
-  (length) => {
-    const results = gameStore.results
-    const videoId = quizData.value?.videoId ?? ''
-
-    for (let i = lastSentResultCount.value; i < length; i++) {
-      const result = results[i]
-      const questionIndex = result.questionNumber - 1
-      const question = quizData.value?.questions[questionIndex]
-      const questionText = question?.questionText
-
-      result.userAnswers.forEach((answer, idx) => {
-        const attemptIndex = idx + 1
-        const timeUntilPress = result.timesUntilPress[idx]
-
-        // 押下と解答は原則1:1対応するが、保険として欠損時はその試行を送らず警告する
-        // （0埋めより分析データの意味が壊れにくい）
-        if (timeUntilPress === undefined) {
-          logger.warn(
-            `[App] timesUntilPress missing for question ${result.questionNumber} attempt ${attemptIndex}`,
-          )
-          return
-        }
-
-        const submissionType = result.submissionTypes[idx] ?? 'manual'
-        const isCorrect = question ? validate(answer, question.answers) : false
-
-        analyticsService.logAnswerSubmitted({
-          quizSessionId: quizSessionId.value,
-          quizId: currentQuizId,
-          videoId,
-          videoTitle: videoTitle.value || undefined,
-          questionIndex,
-          attemptIndex,
-          answer,
-          isCorrect,
-          isFinalAttempt: attemptIndex === result.userAnswers.length,
-          submissionType,
-          timeUntilPressSec: timeUntilPress,
-          questionText,
-        })
-      })
-
-      const resultLabel: 'correct' | 'incorrect' | 'skipped' | 'unanswered' = result.skipped
-        ? 'skipped'
-        : result.isCorrect
-          ? 'correct'
-          : result.userAnswers.length === 0
-            ? 'unanswered'
-            : 'incorrect'
-
-      analyticsService.logQuestionAnswered({
-        quizSessionId: quizSessionId.value,
-        quizId: currentQuizId,
-        videoId,
-        videoTitle: videoTitle.value || undefined,
-        questionIndex,
-        result: resultLabel,
-        attemptsUsed: result.userAnswers.length,
-        answers: result.userAnswers.join('|'),
-        timesUntilPressSec: result.timesUntilPress.map((t) => t.toFixed(1)).join('|'),
-        firstTimeUntilPressSec: result.timesUntilPress[0],
-        questionText,
-      })
-    }
-
-    lastSentResultCount.value = length
-  },
-)
-
 // --- イベントハンドラ ---
 
 // QuizButton 押下 → GameManager に委譲
@@ -431,7 +225,7 @@ function handleGateTap() {
   isGateDismissed.value = true
 
   // Analytics 初期化（ゲート解除直後。fire-and-forget）
-  void analyticsService.init()
+  void initializeAnalytics()
 }
 
 onMounted(() => {
