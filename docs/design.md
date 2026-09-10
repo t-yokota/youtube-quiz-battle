@@ -2079,7 +2079,7 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 
 ### 品質ゲート
 
-`npm run lint:check`、`npm run build`、`npm run test:coverage`をPRとdevelop pushで実行する。全`src/**/*.{ts,vue}`（テスト・型定義を除く）をcoverage対象とし、Statements 66%、Branches 57.65%、Functions 59.85%、Lines 68.21%を現状維持の下限とする。全指標80%は改善計画Fの目標。PlayerフェイクはseekとcurrentTime、再生操作と状態を連動させ、遅延通知を個別に発火できる。
+`npm run lint:check`、`npm run build`、`npm run test:coverage`をPRとdevelop pushで実行する。全`src/**/*.{ts,vue}`（テスト・型定義を除く）をcoverage対象とし、Statements/Branches/Functions/Linesの下限をすべて80%とする（改善計画Fで引き上げ）。PlayerフェイクはseekとcurrentTime、再生操作と状態を連動させ、遅延通知を個別に発火できる。
 
 ### End-to-End Testing
 

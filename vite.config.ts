@@ -76,7 +76,7 @@ export default defineConfig(({ mode }) => ({
       provider: 'v8',
       include: ['src/**/*.{ts,vue}'],
       exclude: ['src/**/__tests__/**', 'src/types/**'],
-      thresholds: { statements: 66, branches: 57.65, functions: 59.85, lines: 68.21 },
+      thresholds: { statements: 80, branches: 80, functions: 80, lines: 80 },
     },
     typecheck: {
       tsconfig: './tsconfig.vitest.json',

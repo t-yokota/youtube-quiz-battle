@@ -39,7 +39,7 @@ WSL2上の開発画面を同一ネットワークのスマートフォンから�
 | 開発サーバー | `npm run dev` |
 | 型チェック | `npm run type-check` |
 | テスト | `npm test` |
-| 全ソースのカバレッジと下限検査 | `npm run test:coverage` |
+| 全ソースのカバレッジと全指標80%の下限検査 | `npm run test:coverage` |
 | テストを監視実行 | `npm run test:watch` |
 | Lint（自動修正あり） | `npm run lint` |
 | Lint（検査のみ） | `npm run lint:check` |
