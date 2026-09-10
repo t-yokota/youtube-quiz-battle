@@ -72,6 +72,12 @@ export default defineConfig(({ mode }) => ({
   test: {
     environment: 'jsdom',
     globals: true,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,vue}'],
+      exclude: ['src/**/__tests__/**', 'src/types/**'],
+      thresholds: { statements: 66, branches: 57.65, functions: 59.85, lines: 68.21 },
+    },
     typecheck: {
       tsconfig: './tsconfig.vitest.json',
     },

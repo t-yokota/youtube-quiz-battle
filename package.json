@@ -16,7 +16,9 @@
     "format": "prettier --write src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "analyze": "vite build --mode analyze"
+    "analyze": "vite build --mode analyze",
+    "lint:check": "eslint .",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "pinia": "^3.0.3",
