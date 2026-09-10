@@ -18,18 +18,11 @@ import ThemeSwitcher from './components/theme/ThemeSwitcher.vue'
 import { useTheme } from './composables/useTheme'
 import { useGameStore } from './stores/gameStore'
 import { useSettingsStore } from './stores/settingsStore'
-import { extractQuizIdFromUrl, loadQuizData } from './services/quizDataLoader'
-import { createGameManager, type GameManager } from './services/gameManager'
-import { createAudioManager } from './services/audioManager'
+import { useQuizSession } from './composables/useQuizSession'
 import { useQuizAnalytics } from './composables/useQuizAnalytics'
-import { getErrorInfo } from './services/errorHandler'
-import { MAX_VOLUME_LEVEL } from './constants/audio'
-import { useGameLoop } from './composables/useGameLoop'
 import { useOrientationGuard } from './composables/useOrientationGuard'
 import { GameState } from './types'
-import type { QuizData, YouTubePlayerManager } from './types'
 import { shouldHandleSpaceKey } from './utils/keyboardHandler'
-import { logger } from './utils/logger'
 
 type StartGateConceptStyle = 'accent-only' | 'white-fill'
 
@@ -38,23 +31,16 @@ type StartGateConceptStyle = 'accent-only' | 'white-fill'
 const START_GATE_CONCEPT_STYLE: StartGateConceptStyle = 'white-fill'
 
 let disposed = false
-const dataLoadController = new AbortController()
 let scrollFrame: number | null = null
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
-
-// 時間更新ループ（getCurrentTime() ポーリングに一本化）
-const gameLoop = useGameLoop()
-
-// GameManager の参照
-const gameManager = ref<GameManager | null>(null)
-const playerManagerRef = ref<YouTubePlayerManager | null>(null)
-
-// クイズデータ（VideoPlayerに渡す）
-const quizData = ref<QuizData | null>(null)
-
-// 初期化エラー
-const initError = ref<{ title: string; message: string } | null>(null)
+const session = useQuizSession()
+const { quizData, initError, handlePlayerReady, handlePlayerError } = session
+const { initialize: initializeAnalytics } = useQuizAnalytics(
+  session.currentQuizId,
+  quizData,
+  session.playerManagerRef,
+)
 
 // モーダル・ダイアログの表示状態
 const isSettingsOpen = ref(false)
@@ -71,111 +57,8 @@ const handleOpenThemeSwitcher = () => {
 
 // 画面向き検出（横画面時は External Pause で一時停止し、ダイアログを表示）
 const { isLandscape: isOrientationOpen, stop: stopOrientationGuard } = useOrientationGuard(
-  () => {
-    gameManager.value?.pauseExternalForOrientation()
-  },
-  () => {
-    gameManager.value?.resumeExternalIfReason('orientation')
-  },
-)
-
-// 音声管理（App レベルで単一インスタンスを保持）
-const audioManager = createAudioManager()
-audioManager.setSoundEnabled(settingsStore.soundEnabled)
-audioManager.setVolume(settingsStore.volumeLevel / MAX_VOLUME_LEVEL)
-audioManager.init().catch((error: unknown) => {
-  if (disposed) return
-  logger.error('[App] Failed to initialize AudioManager:', error)
-  initError.value = getErrorInfo(error)
-})
-
-watch(
-  () => settingsStore.volumeLevel,
-  (level) => {
-    audioManager.setVolume(level / MAX_VOLUME_LEVEL)
-  },
-)
-
-watch(
-  () => settingsStore.soundEnabled,
-  (enabled) => {
-    audioManager.setSoundEnabled(enabled)
-  },
-)
-
-// --- 初期化 ---
-
-// クイズデータをロード（?quiz= で指定、未指定時は sample）
-const currentQuizId = extractQuizIdFromUrl()
-const { initialize: initializeAnalytics } = useQuizAnalytics(
-  currentQuizId,
-  quizData,
-  playerManagerRef,
-)
-
-async function initQuizData() {
-  try {
-    logger.log(`[App] Loading quiz data for quizId: ${currentQuizId}`)
-    const data = await loadQuizData(currentQuizId, dataLoadController.signal)
-    if (disposed) return
-    quizData.value = data
-    gameStore.setQuizData(quizData.value)
-    logger.log(`[App] Quiz data loaded: ${quizData.value.questions.length} questions`)
-  } catch (error) {
-    if (disposed) return
-    logger.error('[App] Failed to load quiz data:', error)
-    initError.value = getErrorInfo(error)
-  }
-}
-
-// クイズデータを即時ロード開始
-initQuizData()
-
-// VideoPlayer 初期化完了時のハンドラ
-function handlePlayerReady(playerManager: YouTubePlayerManager) {
-  if (disposed || initError.value || !quizData.value) return
-
-  // GameManager を作成して初期化
-  const manager = createGameManager(
-    playerManager,
-    quizData.value,
-    gameStore,
-    audioManager,
-    settingsStore,
-  )
-  manager.initializeExternalPauseHandling()
-  gameManager.value = manager
-  playerManagerRef.value = playerManager
-  logger.log('[App] GameManager initialized')
-
-  // Time Update Loop を開始（getCurrentTime() ポーリングに一本化）
-  gameLoop.start(playerManager, manager)
-
-  // READY 状態へ遷移
-  gameStore.transitionToState(GameState.READY)
-}
-
-// VideoPlayer 初期化エラー時のハンドラ
-// VideoPlayer からは生の内部メッセージ（例: "YouTube Player Error: 2"）が渡ってくるため、
-// YOUTUBE_LOAD_FAILED として分類されるようコード接頭辞を付与してから変換する
-function handlePlayerError(message: string) {
-  if (disposed) return
-  logger.error('[App] VideoPlayer error:', message)
-  initError.value = getErrorInfo(new Error(`YOUTUBE_LOAD_FAILED: ${message}`))
-}
-
-// 音声など別の初期化が遅れて失敗した場合も、動作中のゲームを止める。
-watch(
-  initError,
-  (error) => {
-    if (!error || disposed) return
-    gameLoop.stop()
-    gameManager.value?.destroy()
-    gameManager.value = null
-    playerManagerRef.value?.pauseVideo()
-    audioManager.stopSound()
-  },
-  { flush: 'sync' },
+  session.pauseForOrientation,
+  session.resumeForOrientation,
 )
 
 // --- イベントハンドラ ---
@@ -203,7 +86,7 @@ function handleButtonPress() {
       input.focus({ preventScroll: true })
     }
   }
-  gameManager.value?.handleButtonPress()
+  session.pressButton()
 }
 
 // スペースキー早押し（グローバルキーボードハンドラ）
@@ -218,10 +101,7 @@ const isGateDismissed = ref(false)
 
 function handleGateTap() {
   // READY（プレイヤー準備完了）までは解除しない
-  if (gameStore.currentState !== GameState.READY) return
-  // 動画を一瞬実再生して停止（iOS に再生実績を作る）→ AudioContext をアンロック
-  gameManager.value?.warmupVideoPlayback()
-  audioManager.unlock()
+  if (!session.primeMedia()) return
   isGateDismissed.value = true
 
   // Analytics 初期化（ゲート解除直後。fire-and-forget）
@@ -269,12 +149,12 @@ watch(shouldCollapseForKeyboard, (collapsed) => {
 // GamePanel 解答送信 → GameManager に委譲
 function handleAnswerSubmit(answer: string) {
   if (isGameInputBlocked()) return
-  gameManager.value?.handleAnswerSubmit(answer)
+  session.submitAnswer(answer)
 }
 
 // ResultActions もう一度プレイ → GameManager に委譲
 function handleReplay() {
-  gameManager.value?.handleReplay()
+  session.replay()
 }
 
 // SettingsModal
@@ -298,17 +178,10 @@ const handleErrorAction = () => {
 // --- クリーンアップ ---
 onBeforeUnmount(() => {
   disposed = true
-  dataLoadController.abort()
   if (scrollFrame !== null) cancelAnimationFrame(scrollFrame)
   window.removeEventListener('keydown', handleKeyDown)
 
-  // 子VideoPlayerがPlayerを破棄する前にゲーム処理を止める。
-  gameLoop.stop()
   stopOrientationGuard()
-  gameManager.value?.destroy()
-  gameManager.value = null
-  playerManagerRef.value = null
-  audioManager.dispose()
 })
 </script>
 

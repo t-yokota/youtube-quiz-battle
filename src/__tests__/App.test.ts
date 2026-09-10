@@ -54,6 +54,7 @@ vi.mock('@/services/analyticsService', () => ({
 }))
 let rejectAudioInit: (error: Error) => void
 let errorListener: ((error: Error) => void) | undefined
+let isMounted = false
 let app: ReturnType<typeof createApp>
 let host: HTMLElement
 let store: ReturnType<typeof useGameStore>
@@ -81,12 +82,14 @@ beforeEach(async () => {
   app = createApp(App)
   app.use(pinia)
   app.mount(host)
+  isMounted = true
   store = useGameStore(pinia)
   await flush()
   expect(store.currentState).toBe(GameState.READY)
 })
 afterEach(() => {
-  app.unmount()
+  if (isMounted) app.unmount()
+  isMounted = false
   host.remove()
   vi.clearAllTimers()
   vi.useRealTimers()
@@ -335,4 +338,19 @@ it('リプレイでセッションIDと送信済み件数を更新しtimeoutの�
       quizSessionId: starts[1][0].quizSessionId,
     }),
   )
+})
+
+it('App終了後のストア変更ではAnalyticsを送信しない', async () => {
+  const service = analytics()
+  await startQuiz()
+  app.unmount()
+  isMounted = false
+  useSettingsStore().setDisableSeekbarOverride(false)
+  store.recordResult(1, false, '東京', [], true, { timesUntilPress: [], submissionTypes: [] })
+  store.transitionToState(GameState.FINISHED)
+  await flush()
+  expect(service.logQuizSessionStarted).toHaveBeenCalledTimes(1)
+  expect(service.logSettingChanged).not.toHaveBeenCalled()
+  expect(service.logQuestionAnswered).not.toHaveBeenCalled()
+  expect(service.logQuizSessionCompleted).not.toHaveBeenCalled()
 })
