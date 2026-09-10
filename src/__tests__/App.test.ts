@@ -20,7 +20,10 @@ vi.mock('@/services/youtubePlayer', async () => {
 })
 vi.mock('@/services/audioManager', () => ({
   createAudioManager: () => ({
-    init: async () => {},
+    init: () =>
+      new Promise<void>((_resolve, reject) => {
+        rejectAudioInit = reject
+      }),
     setVolume: vi.fn(),
     setSoundEnabled: vi.fn(),
     unlock: vi.fn(),
@@ -43,6 +46,7 @@ vi.mock('@/services/analyticsService', () => ({
     logAnswerSubmitted: vi.fn(),
   }),
 }))
+let rejectAudioInit: (error: Error) => void
 let errorListener: ((error: Error) => void) | undefined
 let app: ReturnType<typeof createApp>
 let host: HTMLElement
@@ -129,4 +133,18 @@ it('ready後のPlayerエラーを表示し、ゲームループと解答タイ�
   expect(store.answerTimeRemaining).toBe(remaining)
   expect(vi.getTimerCount()).toBe(0)
   expect(player.pauseVideo).toHaveBeenCalled()
+})
+
+it('遅れて失敗する音声初期化でも稼働中のゲームを停止する', async () => {
+  const player = await vi.mocked(createYouTubePlayerManager).mock.results.at(-1)!.value
+  host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+  await flush()
+  space()
+  await flush()
+  rejectAudioInit(new Error('AUDIO_LOAD_FAILED'))
+  await flush()
+  expect(player.pauseVideo).toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(20000)
+  expect(vi.getTimerCount()).toBe(0)
+  expect(document.body.textContent).toContain('再読み込み')
 })

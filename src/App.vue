@@ -237,14 +237,23 @@ function handlePlayerReady(playerManager: YouTubePlayerManager) {
 // YOUTUBE_LOAD_FAILED として分類されるようコード接頭辞を付与してから変換する
 function handlePlayerError(message: string) {
   if (disposed) return
-  gameLoop.stop()
-  gameManager.value?.destroy()
-  gameManager.value = null
-  playerManagerRef.value?.pauseVideo()
-  audioManager.stopSound()
   logger.error('[App] VideoPlayer error:', message)
   initError.value = getErrorInfo(new Error(`YOUTUBE_LOAD_FAILED: ${message}`))
 }
+
+// 音声など別の初期化が遅れて失敗した場合も、動作中のゲームを止める。
+watch(
+  initError,
+  (error) => {
+    if (!error || disposed) return
+    gameLoop.stop()
+    gameManager.value?.destroy()
+    gameManager.value = null
+    playerManagerRef.value?.pauseVideo()
+    audioManager.stopSound()
+  },
+  { flush: 'sync' },
+)
 
 // --- Analytics フック ---
 
