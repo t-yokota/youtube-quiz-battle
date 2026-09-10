@@ -485,7 +485,7 @@ export const SEEK_TOLERANCE_SEC = 1.0
 | true、または**ゲーム状態がANSWERING中**（disableSeekbarの値に関わらず強制） | 動画の再生時間をpreviousVideoTimeまで強制リセットする（`seekTo(previousVideoTime)`に加えて`currentVideoTime`自体もpreviousVideoTimeまで巻き戻す。`submitAnswer`内のrevealTime比較に影響するため）。previousVideoTimeは更新しない |
 | false（かつANSWERING以外） | 以下に記すようにクイズ区間を消費することで、対象となった問題を途中参加あるいは途中離脱扱いにする<br><br>**前方ジャンプ（current > previous）の場合:**<br>- `[previousVideoTime, currentVideoTime]`区間と重なるすべてのクイズ区間を消費（consumed = {start: true, reveal: true, end: true}）<br>- 区間の重なり判定: `q.startTime < currentVideoTime && q.endTime > previousVideoTime`<br>- シーク後の状態遷移（3分岐）:<br>　• すべてのクイズ区間を消費済みかつ最後のクイズ区間のendTimeを通過した場合 → FINISHEDへ遷移<br>　• シーク先が未消費の問題区間内の場合 → WAITINGへ遷移<br>　• それ以外（問題区間外） → TALKINGへ遷移<br>- 消費されていないクイズ区間に到達したら、状態遷移を再開<br><br>**後方ジャンプ（current < previous）の場合:**<br>- previousVideoTimeがクイズ区間内の場合、そのクイズ区間全体を消費（途中離脱として扱う）<br>- シーク後の状態遷移は前方ジャンプと同じルールで3分岐<br><br>**消費に伴う付随処理:**<br>- 消費した各問題は`recordSkippedQuestion(index, true)`で結果を記録（0点・スキップ扱い）<br>- 消費処理の最後に`gameStore.initializeForQuestion()`を呼び、解答UI（不正解表示・入力内容・解答履歴）をクリアする（前問のUIが遷移先に残らないようにするため） |
 
-内部操作ガード（`internalAction`フラグ）は同期スコープのみ有効。YouTube側のイベントは非同期で届くため、External Pause Handling節のガード（PAUSED/PLAYING分岐）で補完している。
+`InternalPlayerControl`は最後に指示した再生意図（PLAYING/PAUSED）を保持する。YouTube側から非同期で届く状態通知と再生意図を比較し、アプリ内コマンドへの応答とPlayer UIなどの外部操作を区別する。
 
 ### Single‑Shot Guard（一回性トリガ）
 
@@ -765,8 +765,8 @@ function checkStall(currentWallMs: number, currentVideoTime: number): void {
 
 **検出ポイント:**
 
-- 可視性: `document.hidden` による検出（`visibilitychange`/`pagehide`/`pageshow`）。PLAYING中またはANSWERING中のみpauseする
-- プレイヤー状態: `onStateChange(PAUSED/PLAYING/ENDED)`（内部操作は`InternalPlayerControl.isInternalAction()`で除外。ただしこのフラグは同期スコープのみ有効なため、YouTube側の非同期イベント到達に対しては個別の状態ガードで補完する）
+- 可視性: `document.hidden` による検出（`visibilitychange`/`pagehide`/`pageshow）。動画再生状態（TALKING/QUESTIONING/WAITING/REVEALING）のPLAYING、またはANSWERING中のみExternal Pauseにする。READY/LOADING/FINISHEDで残留したPLAYINGは停止だけ行い、復帰対象にはしない
+- プレイヤー状態: `onStateChange(PAUSED/PLAYING/ENDED)`。`InternalPlayerControl`が保持する再生意図と比較し、非同期の内部操作通知とPlayer UIなどによる外部操作を区別する
 - 再生停滞: TimeUpdate内で `wallDelta` と `videoDelta` を比較（前述）
 - 画面向き: `useOrientationGuard`がタッチデバイスの横画面を検出すると`pauseExternalForOrientation()`を呼ぶ
 - 広告再生: YouTube広告中は `getCurrentTime()` が進まないため特別な処理不要
@@ -774,12 +774,14 @@ function checkStall(currentWallMs: number, currentVideoTime: number): void {
 **一時停止時の動作:**
 
 - ANSWERING中: `player.pauseVideo()`は呼ばない（既に停止済み）。解答カウントダウンのみ停止
-- ANSWERING以外: `player.pauseVideo()` で動画を明示的に停止
+- 動画再生状態: `player.pauseVideo()`で動画を明示的に停止し、再開対象を`video`として記録
+- ユーザーがPlayer UIで一時停止した場合: 既に停止済みのため`pauseVideo()`は重ねず、再開対象を`none`として記録
 
 **再開時の動作:**
 
-- ANSWERING中: `player.playVideo()`は呼ばない。解答カウントダウンのみ再開（`resumeAnswerCountdown()`。`answerTimeRemaining`はリセットせず現在値から継続）
-- ANSWERING以外: `player.playVideo()` で動画を再開
+- 一時停止時に記録した再開対象が`answer-countdown`で、復帰時もANSWERING中: カウントダウンのみ再開
+- 一時停止時に記録した再開対象が`video`で、復帰時も動画再生状態: `player.playVideo()`で動画を再開
+- READY/LOADING/FINISHED、またはユーザー一時停止: `player.playVideo()`を呼ばず停止を維持
 - 再開時にYouTube Playerの巻き戻り仕様への補正判定を行う（詳細は次節）
 
 #### External Pause中の時間更新スキップ
@@ -805,28 +807,20 @@ updateVideoTime(current: number): void {
 setupVisibilityHandlers(): void {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      // タブが非表示になった時：動画が再生中 または ANSWERING中のみpause
-      const playerState = this.playerControl.getPlayerState()
-      if (playerState === YouTubePlayerState.PLAYING || gameStore.currentState === GameState.ANSWERING) {
-        this.pauseExternal('visibility')
-      }
+      this.pauseForVisibility()
     } else {
-      // タブが表示された時：visibility pauseの場合のみresume
-      if (this.externalPausedReason === 'visibility') {
-        this.resumeExternal()
-      }
+      this.resumeFromVisibility()
     }
   })
 
-  // pagehide/pageshow も同様（PLAYING または ANSWERING でpause、visibility理由でのみresume）
+  // pagehide/pageshowも同じ共通処理を呼ぶ。resumeExternalは一度状態を解除するため冪等
   window.addEventListener('pagehide', () => { /* 同上 */ })
   window.addEventListener('pageshow', () => { /* 同上 */ })
 }
 
 setupPlayerStateHandlers(): void {
+  this.playerControl.syncPlaybackIntentFromPlayer()
   this.playerControl.onStateChange((state) => {
-    if (this.playerControl.isInternalAction()) return
-
     // 動画末尾（ENDED）: External Pauseを解除し、未消費の残り問題をすべて確定させてFINISHEDまで進める
     // （終端付近は時刻ベースの判定が信用できないため、ENDEDイベントを終端シグナルとして扱う）
     if (state === YouTubePlayerState.ENDED) {
@@ -841,28 +835,31 @@ setupPlayerStateHandlers(): void {
     }
 
     if (state === YouTubePlayerState.PAUSED) {
-      if (gameStore.currentState === GameState.ANSWERING) return // 内部pauseの非同期到達
-      if (gameStore.currentState === GameState.READY) return     // リプレイ時pauseVideo()の非同期到達
+      if (this.playerControl.isPlaybackStateExpected(state)) return
+      this.playerControl.acceptExternalPlaybackState(state)
+      if (gameStore.currentState === GameState.ANSWERING) return
+      if (gameStore.currentState === GameState.READY) return
       this.pauseExternal('user')
     }
 
     if (state === YouTubePlayerState.PLAYING) {
+      const expected = this.playerControl.isPlaybackStateExpected(state)
       if (gameStore.currentState === GameState.ANSWERING) {
-        this.playerControl.pauseVideo() // ユーザーがプレイヤー操作で再生した場合は即座に止める
+        this.playerControl.pauseVideo()
         return
       }
-      if (!this.externalPaused && gameStore.currentState === GameState.READY) {
-        if (performance.now() < this.gateWarmupUntil) return // 開始ゲートのウォームアップ再生中は無視
-        if (this.replayResetPending) {
-          this.playerControl.pauseVideo() // リプレイのseekTo(0)起因のspurious PLAYINGを抑止
-          return
-        }
-        // プレイヤーから直接再生された場合、ボタンチェックを封じてゲーム開始扱いにする
-        gameStore.transitionToState(GameState.TALKING)
+      if (!isVideoPlaybackState(gameStore.currentState)) {
+        if (gameStore.currentState === GameState.READY && this.gateWarmupActive && expected) return
+        this.playerControl.pauseVideo()
         return
       }
-      if (this.externalPaused) {
-        this.resumeExternal()
+      if (expected) return
+
+      this.playerControl.acceptExternalPlaybackState(state)
+      if (this.externalPausedReason === 'user') {
+        this.resumeExternal() // 状態だけ解除。Playerは既に再生中なのでplayVideoは重ねない
+      } else if (this.externalPaused) {
+        this.playerControl.pauseVideo() // lifecycle側の復帰処理まで停止を維持
       }
     }
   })
@@ -1001,7 +998,7 @@ graph LR
 
 | クラス | ファイル | 責務 |
 |---|---|---|
-| `InternalPlayerControl` | internalPlayerControl.ts | `YouTubePlayerManager`への内部操作ガード付きプロキシ。`withInternalAction()`で包んだ`playVideo`/`pauseVideo`/`seekTo`実行中のみ`internalAction`フラグを立て、`onStateChange`側が内部操作由来の状態変化を判別できるようにする（フラグは同期スコープのみ有効） |
+| `InternalPlayerControl` | internalPlayerControl.ts | `YouTubePlayerManager`への再生意図付きプロキシ。`playVideo`/`pauseVideo`の指示状態を保持し、非同期の`onStateChange`通知がアプリ内コマンドに対応するかを判別できるようにする |
 | `ThresholdEngine` | thresholdEngine.ts | consumedフラグの唯一の所有者。`(prev, curr]`窓走査・シーク消費・スキップ記録・start/reveal/endハンドラ・動画終端の確定処理（`finalizeAtVideoEnd`）を担う |
 | `AnswerFlowController` | answerFlowController.ts | 解答カウントダウン・解答送信・解答後の動画再開・`jumpToRevealPeriod`シークを担う |
 | `ExternalPauseController` | externalPauseController.ts | External Pauseの開始/解除・visibility/pagehide/pageshowハンドラ・プレイヤー状態変化ハンドラ・stall検出・YouTube巻き戻り補正を担う |

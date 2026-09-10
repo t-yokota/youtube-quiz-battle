@@ -736,8 +736,9 @@ describe('External Pause: 可視性変化', () => {
   it('document.hidden=true で pauseVideo が呼ばれる', () => {
     const player = makePlayerMock()
     ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
-    const { gm } = makeGameManager(makeQuizData(), player)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
     gm.setupVisibilityHandlers()
+    store.transitionToState(GameState.TALKING)
 
     Object.defineProperty(document, 'hidden', { value: true, configurable: true })
     document.dispatchEvent(new Event('visibilitychange'))
@@ -748,8 +749,9 @@ describe('External Pause: 可視性変化', () => {
   it('visibility pause 後に document.hidden=false で playVideo が呼ばれる', () => {
     const player = makePlayerMock()
     ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
-    const { gm } = makeGameManager(makeQuizData(), player)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
     gm.setupVisibilityHandlers()
+    store.transitionToState(GameState.TALKING)
 
     Object.defineProperty(document, 'hidden', { value: true, configurable: true })
     document.dispatchEvent(new Event('visibilitychange'))
@@ -759,11 +761,63 @@ describe('External Pause: 可視性変化', () => {
     expect(player.playVideo).toHaveBeenCalled()
   })
 
+  it('READY中はPlayer状態が一時的にPLAYINGでも復帰時に再生しない', () => {
+    const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
+    const { gm, store } = makeGameManager(makeQuizData({ buttonCheckEnabled: false }), player)
+    gm.setupVisibilityHandlers()
+    store.transitionToState(GameState.READY)
+
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(player.pauseVideo).toHaveBeenCalledTimes(1)
+    expect(player.playVideo).not.toHaveBeenCalled()
+    expect(store.currentState).toBe(GameState.READY)
+    expect(gm.isExternalPaused()).toBe(false)
+  })
+
+  it('非表示中にFINISHEDへ遷移した場合は復帰時に動画を再開しない', () => {
+    const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    gm.setupVisibilityHandlers()
+    store.transitionToState(GameState.TALKING)
+
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+    store.transitionToState(GameState.FINISHED)
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(player.pauseVideo).toHaveBeenCalledTimes(1)
+    expect(player.playVideo).not.toHaveBeenCalled()
+  })
+
+  it('visibilitychangeとpageshowの両方が届いても動画再開は1回だけ', () => {
+    const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    gm.setupVisibilityHandlers()
+    store.transitionToState(GameState.TALKING)
+
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+    window.dispatchEvent(new Event('pageshow'))
+
+    expect(player.playVideo).toHaveBeenCalledTimes(1)
+  })
+
   it('visibility pause 中は updateVideoTime がスキップされる', () => {
     const player = makePlayerMock()
     ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
     const { gm, store } = makeGameManager(makeQuizData(), player)
     gm.setupVisibilityHandlers()
+    store.transitionToState(GameState.TALKING)
 
     // Q1.startTime 手前で一時停止
     simulatePlayback(gm, 9.9)
@@ -773,7 +827,7 @@ describe('External Pause: 可視性変化', () => {
 
     // pause 中に startTime を超えても状態変化しない
     gm.updateVideoTime(10.1)
-    expect(store.currentState).toBe(GameState.LOADING)
+    expect(store.currentState).toBe(GameState.TALKING)
   })
 })
 
@@ -789,7 +843,8 @@ describe('External Pause: orientation', () => {
 
   it("orientation で pause 中に resumeExternalIfReason('orientation') を呼ぶと playVideo が呼ばれる", () => {
     const player = makePlayerMock()
-    const { gm } = makeGameManager(makeQuizData(), player)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    store.transitionToState(GameState.TALKING)
 
     gm.pauseExternal('orientation')
     gm.resumeExternalIfReason('orientation')
@@ -797,11 +852,27 @@ describe('External Pause: orientation', () => {
     expect(player.playVideo).toHaveBeenCalled()
   })
 
+  it('READY中にPlayer状態がPLAYINGでも縦画面復帰時に再生しない', () => {
+    const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    store.transitionToState(GameState.READY)
+
+    gm.pauseExternalForOrientation()
+    gm.resumeExternalIfReason('orientation')
+
+    expect(player.pauseVideo).toHaveBeenCalledTimes(1)
+    expect(player.playVideo).not.toHaveBeenCalled()
+    expect(store.currentState).toBe(GameState.READY)
+    expect(gm.isExternalPaused()).toBe(false)
+  })
+
   it("visibility で pause 中に resumeExternalIfReason('orientation') を呼んでも何も起きない", () => {
     const player = makePlayerMock()
     ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
-    const { gm } = makeGameManager(makeQuizData(), player)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
     gm.setupVisibilityHandlers()
+    store.transitionToState(GameState.TALKING)
 
     Object.defineProperty(document, 'hidden', { value: true, configurable: true })
     document.dispatchEvent(new Event('visibilitychange'))
@@ -928,14 +999,14 @@ describe('External Pause: 再生停滞（stall）検出', () => {
   it('壁時計が STALL_WALL_MS 以上経過し動画時間が進まない場合に pauseVideo が呼ばれる', () => {
     const player = makePlayerMock()
     ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
-    const { gm } = makeGameManager(makeQuizData(), player)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    store.transitionToState(GameState.TALKING)
 
-    const initWall = performance.now()
     gm.initializeExternalPauseHandling()
-    // lastWallMs ≈ initWall, lastVideoTime = 0
+    const stalledWall = performance.now() + STALL_WALL_MS + 1
 
     // 壁時計が STALL_WALL_MS+1 経過、動画時間はほぼ未進
-    gm.checkStall(initWall + STALL_WALL_MS + 1, STALL_VIDEO_DELTA_SEC - 0.01)
+    gm.checkStall(stalledWall, STALL_VIDEO_DELTA_SEC - 0.01)
 
     expect(player.pauseVideo).toHaveBeenCalled()
     expect(gm.isExternalPaused()).toBe(true)
@@ -944,17 +1015,18 @@ describe('External Pause: 再生停滞（stall）検出', () => {
   it('stall 後に動画時間が STALL_VIDEO_DELTA_SEC 以上進むと playVideo が呼ばれる', () => {
     const player = makePlayerMock()
     ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
-    const { gm } = makeGameManager(makeQuizData(), player)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+    store.transitionToState(GameState.TALKING)
 
-    const initWall = performance.now()
     gm.initializeExternalPauseHandling()
+    const stalledWall = performance.now() + STALL_WALL_MS + 1
 
     // stall 状態にする
-    gm.checkStall(initWall + STALL_WALL_MS + 1, STALL_VIDEO_DELTA_SEC - 0.01)
+    gm.checkStall(stalledWall, STALL_VIDEO_DELTA_SEC - 0.01)
     expect(gm.isExternalPaused()).toBe(true)
 
     // 動画時間が十分進む → stall から復帰
-    gm.checkStall(initWall + STALL_WALL_MS + 2, STALL_VIDEO_DELTA_SEC + 0.1)
+    gm.checkStall(stalledWall + 1, STALL_VIDEO_DELTA_SEC + 0.1)
     expect(gm.isExternalPaused()).toBe(false)
     expect(player.playVideo).toHaveBeenCalled()
   })
@@ -1077,6 +1149,7 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     // ウォームアップ中の PLAYING イベントは無視される（pause も遷移もしない）
     stateChangeCallback!(1) // PLAYING
     expect(store.currentState).toBe(GameState.READY)
+    expect(player.pauseVideo).not.toHaveBeenCalled()
 
     // ウォームアップ終了: 停止 + 先頭へ
     vi.advanceTimersByTime(500)
@@ -1266,7 +1339,7 @@ describe('解答カウントダウンタイマー', () => {
     expect(store.currentState).toBe(GameState.ANSWERING)
     expect(store.answerTimeRemaining).toBe(10)
 
-    // YouTube IFrame APIからPAUSEDイベントが非同期で到達（internalActionは既にfalse）
+    // YouTube IFrame APIから内部pauseVideo()に対応するPAUSEDイベントが非同期で到達
     stateChangeCallback!(2) // PAUSED
 
     // カウントダウンが停止していないことを確認
@@ -1399,8 +1472,9 @@ describe('解答カウントダウンタイマー', () => {
     expect(store.results.every((r) => r.skipped)).toBe(true)
   })
 
-  it('READY中にプレイヤーから直接再生されるとTALKINGへ遷移する（ボタンチェック封じ）', () => {
+  it('READY中に予期しないPLAYINGが届いてもTALKINGへ遷移せず停止し直す', () => {
     const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PAUSED)
     const { gm, store } = makeGameManager(makeQuizData(), player)
 
     let stateChangeCallback: ((state: number) => void) | null = null
@@ -1412,8 +1486,72 @@ describe('解答カウントダウンタイマー', () => {
     store.transitionToState(GameState.READY)
     stateChangeCallback!(1) // PLAYING
 
-    expect(store.currentState).toBe(GameState.TALKING)
-    expect(store.buttonState).toBe(ButtonState.DISABLED)
+    expect(store.currentState).toBe(GameState.READY)
+    expect(store.buttonState).toBe(ButtonState.STANDBY)
+    expect(player.pauseVideo).toHaveBeenCalledTimes(1)
+  })
+
+  it('内部playVideoのPLAYING通知でも到着時にFINISHEDなら停止し直す', () => {
+    const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+
+    let stateChangeCallback: ((state: number) => void) | null = null
+    player.onStateChange = vi.fn((cb: (state: number) => void) => {
+      stateChangeCallback = cb
+    })
+    gm.initializeExternalPauseHandling()
+    store.transitionToState(GameState.FINISHED)
+
+    stateChangeCallback!(YouTubePlayerState.PLAYING)
+
+    expect(store.currentState).toBe(GameState.FINISHED)
+    expect(player.pauseVideo).toHaveBeenCalledTimes(1)
+  })
+
+  it('ユーザー一時停止からPlayer操作で再生した場合はplayVideoを重ねて呼ばない', () => {
+    const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+
+    let stateChangeCallback: ((state: number) => void) | null = null
+    player.onStateChange = vi.fn((cb: (state: number) => void) => {
+      stateChangeCallback = cb
+    })
+    gm.initializeExternalPauseHandling()
+    store.transitionToState(GameState.TALKING)
+
+    stateChangeCallback!(YouTubePlayerState.PAUSED)
+    expect(gm.isExternalPaused()).toBe(true)
+
+    stateChangeCallback!(YouTubePlayerState.PLAYING)
+
+    expect(gm.isExternalPaused()).toBe(false)
+    expect(player.playVideo).not.toHaveBeenCalled()
+  })
+
+  it('ユーザー一時停止中にバックグラウンドから復帰しても再生しない', () => {
+    const player = makePlayerMock()
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
+    const { gm, store } = makeGameManager(makeQuizData(), player)
+
+    let stateChangeCallback: ((state: number) => void) | null = null
+    player.onStateChange = vi.fn((cb: (state: number) => void) => {
+      stateChangeCallback = cb
+    })
+    gm.initializeExternalPauseHandling()
+    store.transitionToState(GameState.TALKING)
+
+    stateChangeCallback!(YouTubePlayerState.PAUSED)
+    ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PAUSED)
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(gm.isExternalPaused()).toBe(true)
+    expect(player.playVideo).not.toHaveBeenCalled()
+    gm.destroy()
   })
 
   it('READY中にonStateChange(PAUSED)が非同期到達してもExternal Pauseにならない', () => {

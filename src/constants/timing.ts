@@ -65,11 +65,6 @@ export const VIDEO_START_DELAY_MS = 1200
 export const GATE_WARMUP_PLAY_MS = 500
 
 /**
- * 開始ゲートのウォームアップ終了後に遅れて届く PLAYING イベントの猶予時間（ミリ秒）
- */
-export const GATE_WARMUP_EVENT_MARGIN_MS = 1000
-
-/**
  * 解答カウントダウンのインターバル（ミリ秒）
  * 1秒ごとに残り時間をデクリメントする
  */

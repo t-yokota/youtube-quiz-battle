@@ -7,7 +7,6 @@ import {
   BUTTON_CHECK_RELEASE_MS,
   VIDEO_START_DELAY_MS,
   GATE_WARMUP_PLAY_MS,
-  GATE_WARMUP_EVENT_MARGIN_MS,
 } from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
 import type { useSettingsStore } from '@/stores/settingsStore'
@@ -129,7 +128,7 @@ export class GameManager {
    * 許可させる。ウォームアップ中の PLAYING は無視され TALKING へは遷移しない
    */
   warmupVideoPlayback(): void {
-    this.externalPause.beginGateWarmup(GATE_WARMUP_PLAY_MS + GATE_WARMUP_EVENT_MARGIN_MS)
+    this.externalPause.beginGateWarmup()
     this.playerControl.playVideo()
     this.warmupStopTimer = window.setTimeout(() => {
       this.warmupStopTimer = null
@@ -141,6 +140,7 @@ export class GameManager {
    * ウォームアップ再生を停止して先頭へ戻す（READY のままゲーム開始を待つ）
    */
   private stopWarmupNow(): void {
+    this.externalPause.endGateWarmup()
     this.playerControl.pauseVideo()
     this.playerControl.seekTo(0)
     this.timeManager.resetTimeValues()
@@ -157,6 +157,8 @@ export class GameManager {
     this.warmupStopTimer = null
     if (stopNow) {
       this.stopWarmupNow()
+    } else {
+      this.externalPause.endGateWarmup()
     }
   }
 
@@ -395,6 +397,7 @@ export class GameManager {
       window.clearTimeout(this.warmupStopTimer)
       this.warmupStopTimer = null
     }
+    this.externalPause.endGateWarmup()
     this.answerFlow.stopAnswerCountdown()
     this.externalPause.destroy()
 

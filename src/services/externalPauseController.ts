@@ -12,9 +12,21 @@ import type { InternalPlayerControl } from './internalPlayerControl'
 import type { ThresholdEngine } from './thresholdEngine'
 import type { AnswerFlowController } from './answerFlowController'
 
+type ExternalPauseReason = 'visibility' | 'user' | 'stall' | 'orientation'
+type ExternalResumeTarget = 'video' | 'answer-countdown' | 'none'
+
+function isVideoPlaybackState(state: GameState): boolean {
+  return (
+    state === GameState.TALKING ||
+    state === GameState.QUESTIONING ||
+    state === GameState.WAITING ||
+    state === GameState.REVEALING
+  )
+}
+
 /**
  * External Pause 制御
- * 外部要因による一時停止（visibility/user/stall）の開始・解除、
+ * 外部要因による一時停止（visibility/user/stall/orientation）の開始・解除、
  * visibility/pagehide/pageshow ハンドラ、プレイヤー状態変化ハンドラ、
  * stall 検出、YouTube rewind 補正を担う。
  */
@@ -27,7 +39,8 @@ export class ExternalPauseController {
 
   // External Pause関連
   private externalPaused: boolean = false
-  private externalPausedReason: 'visibility' | 'user' | 'stall' | 'orientation' | null = null
+  private externalPausedReason: ExternalPauseReason | null = null
+  private externalResumeTarget: ExternalResumeTarget = 'none'
 
   // 再生停滞（stall）の検出用
   private lastWallMs: number = 0
@@ -39,9 +52,8 @@ export class ExternalPauseController {
   // リプレイの先頭シーク完了前に遅れて届く PLAYING を識別するライフサイクルフラグ
   private replayResetPending: boolean = false
 
-  // 開始ゲートのウォームアップ再生中は READY の PLAYING を単に無視する期限
-  // （リプレイ用の抑止と違い pause もしない — 一瞬の実再生を殺さないため）
-  private gateWarmupUntil: number = 0
+  // READY中に唯一許可する、開始ゲートの短いウォームアップ再生
+  private gateWarmupActive: boolean = false
 
   // 登録済みイベントリスナーの参照（destroy() で解除するために保持）
   private visibilityChangeHandler: (() => void) | null = null
@@ -93,12 +105,18 @@ export class ExternalPauseController {
    * External Pauseを開始
    * @param reason 一時停止の要因
    */
-  pauseExternal(reason: 'visibility' | 'user' | 'stall' | 'orientation'): void {
+  pauseExternal(reason: ExternalPauseReason): void {
     if (this.externalPaused) return
 
     // 一時停止開始
     this.externalPaused = true
     this.externalPausedReason = reason
+    this.externalResumeTarget =
+      this.gameStore.currentState === GameState.ANSWERING
+        ? 'answer-countdown'
+        : reason !== 'user' && isVideoPlaybackState(this.gameStore.currentState)
+          ? 'video'
+          : 'none'
 
     const currentVideoTime = this.playerControl.getCurrentTime()
     const previousVideoTime = this.timeManager.getPreviousVideoTime()
@@ -110,9 +128,9 @@ export class ExternalPauseController {
 
     // 動画を停止
     // ANSWERING中は既に動画停止済みなのでpauseVideo()不要、カウントダウンのみ停止
-    if (this.gameStore.currentState === GameState.ANSWERING) {
+    if (this.externalResumeTarget === 'answer-countdown') {
       this.answerFlow.stopAnswerCountdown()
-    } else {
+    } else if (reason !== 'user') {
       this.playerControl.pauseVideo()
     }
   }
@@ -125,8 +143,10 @@ export class ExternalPauseController {
 
     // 一時停止解除
     const prevReason = this.externalPausedReason
+    const resumeTarget = this.externalResumeTarget
     this.externalPaused = false
     this.externalPausedReason = null
+    this.externalResumeTarget = 'none'
 
     const previousVideoTime = this.timeManager.getPreviousVideoTime()
     const currentVideoTime = this.playerControl.getCurrentTime()
@@ -170,26 +190,33 @@ export class ExternalPauseController {
 
     // 動画を再開
     // ANSWERING中は動画再開せず、カウントダウン再開のみ
-    if (this.gameStore.currentState === GameState.ANSWERING) {
+    if (resumeTarget === 'answer-countdown' && this.gameStore.currentState === GameState.ANSWERING) {
       this.answerFlow.resumeAnswerCountdown()
-    } else {
+    } else if (resumeTarget === 'video' && isVideoPlaybackState(this.gameStore.currentState)) {
       this.playerControl.playVideo()
+    } else {
+      logger.log('[ExternalPauseController] Resume skipped for current game state:', {
+        resumeTarget,
+        currentState: this.gameStore.currentState,
+      })
     }
   }
 
   /**
    * 横画面検出時の External Pause（orientation 用）
-   * visibility と同じ条件（動画再生中 or ANSWERING）のときだけ一時停止する。
-   * READY 等の停止中に無条件で pause すると、縦復帰時の resume が
-   * playVideo してしまい、タップなしで再生が始まる事故になる
+   * visibility と同じく、動画再生状態の PLAYING または ANSWERING のときだけ
+   * External Pauseにする。READY等に残留したPLAYINGは停止だけ行い、復帰対象にしない。
    */
   pauseExternalForOrientation(): void {
     const playerState = this.playerControl.getPlayerState()
+    const currentState = this.gameStore.currentState
     if (
-      playerState === YouTubePlayerState.PLAYING ||
-      this.gameStore.currentState === GameState.ANSWERING
+      currentState === GameState.ANSWERING ||
+      (isVideoPlaybackState(currentState) && playerState === YouTubePlayerState.PLAYING)
     ) {
       this.pauseExternal('orientation')
+    } else if (!isVideoPlaybackState(currentState) && playerState === YouTubePlayerState.PLAYING) {
+      this.playerControl.pauseVideo()
     }
   }
 
@@ -198,7 +225,7 @@ export class ExternalPauseController {
    * （visibility/pagehide/pageshow と同じパターンを orientation にも適用するため）
    * @param reason 解除条件として照合する一時停止の要因
    */
-  resumeExternalIfReason(reason: 'visibility' | 'user' | 'stall' | 'orientation'): void {
+  resumeExternalIfReason(reason: ExternalPauseReason): void {
     if (this.externalPausedReason === reason) {
       this.resumeExternal()
     }
@@ -210,34 +237,21 @@ export class ExternalPauseController {
   setupVisibilityHandlers(): void {
     this.visibilityChangeHandler = () => {
       if (document.hidden) {
-        // タブが非表示になった時：動画が再生中またはANSWERING中にpause
-        const playerState = this.playerControl.getPlayerState()
-        if (
-          playerState === YouTubePlayerState.PLAYING ||
-          this.gameStore.currentState === GameState.ANSWERING
-        ) {
-          this.pauseExternal('visibility')
-        }
+        this.pauseForVisibility()
       } else {
-        // タブが表示された時：visibility pauseの場合のみresume
-        if (this.externalPausedReason === 'visibility') {
-          this.resumeExternal()
-        }
+        this.resumeFromVisibility()
       }
     }
     document.addEventListener('visibilitychange', this.visibilityChangeHandler)
 
     this.pageHideHandler = () => {
       const playerState = this.playerControl.getPlayerState()
-      const isAnswering = this.gameStore.currentState === GameState.ANSWERING
+      const currentState = this.gameStore.currentState
       logger.log('[ExternalPauseController] Page hide', {
         playerState,
-        isAnswering,
-        willPause: playerState === YouTubePlayerState.PLAYING || isAnswering,
+        currentState,
       })
-      if (playerState === YouTubePlayerState.PLAYING || isAnswering) {
-        this.pauseExternal('visibility')
-      }
+      this.pauseForVisibility()
     }
     window.addEventListener('pagehide', this.pageHideHandler)
 
@@ -246,21 +260,45 @@ export class ExternalPauseController {
         externalPausedReason: this.externalPausedReason,
         willResume: this.externalPausedReason === 'visibility',
       })
-      if (this.externalPausedReason === 'visibility') {
-        this.resumeExternal()
-      }
+      this.resumeFromVisibility()
     }
     window.addEventListener('pageshow', this.pageShowHandler)
+  }
+
+  private pauseForVisibility(): void {
+    const currentState = this.gameStore.currentState
+    const playerState = this.playerControl.getPlayerState()
+
+    if (currentState === GameState.ANSWERING) {
+      this.pauseExternal('visibility')
+      return
+    }
+
+    if (isVideoPlaybackState(currentState) && playerState === YouTubePlayerState.PLAYING) {
+      this.pauseExternal('visibility')
+      return
+    }
+
+    // READY / LOADING / FINISHED は停止が正。Player側に遅れたPLAYINGが残っていても
+    // External Pauseにはせず停止だけを確定し、復帰時の自動再生対象にしない。
+    if (!isVideoPlaybackState(currentState) && playerState === YouTubePlayerState.PLAYING) {
+      logger.log('[ExternalPauseController] Suppressed playback while page is hidden:', currentState)
+      this.playerControl.pauseVideo()
+    }
+  }
+
+  private resumeFromVisibility(): void {
+    if (this.externalPausedReason === 'visibility') {
+      this.resumeExternal()
+    }
   }
 
   /**
    * プレイヤー状態変化イベントハンドラーを設定
    */
   setupPlayerStateHandlers(): void {
+    this.playerControl.syncPlaybackIntentFromPlayer()
     this.playerControl.onStateChange((state) => {
-      // 内部操作による状態変化は除外
-      if (this.playerControl.isInternalAction()) return
-
       // 動画末尾（ENDED）に到達した場合: External Pause を解除し、
       // 未消費の残り問題をすべて確定させて FINISHED まで進める
       // （終端では時刻ベースのシーク検出が信用できないため、イベントで確定する）
@@ -269,6 +307,7 @@ export class ExternalPauseController {
           logger.log('[ExternalPauseController] Video ended - clearing external pause')
           this.externalPaused = false
           this.externalPausedReason = null
+          this.externalResumeTarget = 'none'
         }
         if (this.gameStore.currentState !== GameState.FINISHED) {
           logger.log('[ExternalPauseController] Video ended - finalizing remaining questions')
@@ -280,6 +319,9 @@ export class ExternalPauseController {
       // ユーザ操作による状態変化（user）をハンドリング
       // PAUSED状態になった場合
       if (state === YouTubePlayerState.PAUSED) {
+        // 最後のアプリ内pauseVideo()に対応する非同期通知は状態変化として扱わない
+        if (this.playerControl.isPlaybackStateExpected(state)) return
+        this.playerControl.acceptExternalPlaybackState(YouTubePlayerState.PAUSED)
         // ANSWERING中の一時停止は内部操作（handleButtonPress由来）の
         // 非同期到達なので無視する
         if (this.gameStore.currentState === GameState.ANSWERING) return
@@ -290,34 +332,49 @@ export class ExternalPauseController {
 
       // PLAYING状態になった場合
       if (state === YouTubePlayerState.PLAYING) {
+        const isExpectedPlayback = this.playerControl.isPlaybackStateExpected(state)
+
         // ANSWERING中にユーザーが再生ボタンを押した場合、即座に停止
         if (this.gameStore.currentState === GameState.ANSWERING) {
           this.playerControl.pauseVideo()
           return
         }
 
-        // READY中にプレイヤーから直接再生された場合はボタンチェックを封じて TALKING へ
-        // （再生中にボタンチェックが走ると問題開始と衝突して状態不整合になるため）
-        if (!this.externalPaused && this.gameStore.currentState === GameState.READY) {
-          // 開始ゲートのウォームアップ再生中は何もしない（意図した一瞬の再生）
-          if (performance.now() < this.gateWarmupUntil) {
+        // READYでは開始ゲートのウォームアップだけを許可する。正規のゲーム開始処理は
+        // 先にTALKINGへ遷移してからplayVideo()するため、それ以外の非再生状態では停止を維持する。
+        if (!isVideoPlaybackState(this.gameStore.currentState)) {
+          if (
+            this.gameStore.currentState === GameState.READY &&
+            this.gateWarmupActive &&
+            isExpectedPlayback
+          ) {
             return
           }
-          // リプレイの seekTo(0) 起因の spurious PLAYING は、到達時間に依存せず
-          // 正常な開始操作まで無視して停止状態を復元する
           if (this.replayResetPending) {
             logger.log('[ExternalPauseController] Suppressed spurious PLAYING after replay')
-            this.playerControl.pauseVideo()
-            return
+          } else {
+            logger.log(
+              '[ExternalPauseController] Suppressed unexpected PLAYING in state:',
+              this.gameStore.currentState,
+            )
           }
-          logger.log('[ExternalPauseController] Playback started from player during READY')
-          this.gameStore.transitionToState(GameState.TALKING)
+          this.playerControl.pauseVideo()
           return
         }
 
-        // External Pauseから復帰
-        if (this.externalPaused) {
+        // 最後のアプリ内playVideo()に対応する非同期通知は状態変化として扱わない
+        if (isExpectedPlayback) return
+
+        this.playerControl.acceptExternalPlaybackState(YouTubePlayerState.PLAYING)
+
+        // Player UIでユーザー一時停止から再開した場合は、既に再生が始まっているため
+        // External Pause状態だけを解除し、playVideo()は重ねて呼ばない。
+        if (this.externalPausedReason === 'user') {
           this.resumeExternal()
+        } else if (this.externalPaused) {
+          // visibility / orientation / stall 中にPlayerが独自に再生した場合は、対応する
+          // ライフサイクル復帰処理まで停止を維持する。
+          this.playerControl.pauseVideo()
         }
       }
     })
@@ -389,7 +446,8 @@ export class ExternalPauseController {
   resetPauseState(): void {
     this.externalPaused = false
     this.externalPausedReason = null
-    this.gateWarmupUntil = 0
+    this.externalResumeTarget = 'none'
+    this.gateWarmupActive = false
     this.replayResetPending = true
   }
 
@@ -400,13 +458,14 @@ export class ExternalPauseController {
     this.replayResetPending = false
   }
 
-  /**
-   * 開始ゲートのウォームアップ再生ウィンドウを開始する
-   * この間の READY の PLAYING は無視される（pause も遷移もしない）
-   * @param durationMs ウォームアップ再生時間 + 余裕
-   */
-  beginGateWarmup(durationMs: number): void {
-    this.gateWarmupUntil = performance.now() + durationMs
+  /** READY中の開始ゲートウォームアップ再生を許可する。 */
+  beginGateWarmup(): void {
+    this.gateWarmupActive = true
+  }
+
+  /** 開始ゲートウォームアップの再生許可を終了する。 */
+  endGateWarmup(): void {
+    this.gateWarmupActive = false
   }
 
   /**
