@@ -321,7 +321,7 @@ watch(
 
         analyticsService.logAnswerSubmitted({
           quizSessionId: quizSessionId.value,
-        quizId: currentQuizId,
+          quizId: currentQuizId,
           videoId,
           videoTitle: videoTitle.value || undefined,
           questionIndex,
@@ -365,7 +365,18 @@ watch(
 // --- イベントハンドラ ---
 
 // QuizButton 押下 → GameManager に委譲
+function isGameInputBlocked(): boolean {
+  return (
+    !isGateDismissed.value ||
+    isSettingsOpen.value ||
+    isThemeSwitcherOpen.value ||
+    isOrientationOpen.value ||
+    initError.value !== null
+  )
+}
+
 function handleButtonPress() {
+  if (isGameInputBlocked()) return
   // iOS ではキーボードがユーザー操作内の同期 focus() でしか開かないため、
   // ANSWERING 遷移（100ms 後）を待たずタップ内で入力欄を有効化して focus する
   // （disabled の直書きは直後の ANSWERING 遷移で Vue の束縛が正式に引き継ぐ）
@@ -381,7 +392,7 @@ function handleButtonPress() {
 
 // スペースキー早押し（グローバルキーボードハンドラ）
 function handleKeyDown(e: KeyboardEvent) {
-  if (!shouldHandleSpaceKey(e)) return
+  if (isGameInputBlocked() || !shouldHandleSpaceKey(e)) return
   e.preventDefault() // スペースキーによるページスクロールを抑止
   handleButtonPress()
 }
@@ -438,6 +449,7 @@ watch(shouldCollapseForKeyboard, (collapsed) => {
 
 // GamePanel 解答送信 → GameManager に委譲
 function handleAnswerSubmit(answer: string) {
+  if (isGameInputBlocked()) return
   gameManager.value?.handleAnswerSubmit(answer)
 }
 
@@ -573,7 +585,9 @@ onUnmounted(() => {
           :class="`start-gate-concept--${START_GATE_CONCEPT_STYLE}`"
           aria-hidden="true"
         ></span>
-        <span class="start-gate-note">クイズ動画を視聴しながら<br>早押しで勝負に参加することができます</span>
+        <span class="start-gate-note"
+          >クイズ動画を視聴しながら<br />早押しで勝負に参加することができます</span
+        >
       </template>
       <span v-else class="start-gate-note">読み込み中...</span>
     </button>
