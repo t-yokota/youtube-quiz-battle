@@ -59,8 +59,20 @@ export function isRecoverable(code: ErrorCode): boolean {
   return code === 'NETWORK_ERROR' || code === 'QUIZ_DATA_LOAD_FAILED'
 }
 
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+function wait(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    signal?.throwIfAborted()
+    const abort = () => {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', abort)
+      reject(signal?.reason)
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', abort)
+      resolve()
+    }, ms)
+    signal?.addEventListener('abort', abort, { once: true })
+  })
 }
 
 /**
@@ -72,13 +84,16 @@ const DEFAULT_MAX_ATTEMPTS = 3
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxAttempts: number = DEFAULT_MAX_ATTEMPTS,
+  signal?: AbortSignal,
 ): Promise<T> {
   let lastError: unknown
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    signal?.throwIfAborted()
     try {
       return await fn()
     } catch (error) {
+      signal?.throwIfAborted()
       lastError = error
 
       const isLastAttempt = attempt === maxAttempts - 1
@@ -86,7 +101,7 @@ export async function withRetry<T>(
         throw error
       }
 
-      await wait(RETRY_BACKOFF_MS[attempt] ?? RETRY_BACKOFF_MS[RETRY_BACKOFF_MS.length - 1])
+      await wait(RETRY_BACKOFF_MS[attempt] ?? RETRY_BACKOFF_MS[RETRY_BACKOFF_MS.length - 1], signal)
     }
   }
 

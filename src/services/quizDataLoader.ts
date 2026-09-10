@@ -45,7 +45,7 @@ export function extractQuizIdFromUrl(): string {
 /**
  * クイズデータを読み込み
  */
-export async function loadQuizData(quizId: string): Promise<QuizData> {
+export async function loadQuizData(quizId: string, signal?: AbortSignal): Promise<QuizData> {
   try {
     // slug 形式以外は fetch せずに not found 扱い
     if (!QUIZ_ID_PATTERN.test(quizId)) {
@@ -55,16 +55,20 @@ export async function loadQuizData(quizId: string): Promise<QuizData> {
     // BASE_URL 前置: GitHub Pages のサブパス配信に対応（末尾スラッシュ付き）
     const dataPath = `${import.meta.env.BASE_URL}data/${quizId}/data.json`
 
-    const response = await withRetry(async () => {
-      const res = await fetch(dataPath)
-      if (!res.ok) {
-        if (res.status === 404) {
-          throw new Error('QUIZ_DATA_NOT_FOUND')
+    const response = await withRetry(
+      async () => {
+        const res = await (signal ? fetch(dataPath, { signal }) : fetch(dataPath))
+        if (!res.ok) {
+          if (res.status === 404) {
+            throw new Error('QUIZ_DATA_NOT_FOUND')
+          }
+          throw new Error('QUIZ_DATA_LOAD_FAILED')
         }
-        throw new Error('QUIZ_DATA_LOAD_FAILED')
-      }
-      return res
-    })
+        return res
+      },
+      undefined,
+      signal,
+    )
 
     // 開発サーバ等の SPA フォールバックは不在パスにも 200 で HTML を返すため、
     // JSON として読めない応答はデータ不在として扱う
@@ -72,9 +76,11 @@ export async function loadQuizData(quizId: string): Promise<QuizData> {
     try {
       rawData = await response.json()
     } catch {
+      signal?.throwIfAborted()
       throw new Error('QUIZ_DATA_NOT_FOUND')
     }
 
+    signal?.throwIfAborted()
     // データ検証
     validateQuizData(rawData)
 

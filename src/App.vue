@@ -40,6 +40,7 @@ type StartGateConceptStyle = 'accent-only' | 'white-fill'
 const START_GATE_CONCEPT_STYLE: StartGateConceptStyle = 'white-fill'
 
 let disposed = false
+const dataLoadController = new AbortController()
 let scrollFrame: number | null = null
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
@@ -192,7 +193,7 @@ const currentQuizId = extractQuizIdFromUrl()
 async function initQuizData() {
   try {
     logger.log(`[App] Loading quiz data for quizId: ${currentQuizId}`)
-    const data = await loadQuizData(currentQuizId)
+    const data = await loadQuizData(currentQuizId, dataLoadController.signal)
     if (disposed) return
     quizData.value = data
     gameStore.setQuizData(quizData.value)
@@ -503,6 +504,7 @@ const handleErrorAction = () => {
 // --- クリーンアップ ---
 onBeforeUnmount(() => {
   disposed = true
+  dataLoadController.abort()
   if (scrollFrame !== null) cancelAnimationFrame(scrollFrame)
   window.removeEventListener('keydown', handleKeyDown)
 

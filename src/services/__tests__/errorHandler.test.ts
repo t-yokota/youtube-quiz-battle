@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ERROR_MESSAGES } from '@/constants/errorMessages'
 import { RETRY_BACKOFF_MS } from '@/constants/timing'
-import { classifyError, getErrorInfo, getErrorMessage, isRecoverable, withRetry } from '../errorHandler'
+import {
+  classifyError,
+  getErrorInfo,
+  getErrorMessage,
+  isRecoverable,
+  withRetry,
+} from '../errorHandler'
 import type { ErrorCode } from '../errorHandler'
 
 describe('classifyError', () => {
@@ -156,4 +162,24 @@ describe('getErrorInfo', () => {
     const info = getErrorInfo(new Error('QUIZ_DATA_INVALID: Missing settings'))
     expect(info.title).toBe('エラーが発生しました')
   })
+})
+
+it('abortはリトライ待機タイマーを解除し、次の通信を開始しない', async () => {
+  vi.useFakeTimers()
+  try {
+    const controller = new AbortController()
+    const fn = vi.fn().mockRejectedValue(new TypeError('offline'))
+    const promise = withRetry(fn, 3, controller.signal)
+    const rejected = expect(promise).rejects.toMatchObject({ name: 'AbortError' })
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(vi.getTimerCount()).toBe(1)
+    controller.abort()
+    await rejected
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(fn).toHaveBeenCalledTimes(1)
+    expect(vi.getTimerCount()).toBe(0)
+  } finally {
+    vi.useRealTimers()
+  }
 })
