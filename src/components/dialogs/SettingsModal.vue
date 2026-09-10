@@ -412,7 +412,6 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   width: calc(6.875 * var(--settings-layout-unit));
   height: calc(0.375 * var(--settings-layout-unit));
   border-radius: calc(0.1875 * var(--settings-layout-unit));
-  outline: none;
   -webkit-appearance: none;
   appearance: none;
 }
