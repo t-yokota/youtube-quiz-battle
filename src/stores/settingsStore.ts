@@ -1,3 +1,4 @@
+import { readStoredValue, writeStoredValue } from '@/utils/browserStorage'
 // 音声設定などのユーザー設定を管理する Pinia ストア
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
@@ -21,7 +22,7 @@ function loadPersistedSettings(): PersistedSettings {
     buttonCheckOverride: null,
   }
 
-  const raw = localStorage.getItem(LOCALSTORAGE_KEY_SETTINGS)
+  const raw = readStoredValue(LOCALSTORAGE_KEY_SETTINGS)
   if (!raw) return defaults
 
   try {
@@ -51,7 +52,7 @@ function loadPersistedSettings(): PersistedSettings {
 }
 
 function persistSettings(settings: PersistedSettings): void {
-  localStorage.setItem(LOCALSTORAGE_KEY_SETTINGS, JSON.stringify(settings))
+  writeStoredValue(LOCALSTORAGE_KEY_SETTINGS, JSON.stringify(settings))
 }
 
 export const useSettingsStore = defineStore('settings', () => {

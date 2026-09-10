@@ -1,3 +1,4 @@
+import { readStoredValue, writeStoredValue } from '@/utils/browserStorage'
 // UIテーマの読込・適用・永続化
 //
 // CSSファイルとthemeMetaの両方に存在するテーマだけを公開する。
@@ -57,7 +58,7 @@ function init(): void {
   if (initialized) return
   initialized = true
 
-  const saved = localStorage.getItem(STORAGE_KEY)
+  const saved = readStoredValue(STORAGE_KEY)
   const normalizedSaved = saved === null ? null : (LEGACY_THEME_IDS[saved] ?? saved)
   const initialTheme =
     normalizedSaved !== null && themeIds.includes(normalizedSaved) ? normalizedSaved : DEFAULT_THEME
@@ -65,7 +66,7 @@ function init(): void {
 
   // 改名・削除済みテーマなどの古い保存値を、次回以降も有効なIDへ正規化する。
   if (saved !== null && saved !== initialTheme) {
-    localStorage.setItem(STORAGE_KEY, initialTheme)
+    writeStoredValue(STORAGE_KEY, initialTheme)
   }
 }
 
@@ -75,7 +76,7 @@ export function useTheme() {
   function setTheme(id: string): void {
     if (!themeIds.includes(id)) return
     apply(id)
-    localStorage.setItem(STORAGE_KEY, id)
+    writeStoredValue(STORAGE_KEY, id)
   }
 
   return {
