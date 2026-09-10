@@ -329,3 +329,110 @@ describe('AudioManager: HTML Audio フォールバック経路', () => {
     }
   })
 })
+
+describe('AudioManager: 非同期処理の終了', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+  it('初期化失敗時に作成済みAudioContextを閉じる', async () => {
+    const context = createMockAudioContext()
+    stubAudioContext(context)
+    stubFetchError()
+    const manager = new AudioManager()
+    await expect(manager.init()).rejects.toThrow('AUDIO_LOAD_FAILED')
+    expect(context.close).toHaveBeenCalledTimes(1)
+  })
+  it('decode中にdisposeすると、完了後に音声を初期化しない', async () => {
+    const context = createMockAudioContext()
+    stubAudioContext(context)
+    stubFetchOk()
+    let finish!: (buffer: AudioBuffer) => void
+    context.decodeAudioData.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        }),
+    )
+    const manager = new AudioManager()
+    const pending = manager.init()
+    for (let i = 0; i < 5; i++) await Promise.resolve()
+    manager.dispose()
+    finish({} as AudioBuffer)
+    await pending
+    manager.playSound(SOUND_TYPE.BUTTON)
+    expect(manager.isSoundSupported()).toBe(false)
+    expect(context.createGain).not.toHaveBeenCalled()
+    expect(context.close).toHaveBeenCalledTimes(1)
+  })
+  it.each(['stop', 'dispose', 'new-sound'])(
+    'resume待ち中の%sは古い再生を失効させる',
+    async (action) => {
+      const context = createMockAudioContext()
+      stubAudioContext(context)
+      stubFetchOk()
+      const manager = new AudioManager()
+      await manager.init()
+      context.state = 'suspended'
+      let finish!: () => void
+      context.resume.mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = resolve
+          }),
+      )
+      manager.playSound(SOUND_TYPE.BUTTON)
+      const finishOld = finish
+      if (action === 'stop') manager.stopSound()
+      if (action === 'dispose') manager.dispose()
+      if (action === 'new-sound') {
+        manager.playSound(SOUND_TYPE.CORRECT)
+      }
+      context.state = 'running'
+      finishOld()
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(context.createBufferSource).not.toHaveBeenCalled()
+      if (action === 'new-sound') {
+        finish()
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(context.lastSource?.start).toHaveBeenCalledWith(
+          0,
+          DEFAULT_AUDIO_SPRITE.sprite[SOUND_TYPE.CORRECT].start,
+          DEFAULT_AUDIO_SPRITE.sprite[SOUND_TYPE.CORRECT].duration,
+        )
+      }
+    },
+  )
+  it('resumeの失敗は未処理のPromise拒否にしない', async () => {
+    const context = createMockAudioContext()
+    stubAudioContext(context)
+    stubFetchOk()
+    const manager = new AudioManager()
+    await manager.init()
+    context.state = 'suspended'
+    context.resume.mockRejectedValue(new Error('blocked'))
+    manager.playSound(SOUND_TYPE.BUTTON)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(context.createBufferSource).not.toHaveBeenCalled()
+    manager.dispose()
+  })
+  it('disposeで無音ループと効果音を停止し、再unlockを無効にする', async () => {
+    audioElementInstances = []
+    stubHtmlAudio()
+    const context = createMockAudioContext()
+    stubAudioContext(context)
+    stubFetchOk()
+    const manager = new AudioManager()
+    await manager.init()
+    manager.unlock()
+    manager.playSound(SOUND_TYPE.BUTTON)
+    manager.dispose()
+    manager.dispose()
+    manager.unlock()
+    expect(context.lastSource?.stop).toHaveBeenCalledTimes(1)
+    expect(context.close).toHaveBeenCalledTimes(1)
+    expect(audioElementInstances).toHaveLength(1)
+    expect(audioElementInstances[0].pause).toHaveBeenCalled()
+  })
+})

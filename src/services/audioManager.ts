@@ -43,6 +43,10 @@ export class AudioManager {
 
   private useWebAudio = false
   private initialized = false
+  private disposed = false
+  private playbackGeneration = 0
+  private initTask: Promise<void> | null = null
+  private loadController = new AbortController()
 
   constructor(options?: AudioManagerOptions) {
     this.sprite = options?.sprite ?? DEFAULT_AUDIO_SPRITE
@@ -52,13 +56,20 @@ export class AudioManager {
    * スプライト音声の読み込み
    * 失敗時は Error('AUDIO_LOAD_FAILED') を throw する（呼び出し側で ErrorDialog へ接続）
    */
-  async init(): Promise<void> {
+  init(): Promise<void> {
+    if (this.disposed) return Promise.resolve()
+    this.initTask ??= this.initialize()
+    return this.initTask
+  }
+
+  private async initialize(): Promise<void> {
     try {
       const AudioContextCtor =
         window.AudioContext ?? (window as WindowWithWebkitAudioContext).webkitAudioContext
 
       if (AudioContextCtor) {
         await this.initWebAudio(AudioContextCtor)
+        if (this.disposed) return
         this.useWebAudio = true
       } else {
         this.initHtmlAudioFallback()
@@ -67,6 +78,8 @@ export class AudioManager {
 
       this.initialized = true
     } catch (error) {
+      this.releaseContext()
+      if (this.disposed) return
       logger.error('[AudioManager] Failed to load audio sprite:', error)
       throw new Error('AUDIO_LOAD_FAILED')
     }
@@ -74,14 +87,17 @@ export class AudioManager {
 
   private async initWebAudio(AudioContextCtor: typeof AudioContext): Promise<void> {
     const audioContext = new AudioContextCtor()
-    const response = await fetch(this.sprite.src)
+    this.audioContext = audioContext
+    const response = await fetch(this.sprite.src, { signal: this.loadController.signal })
 
     if (!response.ok) {
       throw new Error('AUDIO_LOAD_FAILED')
     }
 
     const arrayBuffer = await response.arrayBuffer()
+    if (this.disposed) return
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+    if (this.disposed) return
 
     const gainNode = audioContext.createGain()
     gainNode.gain.value = this.currentGainValue()
@@ -106,13 +122,15 @@ export class AudioManager {
    * 再生中の効果音があれば停止してから新しい効果音を再生する
    */
   playSound(type: SOUND_TYPE): void {
-    if (!this.initialized || !this.soundEnabled || this.muted) return
+    if (this.disposed || !this.initialized || !this.soundEnabled || this.muted) return
 
     this.stopSound()
 
     // 中断等で無音ループが止まっていたら再開（アンロック済み要素なのでジェスチャ外でも可）
     if (this.silentLoop && this.silentLoop.paused) {
-      void this.silentLoop.play()?.catch(() => {})
+      void this.silentLoop
+        .play()
+        ?.catch((error) => logger.warn('[AudioManager] Silent loop resume failed:', error))
     }
 
     if (this.useWebAudio) {
@@ -133,11 +151,10 @@ export class AudioManager {
     if (!this.audioContext) return null
     if (this.audioContext.state === 'running') return this.audioContext
 
-    const Ctor =
-      window.AudioContext ?? (window as WindowWithWebkitAudioContext).webkitAudioContext
+    const Ctor = window.AudioContext ?? (window as WindowWithWebkitAudioContext).webkitAudioContext
     if (!Ctor) return this.audioContext
 
-    void this.audioContext.close().catch(() => {})
+    this.releaseContext()
     const context = new Ctor()
     const gainNode = context.createGain()
     gainNode.gain.value = this.currentGainValue()
@@ -147,7 +164,8 @@ export class AudioManager {
     return context
   }
 
-  private playWithWebAudio(type: SOUND_TYPE): void {
+  private playWithWebAudio(type: SOUND_TYPE, generation = this.playbackGeneration): void {
+    if (this.disposed || generation !== this.playbackGeneration) return
     if (!this.audioContext || !this.audioBuffer || !this.gainNode) return
 
     const context = this.ensureRunningContext()
@@ -156,11 +174,21 @@ export class AudioManager {
     // 作り直しても running にならない場合（ユーザー操作外の呼び出し等）は
     // resume 完了後に再生し直す
     if (context.state !== 'running') {
-      void context.resume().then(() => {
-        if (this.soundEnabled && !this.muted) {
-          this.playWithWebAudio(type)
-        }
-      })
+      void context
+        .resume()
+        .then(() => {
+          if (
+            !this.disposed &&
+            generation === this.playbackGeneration &&
+            this.audioContext === context &&
+            context.state === 'running' &&
+            this.soundEnabled &&
+            !this.muted
+          ) {
+            this.playWithWebAudio(type, generation)
+          }
+        })
+        .catch((error) => logger.warn('[AudioManager] AudioContext resume failed:', error))
       return
     }
 
@@ -172,6 +200,7 @@ export class AudioManager {
 
     this.currentSource = source
     source.onended = () => {
+      source.disconnect?.()
       if (this.currentSource === source) {
         this.currentSource = null
       }
@@ -195,12 +224,15 @@ export class AudioManager {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   stopSound(type?: SOUND_TYPE): void {
+    this.playbackGeneration++
     if (this.currentSource) {
       try {
         this.currentSource.stop()
       } catch {
         // 既に停止済みの場合は無視
       }
+      this.currentSource.onended = null
+      this.currentSource.disconnect?.()
       this.currentSource = null
     }
 
@@ -238,6 +270,7 @@ export class AudioManager {
    * 無音バッファを 1 サンプル再生し音声セッションを確実に活性化する
    */
   unlock(): void {
+    if (this.disposed || !this.initialized) return
     // HTMLAudio 経路: ジェスチャ内で各要素の play を発行し同期で即 pause して解放する
     // （promise 完了を待つと iOS で音が一瞬漏れる）
     if (!this.useWebAudio) {
@@ -265,6 +298,31 @@ export class AudioManager {
     // AudioContext を running にする（無音バッファの発音は行わない —
     // クリックノイズの原因になり得るため。セッション活性は無音ループが担う）
     this.ensureRunningContext()
+  }
+
+  /** Appが所有する音声資源を解放し、待機中の再生と初期化を失効させる。 */
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.initialized = false
+    this.loadController.abort()
+    this.stopSound()
+    this.silentLoop?.pause()
+    this.silentLoop = null
+    this.htmlAudios = {}
+    this.releaseContext()
+    this.audioBuffer = null
+  }
+
+  private releaseContext(): void {
+    this.gainNode?.disconnect?.()
+    this.gainNode = null
+    const context = this.audioContext
+    this.audioContext = null
+    if (context)
+      void context
+        .close()
+        .catch((error) => logger.warn('[AudioManager] AudioContext close failed:', error))
   }
 
   isSoundSupported(): boolean {

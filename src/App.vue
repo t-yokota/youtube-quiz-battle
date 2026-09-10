@@ -503,6 +503,7 @@ onBeforeUnmount(() => {
   gameManager.value?.destroy()
   gameManager.value = null
   playerManagerRef.value = null
+  audioManager.dispose()
 })
 </script>
 
