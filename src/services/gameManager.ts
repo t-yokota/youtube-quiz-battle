@@ -61,6 +61,7 @@ export class GameManager {
     this.clearWarmupStop(false)
     this.answerFlow.stopAnswerCountdown()
     this.timeManager.cancelInternalSeek()
+    this.audioManager?.stopSound()
   }
 
   constructor(

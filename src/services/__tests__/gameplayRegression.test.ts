@@ -173,4 +173,18 @@ describe('ゲーム進行の境界', () => {
     tick(0)
     expect(store.currentState).toBe(GameState.QUESTIONING)
   })
+  it.each(['reset', 'destroy'])('%sで保留中の音声再生もキャンセルする', (action) => {
+    const { store, fake } = setup()
+    manager.destroy()
+    const audio = { playSound: vi.fn(), stopSound: vi.fn() }
+    manager = createGameManager(
+      fake.player,
+      quizFixture(),
+      store,
+      audio as unknown as import('../audioManager').AudioManager,
+    )
+    if (action === 'reset') manager.resetGame()
+    else manager.destroy()
+    expect(audio.stopSound).toHaveBeenCalledTimes(1)
+  })
 })

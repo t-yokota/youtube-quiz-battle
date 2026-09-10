@@ -567,7 +567,10 @@ describe('ボタンチェック演出 OFF（Task 19-4）', () => {
     settingsStore.setButtonCheckEnabled(false)
 
     const playSound = vi.fn()
-    const audioManagerMock = { playSound } as unknown as import('../audioManager').AudioManager
+    const audioManagerMock = {
+      playSound,
+      stopSound: vi.fn(),
+    } as unknown as import('../audioManager').AudioManager
 
     const player = makePlayerMock()
     const store = useGameStore()
@@ -591,7 +594,10 @@ describe('ボタンチェック演出 OFF（Task 19-4）', () => {
     settingsStore.setButtonCheckEnabled(false)
 
     const playSound = vi.fn()
-    const audioManagerMock = { playSound } as unknown as import('../audioManager').AudioManager
+    const audioManagerMock = {
+      playSound,
+      stopSound: vi.fn(),
+    } as unknown as import('../audioManager').AudioManager
 
     const player = makePlayerMock()
     const store = useGameStore()
