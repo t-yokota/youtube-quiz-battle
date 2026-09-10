@@ -68,9 +68,9 @@ export async function loadQuizData(quizId: string): Promise<QuizData> {
 
     // 開発サーバ等の SPA フォールバックは不在パスにも 200 で HTML を返すため、
     // JSON として読めない応答はデータ不在として扱う
-    let rawData: RawQuizData
+    let rawData: unknown
     try {
-      rawData = (await response.json()) as RawQuizData
+      rawData = await response.json()
     } catch {
       throw new Error('QUIZ_DATA_NOT_FOUND')
     }
@@ -91,9 +91,28 @@ export async function loadQuizData(quizId: string): Promise<QuizData> {
 /**
  * クイズデータを検証
  */
-function validateQuizData(data: RawQuizData): void {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function validateQuizData(value: unknown): asserts value is RawQuizData {
+  if (!isRecord(value)) {
+    throw new Error('QUIZ_DATA_INVALID: Invalid object structure')
+  }
+  if (!isRecord(value.settings)) throw new Error('QUIZ_DATA_INVALID: Missing settings')
+  if (!Array.isArray(value.questions))
+    throw new Error('QUIZ_DATA_INVALID: Missing or invalid questions array')
+  for (const question of value.questions) {
+    if (!isRecord(question)) throw new Error('QUIZ_DATA_INVALID: Invalid question object')
+    const periods = question.othersAnsweringPeriods
+    if (periods !== undefined && (!Array.isArray(periods) || !periods.every(isRecord))) {
+      throw new Error('QUIZ_DATA_INVALID: Invalid othersAnsweringPeriods array')
+    }
+  }
+  // Containers are safe to access; validate every consumed field below before returning.
+  const data = value as unknown as RawQuizData
   // 必須フィールドのチェック
-  if (!data.videoId) {
+  if (typeof data.videoId !== 'string' || data.videoId.trim() === '') {
     throw new Error('QUIZ_DATA_INVALID: Missing videoId')
   }
 
@@ -105,7 +124,6 @@ function validateQuizData(data: RawQuizData): void {
     throw new Error('QUIZ_DATA_INVALID: Questions array is empty')
   }
 
-
   // クイズ設定のチェック
   if (!data.settings) {
     throw new Error('QUIZ_DATA_INVALID: Missing settings')
@@ -115,7 +133,7 @@ function validateQuizData(data: RawQuizData): void {
     throw new Error('QUIZ_DATA_INVALID: Invalid answerTimeLimit')
   }
 
-  if (typeof data.settings.maxAttempts !== 'number' || data.settings.maxAttempts <= 0) {
+  if (!Number.isInteger(data.settings.maxAttempts) || data.settings.maxAttempts <= 0) {
     throw new Error('QUIZ_DATA_INVALID: Invalid maxAttempts')
   }
 
@@ -128,6 +146,16 @@ function validateQuizData(data: RawQuizData): void {
 
   if (data.settings.debug !== undefined && typeof data.settings.debug !== 'boolean') {
     throw new Error('QUIZ_DATA_INVALID: Invalid debug')
+  }
+
+  for (const key of [
+    'disableSeekbar',
+    'jumpToRevealPeriod',
+    'hideVideoPlayerDuringAnswer',
+  ] as const) {
+    if (data.settings[key] !== undefined && typeof data.settings[key] !== 'boolean') {
+      throw new Error(`QUIZ_DATA_INVALID: Invalid ${key}`)
+    }
   }
 
   // 各問題のチェック
@@ -147,15 +175,15 @@ function validateQuizData(data: RawQuizData): void {
     }
 
     // 時間データの妥当性チェック
-    if (typeof q.startTime !== 'number' || q.startTime < 0) {
+    if (!Number.isFinite(q.startTime) || q.startTime < 0) {
       throw new Error(`QUIZ_DATA_INVALID: Question ${index + 1} has invalid startTime`)
     }
 
-    if (typeof q.revealTime !== 'number' || q.revealTime < 0) {
+    if (!Number.isFinite(q.revealTime) || q.revealTime < 0) {
       throw new Error(`QUIZ_DATA_INVALID: Question ${index + 1} has invalid revealTime`)
     }
 
-    if (typeof q.endTime !== 'number' || q.endTime < 0) {
+    if (!Number.isFinite(q.endTime) || q.endTime < 0) {
       throw new Error(`QUIZ_DATA_INVALID: Question ${index + 1} has invalid endTime`)
     }
 
@@ -168,7 +196,7 @@ function validateQuizData(data: RawQuizData): void {
     // OthersAnsweringPeriodsの検証
     if (q.othersAnsweringPeriods) {
       q.othersAnsweringPeriods.forEach((period, pIndex) => {
-        if (typeof period.startTime !== 'number' || typeof period.endTime !== 'number') {
+        if (!Number.isFinite(period.startTime) || !Number.isFinite(period.endTime)) {
           throw new Error(
             `QUIZ_DATA_INVALID: Question ${index + 1} othersAnsweringPeriod ${pIndex + 1} has invalid time`,
           )

@@ -523,3 +523,30 @@ describe('loadQuizData: questionNumber と配列順の整合性', () => {
     await expect(loadQuizData('sample')).rejects.toThrow(/questionNumber mismatch/)
   })
 })
+
+describe('外部JSONの構造検証', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  it.each([
+    null,
+    [],
+    123,
+    makeRawData({ videoId: 123 }),
+    makeRawData({ videoId: '  ' }),
+    makeRawData({ settings: [] }),
+    makeRawData({ settings: { maxAttempts: 1.5, answerTimeLimit: 10 } }),
+    makeRawData({ settings: { maxAttempts: Infinity, answerTimeLimit: 10 } }),
+    ...['disableSeekbar', 'jumpToRevealPeriod', 'hideVideoPlayerDuringAnswer'].map((key) =>
+      makeRawData({ settings: { maxAttempts: 3, answerTimeLimit: 10, [key]: 'false' } }),
+    ),
+    makeRawData({ questions: [null] }),
+    makeRawData({ questions: [makeRawQuestion({ endTime: Infinity })] }),
+    makeRawData({ questions: [makeRawQuestion({ othersAnsweringPeriods: {} })] }),
+    makeRawData({ questions: [makeRawQuestion({ othersAnsweringPeriods: [null] })] }),
+    makeRawData({
+      questions: [makeRawQuestion({ othersAnsweringPeriods: [{ startTime: NaN, endTime: 2 }] })],
+    }),
+  ])('不正な入力を統一したデータエラーにする: %j', async (data) => {
+    mockFetchOk(data)
+    await expect(loadQuizData('sample')).rejects.toThrow('QUIZ_DATA_INVALID')
+  })
+})
