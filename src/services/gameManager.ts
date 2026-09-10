@@ -334,6 +334,8 @@ export class GameManager {
       return
     }
 
+    if (this.timeManager.shouldWaitForInternalSeek(current)) return
+
     const prev = this.timeManager.getPreviousVideoTime()
 
     // 現在時刻を更新

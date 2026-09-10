@@ -1,6 +1,6 @@
 // 時間管理サービス
 import type { QuizQuestion } from '@/types'
-import { SEEK_TOLERANCE_SEC } from '@/constants/timing'
+import { SEEK_TOLERANCE_SEC, INTERNAL_SEEK_TIMEOUT_MS } from '@/constants/timing'
 
 /**
  * 時間管理システム
@@ -9,8 +9,30 @@ import { SEEK_TOLERANCE_SEC } from '@/constants/timing'
 export class TimeManager {
   private currentVideoTime: number = 0
   private previousVideoTime: number = 0
+  private internalSeek: { target: number; deadline: number } | null = null
 
+  /** 古い時刻通知を無視し、目標到達時にユーザーシーク判定の基準を同期する。 */
+  beginInternalSeek(target: number): void {
+    this.internalSeek = { target, deadline: performance.now() + INTERNAL_SEEK_TIMEOUT_MS }
+  }
 
+  cancelInternalSeek(): void {
+    this.internalSeek = null
+  }
+
+  shouldWaitForInternalSeek(time: number): boolean {
+    const seek = this.internalSeek
+    if (!seek) return false
+    if (Math.abs(time - seek.target) <= SEEK_TOLERANCE_SEC) {
+      this.internalSeek = null
+      this.previousVideoTime = seek.target
+      return false
+    }
+    if (performance.now() < seek.deadline) return true
+    // 到達しないシークで監視を永久停止しない。元の時刻基準で通常監視へ戻す。
+    this.internalSeek = null
+    return false
+  }
 
   /**
    * 現在の動画時間を取得
@@ -70,6 +92,7 @@ export class TimeManager {
    * ゲームリセット時に使用
    */
   resetTimeValues(): void {
+    this.internalSeek = null
     this.currentVideoTime = 0
     this.previousVideoTime = 0
   }

@@ -169,7 +169,13 @@ export class AnswerFlowController {
       this.thresholdEngine.markRevealConsumed(questionIndex)
 
       // revealTime にシーク
-      this.playerControl.seekTo(question.revealTime)
+      this.timeManager.beginInternalSeek(question.revealTime)
+      try {
+        this.playerControl.seekTo(question.revealTime)
+      } catch (error) {
+        this.timeManager.cancelInternalSeek()
+        throw error
+      }
       this.playerControl.playVideo()
 
       // REVEALING 状態への遷移

@@ -105,3 +105,6 @@ export const TIMER_URGENT_THRESHOLD_SEC = 3
  * リトライ1回目の前に1秒、2回目の前に2秒、3回目の前に4秒待機する
  */
 export const RETRY_BACKOFF_MS = [1000, 2000, 4000]
+
+/** 内部シークの到達待機期限（ミリ秒）。 */
+export const INTERNAL_SEEK_TIMEOUT_MS = 10000
