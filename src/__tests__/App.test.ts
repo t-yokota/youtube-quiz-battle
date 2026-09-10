@@ -4,12 +4,18 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import App from '../App.vue'
 import { useGameStore } from '@/stores/gameStore'
 import { GameState, ButtonState } from '@/types'
-import { fakePlayer } from './helpers/gameFixture'
+import { createAnalyticsService } from '@/services/analyticsService'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { useDebugStore } from '@/stores/debugStore'
+import { fakePlayer, quizFixture } from './helpers/gameFixture'
 import { createYouTubePlayerManager } from '@/services/youtubePlayer'
 
 vi.mock('@/services/quizDataLoader', async () => {
   const { quizFixture } = await import('./helpers/gameFixture')
-  return { extractQuizIdFromUrl: () => 'sample', loadQuizData: async () => quizFixture() }
+  return {
+    extractQuizIdFromUrl: () => 'sample',
+    loadQuizData: async () => quizFixture({ debug: true }),
+  }
 })
 vi.mock('@/services/youtubePlayer', async () => {
   const { fakePlayer } = await import('./helpers/gameFixture')
@@ -36,7 +42,7 @@ vi.mock('virtual:pwa-register/vue', () => ({
   useRegisterSW: () => ({ needRefresh: ref(false), updateServiceWorker: vi.fn() }),
 }))
 vi.mock('@/services/analyticsService', () => ({
-  createAnalyticsService: () => ({
+  createAnalyticsService: vi.fn(() => ({
     init: async () => {},
     setDebugMode: vi.fn(),
     logQuizSessionStarted: vi.fn(),
@@ -44,7 +50,7 @@ vi.mock('@/services/analyticsService', () => ({
     logSettingChanged: vi.fn(),
     logQuestionAnswered: vi.fn(),
     logAnswerSubmitted: vi.fn(),
-  }),
+  })),
 }))
 let rejectAudioInit: (error: Error) => void
 let errorListener: ((error: Error) => void) | undefined
@@ -147,4 +153,186 @@ it('遅れて失敗する音声初期化でも稼働中のゲームを停止す�
   await vi.advanceTimersByTimeAsync(20000)
   expect(vi.getTimerCount()).toBe(0)
   expect(document.body.textContent).toContain('再読み込み')
+})
+
+function analytics() {
+  return vi.mocked(createAnalyticsService).mock.results.at(-1)!.value as ReturnType<
+    typeof createAnalyticsService
+  >
+}
+async function startQuiz() {
+  host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+  await flush()
+  space()
+  await flush()
+}
+it('開始時の実効設定を一度送信し、進行中の設定変更だけを通知する', async () => {
+  const service = analytics()
+  const settings = useSettingsStore()
+  const debug = useDebugStore()
+  settings.setDisableSeekbarOverride(false)
+  debug.setAnswerTimeLimitOverride(20)
+  debug.setMaxAttemptsOverride(2)
+  debug.setJumpToRevealPeriodOverride(true)
+  debug.setHideVideoPlayerDuringAnswerOverride(true)
+  await flush()
+  expect(service.logSettingChanged).not.toHaveBeenCalled()
+  await startQuiz()
+  expect(service.logQuizSessionStarted).toHaveBeenCalledExactlyOnceWith({
+    quizSessionId: expect.any(String),
+    quizId: 'sample',
+    videoId: quizFixture().videoId,
+    videoTitle: 'Quiz',
+    totalQuestions: 3,
+    buttonCheckEnabled: false,
+    seekAllowed: true,
+    jumpToRevealPeriod: true,
+    hideVideoPlayerDuringAnswer: true,
+    answerTimeLimit: 20,
+    maxAttempts: 2,
+  })
+  settings.setDisableSeekbarOverride(true)
+  settings.setButtonCheckEnabled(true)
+  debug.setAnswerTimeLimitOverride(15)
+  debug.setMaxAttemptsOverride(3)
+  debug.setJumpToRevealPeriodOverride(false)
+  debug.setHideVideoPlayerDuringAnswerOverride(false)
+  await flush()
+  const calls = vi
+    .mocked(service.logSettingChanged)
+    .mock.calls.map(([event]) => [event.settingName, event.settingValue])
+  expect(calls).toEqual(
+    expect.arrayContaining([
+      ['seek_allowed', false],
+      ['button_check_enabled', true],
+      ['answer_time_limit', 15],
+      ['max_attempts', 3],
+      ['jump_to_reveal_period', false],
+      ['hide_video_player_during_answer', false],
+    ]),
+  )
+  expect(calls).toHaveLength(6)
+})
+it('複数試行・スキップ・無解答のpayloadと完走集計を一度だけ送信する', async () => {
+  const service = analytics()
+  await startQuiz()
+  const session = vi.mocked(service.logQuizSessionStarted).mock.calls[0][0].quizSessionId
+  store.setCurrentQuestionIndex(0)
+  store.initializeForQuestion()
+  store.transitionToState(GameState.ANSWERING)
+  store.recordButtonPress(1.2)
+  store.handleAnswerSubmit('不正解')
+  await flush()
+  expect(service.logAnswerSubmitted).not.toHaveBeenCalled()
+  store.recordButtonPress(2.5)
+  store.handleAnswerSubmit('東京')
+  await flush()
+  const common = {
+    quizSessionId: session,
+    quizId: 'sample',
+    videoId: quizFixture().videoId,
+    videoTitle: 'Quiz',
+    questionIndex: 0,
+    questionText: undefined,
+  }
+  expect(vi.mocked(service.logAnswerSubmitted).mock.calls.map(([event]) => event)).toEqual([
+    {
+      ...common,
+      attemptIndex: 1,
+      answer: '不正解',
+      isCorrect: false,
+      isFinalAttempt: false,
+      submissionType: 'manual',
+      timeUntilPressSec: 1.2,
+    },
+    {
+      ...common,
+      attemptIndex: 2,
+      answer: '東京',
+      isCorrect: true,
+      isFinalAttempt: true,
+      submissionType: 'manual',
+      timeUntilPressSec: 2.5,
+    },
+  ])
+  expect(service.logQuestionAnswered).toHaveBeenCalledExactlyOnceWith({
+    ...common,
+    result: 'correct',
+    attemptsUsed: 2,
+    answers: '不正解|東京',
+    timesUntilPressSec: '1.2|2.5',
+    firstTimeUntilPressSec: 1.2,
+  })
+  const noAttempts = { timesUntilPress: [], submissionTypes: [] }
+  store.recordResult(2, false, '大阪', [], true, noAttempts)
+  store.recordResult(3, false, '京都', [], false, noAttempts)
+  store.transitionToState(GameState.FINISHED)
+  await flush()
+  expect(vi.mocked(service.logQuestionAnswered).mock.calls.map(([event]) => event.result)).toEqual([
+    'correct',
+    'skipped',
+    'unanswered',
+  ])
+  expect(service.logQuizSessionCompleted).toHaveBeenCalledExactlyOnceWith({
+    quizSessionId: session,
+    quizId: 'sample',
+    videoId: quizFixture().videoId,
+    videoTitle: 'Quiz',
+    totalQuestions: 3,
+    correctCount: 1,
+    incorrectCount: 0,
+    skippedCount: 1,
+    unansweredCount: 1,
+    totalAttempts: 2,
+  })
+  store.transitionToState(GameState.FINISHED)
+  store.recordResult(3, false, '京都', [], false, noAttempts)
+  await flush()
+  expect(service.logQuestionAnswered).toHaveBeenCalledTimes(3)
+  expect(service.logAnswerSubmitted).toHaveBeenCalledTimes(2)
+  expect(service.logQuizSessionCompleted).toHaveBeenCalledTimes(1)
+})
+it('リプレイでセッションIDと送信済み件数を更新しtimeoutの空解答も記録する', async () => {
+  const service = analytics()
+  await startQuiz()
+  store.recordResult(1, false, '東京', [], true, { timesUntilPress: [], submissionTypes: [] })
+  store.transitionToState(GameState.FINISHED)
+  await flush()
+  useSettingsStore().setDisableSeekbarOverride(false)
+  await flush()
+  expect(service.logSettingChanged).not.toHaveBeenCalled()
+  host.querySelector<HTMLButtonElement>('.replay-button')!.click()
+  await flush()
+  expect(store.currentState).toBe(GameState.READY)
+  space()
+  await flush()
+  const starts = vi.mocked(service.logQuizSessionStarted).mock.calls
+  expect(starts).toHaveLength(2)
+  expect(starts[1][0].quizSessionId).not.toBe(starts[0][0].quizSessionId)
+  expect(starts[1][0].seekAllowed).toBe(true)
+  store.setCurrentQuestionIndex(0)
+  store.initializeForQuestion()
+  store.recordButtonPress(0.4)
+  store.transitionToState(GameState.ANSWERING)
+  store.handleAnswerSubmit('', 'timeout')
+  store.recordResult(1, false, '東京', [''], false)
+  await flush()
+  expect(service.logAnswerSubmitted).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      quizSessionId: starts[1][0].quizSessionId,
+      submissionType: 'timeout',
+      answer: '',
+      isCorrect: false,
+      isFinalAttempt: true,
+      timeUntilPressSec: 0.4,
+    }),
+  )
+  expect(service.logQuestionAnswered).toHaveBeenCalledTimes(2)
+  expect(service.logQuestionAnswered).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      result: 'incorrect',
+      attemptsUsed: 1,
+      quizSessionId: starts[1][0].quizSessionId,
+    }),
+  )
 })
