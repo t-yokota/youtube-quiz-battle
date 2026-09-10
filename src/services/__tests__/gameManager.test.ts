@@ -996,7 +996,7 @@ describe('External Pause: ANSWERING中の可視性変化', () => {
 // ============================================================================
 
 describe('External Pause: 再生停滞（stall）検出', () => {
-  it('壁時計が STALL_WALL_MS 以上経過し動画時間が進まない場合に pauseVideo が呼ばれる', () => {
+  it('壁時計が STALL_WALL_MS 以上経過し動画時間が進まない場合にゲーム進行を保留する', () => {
     const player = makePlayerMock()
     ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PLAYING)
     const { gm, store } = makeGameManager(makeQuizData(), player)
@@ -1008,7 +1008,7 @@ describe('External Pause: 再生停滞（stall）検出', () => {
     // 壁時計が STALL_WALL_MS+1 経過、動画時間はほぼ未進
     gm.checkStall(stalledWall, STALL_VIDEO_DELTA_SEC - 0.01)
 
-    expect(player.pauseVideo).toHaveBeenCalled()
+    expect(player.pauseVideo).not.toHaveBeenCalled()
     expect(gm.isExternalPaused()).toBe(true)
   })
 
