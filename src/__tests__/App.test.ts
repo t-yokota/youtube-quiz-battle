@@ -354,3 +354,23 @@ it('App終了後のストア変更ではAnalyticsを送信しない', async () =
   expect(service.logQuestionAnswered).not.toHaveBeenCalled()
   expect(service.logQuizSessionCompleted).not.toHaveBeenCalled()
 })
+
+it('設定からテーマ選択へ移っても停止を維持し、閉じたら再生する', async () => {
+  const player = await vi.mocked(createYouTubePlayerManager).mock.results.at(-1)!.value
+  host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+  await flush()
+  space()
+  await flush()
+  host.querySelector<HTMLButtonElement>('[aria-label="設定を開く"]')!.click()
+  await flush()
+  vi.mocked(player.playVideo).mockClear()
+  const settings = Array.from(document.querySelectorAll('[role="dialog"][aria-label="設定"]')).at(
+    -1,
+  )!
+  settings.querySelector<HTMLButtonElement>('.theme-button')!.click()
+  await flush()
+  expect(player.playVideo).not.toHaveBeenCalled()
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+  await flush()
+  expect(player.playVideo).toHaveBeenCalledTimes(1)
+})

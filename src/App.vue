@@ -51,8 +51,8 @@ const isThemeSwitcherOpen = ref(false)
 
 const handleOpenThemeSwitcher = () => {
   // 設定モーダルから開くため、先に閉じてから表示する
-  isSettingsOpen.value = false
   isThemeSwitcherOpen.value = true
+  isSettingsOpen.value = false
 }
 
 // 画面向き検出（横画面時は External Pause で一時停止し、ダイアログを表示）
@@ -60,6 +60,12 @@ const { isLandscape: isOrientationOpen, stop: stopOrientationGuard } = useOrient
   session.pauseForOrientation,
   session.resumeForOrientation,
 )
+
+// 同期監視でも設定→テーマ切替中に停止を解除しないよう、開く順序を揃える。
+watch(() => isSettingsOpen.value || isThemeSwitcherOpen.value, session.setSettingsOpen, {
+  flush: 'sync',
+})
+if (isOrientationOpen.value) session.pauseForOrientation()
 
 // --- イベントハンドラ ---
 

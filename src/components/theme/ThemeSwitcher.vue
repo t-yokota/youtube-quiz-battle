@@ -191,7 +191,9 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
       >
         <div class="switcher-heading">
           <p class="switcher-title">UIをえらぶ</p>
-          <p class="switcher-hint">上下にスクロール · タップで適用</p>
+          <p class="switcher-hint">
+            上下にスクロール · タップで適用<br />解答中の制限時間は止まりません。
+          </p>
         </div>
 
         <div ref="railRef" class="rail">

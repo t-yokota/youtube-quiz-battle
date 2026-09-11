@@ -158,3 +158,18 @@ it('早押しと解答を委譲し、画面向きによる停止・再開を維�
   expect(store.currentState).toBe(GameState.WAITING)
   expect(store.results[0]).toMatchObject({ isCorrect: true, userAnswers: ['東京'] })
 })
+
+it('Player初期化前の設定・横画面状態を引き継ぎ、最後の解除まで再生しない', async () => {
+  mount()
+  session.setSettingsOpen(true)
+  session.pauseForOrientation()
+  await flush()
+  const { player } = fakePlayer()
+  session.handlePlayerReady(player)
+  store.transitionToState(GameState.TALKING)
+  session.setSettingsOpen(false)
+  expect(player.playVideo).not.toHaveBeenCalled()
+  session.resumeForOrientation()
+  // 開く前から再生していなかったので、閉じるだけでは再開しない。
+  expect(player.playVideo).not.toHaveBeenCalled()
+})

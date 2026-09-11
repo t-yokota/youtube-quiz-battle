@@ -20,6 +20,22 @@ export function useQuizSession() {
   const gameLoop = useGameLoop()
   const gameManager = shallowRef<GameManager | null>(null)
   const playerManagerRef = shallowRef<YouTubePlayerManager | null>(null)
+  const settingsOpen = ref(false)
+  const orientationOpen = ref(false)
+  watch(
+    [gameManager, settingsOpen, orientationOpen],
+    ([manager, settings, orientation]) => {
+      if (!manager) return
+      for (const [reason, open] of [
+        ['settings', settings],
+        ['orientation', orientation],
+      ] as const) {
+        if (open) manager.pauseExternal(reason)
+        else manager.resumeExternalIfReason(reason)
+      }
+    },
+    { flush: 'sync' },
+  )
   const quizData = ref<QuizData | null>(null)
   const initError = ref<{ title: string; message: string } | null>(null)
   // 音声管理（App レベルで単一インスタンスを保持）
@@ -145,7 +161,14 @@ export function useQuizSession() {
     pressButton: () => gameManager.value?.handleButtonPress(),
     submitAnswer: (answer: string) => gameManager.value?.handleAnswerSubmit(answer),
     replay: () => gameManager.value?.handleReplay(),
-    pauseForOrientation: () => gameManager.value?.pauseExternalForOrientation(),
-    resumeForOrientation: () => gameManager.value?.resumeExternalIfReason('orientation'),
+    setSettingsOpen: (open: boolean) => {
+      settingsOpen.value = open
+    },
+    pauseForOrientation: () => {
+      orientationOpen.value = true
+    },
+    resumeForOrientation: () => {
+      orientationOpen.value = false
+    },
   }
 }
