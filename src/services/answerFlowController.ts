@@ -24,6 +24,7 @@ export class AnswerFlowController {
 
   // 解答カウントダウンタイマー（ANSWERING中の制限時間管理）
   private answerCountdownInterval: number | null = null
+  private answerDeadline: number | null = null
 
   constructor(
     playerControl: InternalPlayerControl,
@@ -55,14 +56,17 @@ export class AnswerFlowController {
   }
 
   /**
-   * 解答カウントダウンタイマーを再開（External Pause復帰時用）
+   * 解答カウントダウン監視を開始（External Pauseでは呼び直さない）
    * answerTimeRemainingはリセットせず、現在値から継続する
    */
   resumeAnswerCountdown(): void {
     this.stopAnswerCountdown()
 
+    this.answerDeadline = performance.now() + this.gameStore.answerTimeRemaining * 1000
     this.answerCountdownInterval = window.setInterval(() => {
-      const remaining = this.gameStore.decrementAnswerTime()
+      const remaining = Math.max(0, Math.ceil((this.answerDeadline! - performance.now()) / 1000))
+      const elapsed = this.gameStore.answerTimeRemaining - remaining
+      if (elapsed > 0) this.gameStore.decrementAnswerTime(elapsed)
 
       if (remaining <= 0) {
         this.handleAnswerTimeout()
@@ -79,6 +83,7 @@ export class AnswerFlowController {
    * 解答カウントダウンタイマーを停止
    */
   stopAnswerCountdown(): void {
+    this.answerDeadline = null
     if (this.answerCountdownInterval !== null) {
       window.clearInterval(this.answerCountdownInterval)
       this.answerCountdownInterval = null
@@ -91,6 +96,7 @@ export class AnswerFlowController {
    * その時点の入力内容で正誤判定を行う（未入力なら空文字 = 不正解）。
    */
   private handleAnswerTimeout(): void {
+    this.gameStore.decrementAnswerTime(this.gameStore.answerTimeRemaining)
     this.stopAnswerCountdown()
     logger.log('[AnswerFlowController] Answer timeout')
 
@@ -106,6 +112,10 @@ export class AnswerFlowController {
    * gameStoreの判定を呼び出し、結果に応じて動画再開・タイマー停止を行う
    */
   handleAnswerSubmit(answer: string): void {
+    if (this.answerDeadline !== null && performance.now() >= this.answerDeadline) {
+      this.handleAnswerTimeout()
+      return
+    }
     this.stopAnswerCountdown()
 
     const result = this.gameStore.handleAnswerSubmit(answer)

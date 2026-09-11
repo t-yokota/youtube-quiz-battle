@@ -12,8 +12,8 @@ import type { InternalPlayerControl } from './internalPlayerControl'
 import type { ThresholdEngine } from './thresholdEngine'
 import type { AnswerFlowController } from './answerFlowController'
 
-type ExternalPauseReason = 'visibility' | 'user' | 'stall' | 'orientation'
-type ExternalResumeTarget = 'video' | 'answer-countdown' | 'none'
+export type ExternalPauseReason = 'visibility' | 'user' | 'stall' | 'orientation' | 'settings'
+type ExternalResumeTarget = 'video' | 'none'
 
 function isVideoPlaybackState(state: GameState): boolean {
   return (
@@ -26,7 +26,7 @@ function isVideoPlaybackState(state: GameState): boolean {
 
 /**
  * External Pause 制御
- * 外部要因による一時停止（visibility/user/stall/orientation）の開始・解除、
+ * 外部要因による一時停止（visibility/user/stall/orientation/settings）の開始・解除、
  * visibility/pagehide/pageshow ハンドラ、プレイヤー状態変化ハンドラ、
  * stall 検出、YouTube rewind 補正を担う。
  */
@@ -35,11 +35,13 @@ export class ExternalPauseController {
   private gameStore: ReturnType<typeof useGameStore>
   private timeManager: TimeManager
   private thresholdEngine: ThresholdEngine
-  private answerFlow: AnswerFlowController
 
   // External Pause関連
-  private externalPaused: boolean = false
-  private externalPausedReason: ExternalPauseReason | null = null
+  private pauseReasons = new Set<ExternalPauseReason>()
+
+  private get externalPaused(): boolean {
+    return this.pauseReasons.size > 0
+  }
   private externalResumeTarget: ExternalResumeTarget = 'none'
 
   // 再生停滞（stall）の検出用
@@ -66,14 +68,20 @@ export class ExternalPauseController {
     gameStore: ReturnType<typeof useGameStore>,
     timeManager: TimeManager,
     thresholdEngine: ThresholdEngine,
-    answerFlow: AnswerFlowController,
+    _answerFlow: AnswerFlowController,
     private readonly acceptVideoEnd: () => boolean = () => true,
   ) {
     this.playerControl = playerControl
     this.gameStore = gameStore
     this.timeManager = timeManager
     this.thresholdEngine = thresholdEngine
-    this.answerFlow = answerFlow
+    this.playerControl.setPlaybackGuard(() => {
+      if (this.destroyed) return false
+      if (!this.externalPaused) return true
+      // 解答期限後などの再生要求は、停止理由がすべて解除されるまで保留する。
+      this.externalResumeTarget = 'video'
+      return false
+    })
   }
 
   /**
@@ -101,7 +109,7 @@ export class ExternalPauseController {
    * シークのジャンプだけが検出される。visibility 等は YouTube 巻き戻り補正のためスキップを維持
    */
   shouldSkipTimeUpdate(): boolean {
-    return this.externalPaused && this.externalPausedReason !== 'user'
+    return [...this.pauseReasons].some((reason) => reason !== 'user')
   }
 
   /**
@@ -110,47 +118,44 @@ export class ExternalPauseController {
    */
   pauseExternal(reason: ExternalPauseReason): void {
     if (this.destroyed) return
-    if (this.externalPaused && (this.externalPausedReason !== 'stall' || reason === 'stall')) return
-
-    // 一時停止開始
-    this.externalPaused = true
-    this.externalPausedReason = reason
-    this.externalResumeTarget =
-      this.gameStore.currentState === GameState.ANSWERING
-        ? 'answer-countdown'
-        : reason !== 'user' && isVideoPlaybackState(this.gameStore.currentState)
+    if (this.pauseReasons.has(reason)) return
+    if (!this.externalPaused) {
+      this.externalResumeTarget =
+        reason !== 'user' &&
+        isVideoPlaybackState(this.gameStore.currentState) &&
+        (this.playerControl.isPlaybackStateExpected(YouTubePlayerState.PLAYING) ||
+          this.playerControl.getPlayerState() === YouTubePlayerState.PLAYING ||
+          this.playerControl.getPlayerState() === YouTubePlayerState.BUFFERING)
           ? 'video'
           : 'none'
-
-    const currentVideoTime = this.playerControl.getCurrentTime()
-    const previousVideoTime = this.timeManager.getPreviousVideoTime()
-
-    logger.log('[ExternalPauseController] External pause started:', reason, {
-      current: currentVideoTime,
-      previous: previousVideoTime,
-    })
-
-    // 動画を停止
-    // ANSWERING中は既に動画停止済みなのでpauseVideo()不要、カウントダウンのみ停止
-    if (this.externalResumeTarget === 'answer-countdown') {
-      this.answerFlow.stopAnswerCountdown()
-    } else if (reason !== 'user' && reason !== 'stall') {
-      this.playerControl.pauseVideo()
     }
+    // 能動的な停止が重なったら、停滞待ちはその停止に引き継ぐ。
+    this.pauseReasons = new Set(
+      [...this.pauseReasons].filter((r) => reason === 'stall' || r !== 'stall'),
+    )
+    this.pauseReasons.add(reason)
+    if (
+      reason !== 'user' &&
+      reason !== 'stall' &&
+      this.gameStore.currentState !== GameState.ANSWERING
+    )
+      this.playerControl.pauseVideo()
   }
 
   /**
    * External Pauseを解除
    */
-  resumeExternal(): void {
+  resumeExternal(reason?: ExternalPauseReason): void {
     if (this.destroyed) return
     if (!this.externalPaused) return
 
     // 一時停止解除
-    const prevReason = this.externalPausedReason
+    const prevReason = reason ?? [...this.pauseReasons].join(',')
+    this.pauseReasons = reason
+      ? new Set([...this.pauseReasons].filter((r) => r !== reason))
+      : new Set()
+    if (this.externalPaused) return
     const resumeTarget = this.externalResumeTarget
-    this.externalPaused = false
-    this.externalPausedReason = null
     this.externalResumeTarget = 'none'
 
     const previousVideoTime = this.timeManager.getPreviousVideoTime()
@@ -195,20 +200,9 @@ export class ExternalPauseController {
       previous: this.timeManager.getPreviousVideoTime(),
     })
 
-    // 動画を再開
-    // ANSWERING中は動画再開せず、カウントダウン再開のみ
-    if (
-      resumeTarget === 'answer-countdown' &&
-      this.gameStore.currentState === GameState.ANSWERING
-    ) {
-      this.answerFlow.resumeAnswerCountdown()
-    } else if (resumeTarget === 'video' && isVideoPlaybackState(this.gameStore.currentState)) {
+    // 解答中は期限が動き続けるため、復帰時にタイマーを作り直さない。
+    if (resumeTarget === 'video' && isVideoPlaybackState(this.gameStore.currentState)) {
       this.playerControl.playVideo()
-    } else {
-      logger.log('[ExternalPauseController] Resume skipped for current game state:', {
-        resumeTarget,
-        currentState: this.gameStore.currentState,
-      })
     }
   }
 
@@ -221,6 +215,7 @@ export class ExternalPauseController {
     const playerState = this.playerControl.getPlayerState()
     const currentState = this.gameStore.currentState
     if (
+      this.externalPaused ||
       currentState === GameState.ANSWERING ||
       (isVideoPlaybackState(currentState) &&
         (playerState === YouTubePlayerState.PLAYING ||
@@ -238,8 +233,8 @@ export class ExternalPauseController {
    * @param reason 解除条件として照合する一時停止の要因
    */
   resumeExternalIfReason(reason: ExternalPauseReason): void {
-    if (this.externalPausedReason === reason) {
-      this.resumeExternal()
+    if (this.pauseReasons.has(reason)) {
+      this.resumeExternal(reason)
     }
   }
 
@@ -270,8 +265,8 @@ export class ExternalPauseController {
 
     this.pageShowHandler = () => {
       logger.log('[ExternalPauseController] Page show', {
-        externalPausedReason: this.externalPausedReason,
-        willResume: this.externalPausedReason === 'visibility',
+        pauseReasons: [...this.pauseReasons],
+        willResume: this.pauseReasons.has('visibility'),
       })
       this.resumeFromVisibility()
     }
@@ -282,7 +277,7 @@ export class ExternalPauseController {
     const currentState = this.gameStore.currentState
     const playerState = this.playerControl.getPlayerState()
 
-    if (currentState === GameState.ANSWERING) {
+    if (this.externalPaused || currentState === GameState.ANSWERING) {
       this.pauseExternal('visibility')
       return
     }
@@ -307,8 +302,8 @@ export class ExternalPauseController {
   }
 
   private resumeFromVisibility(): void {
-    if (this.externalPausedReason === 'visibility') {
-      this.resumeExternal()
+    if (this.pauseReasons.has('visibility')) {
+      this.resumeExternal('visibility')
     }
   }
 
@@ -327,8 +322,7 @@ export class ExternalPauseController {
         if (!this.acceptVideoEnd()) return
         if (this.externalPaused) {
           logger.log('[ExternalPauseController] Video ended - clearing external pause')
-          this.externalPaused = false
-          this.externalPausedReason = null
+          this.pauseReasons = new Set()
           this.externalResumeTarget = 'none'
         }
         if (this.gameStore.currentState !== GameState.FINISHED) {
@@ -384,8 +378,8 @@ export class ExternalPauseController {
           return
         }
 
-        if (this.externalPausedReason === 'stall') {
-          this.resumeExternal()
+        if (this.pauseReasons.has('stall')) {
+          this.resumeExternal('stall')
           return
         }
 
@@ -396,8 +390,8 @@ export class ExternalPauseController {
 
         // Player UIでユーザー一時停止から再開した場合は、既に再生が始まっているため
         // External Pause状態だけを解除し、playVideo()は重ねて呼ばない。
-        if (this.externalPausedReason === 'user') {
-          this.resumeExternal()
+        if (this.pauseReasons.size === 1 && this.pauseReasons.has('user')) {
+          this.resumeExternal('user')
         } else if (this.externalPaused) {
           // visibility / orientation / stall 中にPlayerが独自に再生した場合は、対応する
           // ライフサイクル復帰処理まで停止を維持する。
@@ -436,17 +430,17 @@ export class ExternalPauseController {
     // 再生停滞から復帰
     if (
       this.externalPaused &&
-      this.externalPausedReason === 'stall' &&
+      this.pauseReasons.has('stall') &&
       videoDelta >= STALL_VIDEO_DELTA_SEC
     ) {
-      this.resumeExternal()
+      this.resumeExternal('stall')
     }
 
     // 毎tickではなく、最後に進行を確認した時刻から停滞時間を積算する。
     if (
       !playbackIntended ||
       !isVideoPlaybackState(this.gameStore.currentState) ||
-      (this.externalPaused && this.externalPausedReason !== 'stall') ||
+      (this.externalPaused && !this.pauseReasons.has('stall')) ||
       Math.abs(videoDelta) >= STALL_VIDEO_DELTA_SEC ||
       currentWallMs < this.lastWallMs
     ) {
@@ -481,8 +475,7 @@ export class ExternalPauseController {
    * 直後の seekTo(0) が発火させる spurious PLAYING の抑止状態も開始する
    */
   resetPauseState(): void {
-    this.externalPaused = false
-    this.externalPausedReason = null
+    this.pauseReasons = new Set()
     this.externalResumeTarget = 'none'
     this.gateWarmupActive = false
     this.replayResetPending = true

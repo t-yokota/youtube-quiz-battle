@@ -35,6 +35,91 @@ describe('ゲーム進行の境界', () => {
     }
     return { store, fake, tick, advanceTo, data }
   }
+  it.each(['settings', 'orientation', 'visibility'] as const)(
+    '%s中も解答期限は進み、時間切れでは動画を再開しない',
+    (reason) => {
+      const { store, fake, advanceTo } = setup({ answerTimeLimit: 3, maxAttempts: 1 })
+      advanceTo(11)
+      manager.handleButtonPress()
+      vi.advanceTimersByTime(100)
+      manager.pauseExternal(reason)
+      vi.mocked(fake.player.playVideo).mockClear()
+      vi.advanceTimersByTime(2000)
+      expect(store.answerTimeRemaining).toBe(1)
+      vi.advanceTimersByTime(1000)
+      expect(store.currentState).toBe(GameState.WAITING)
+      expect(store.results[0]?.submissionTypes).toEqual(['timeout'])
+      expect(fake.player.playVideo).not.toHaveBeenCalled()
+      manager.resumeExternalIfReason(reason)
+      expect(fake.player.playVideo).toHaveBeenCalledTimes(1)
+    },
+  )
+  it.each([
+    ['settings', 'orientation'],
+    ['orientation', 'settings'],
+    ['settings', 'visibility'],
+  ] as const)('%sと%sが重なったら最後の解除まで停止する', (first, second) => {
+    const { fake, advanceTo } = setup()
+    advanceTo(11)
+    manager.pauseExternal(first)
+    manager.pauseExternal(second)
+    vi.mocked(fake.player.playVideo).mockClear()
+    manager.resumeExternalIfReason(first)
+    expect(manager.isExternalPaused()).toBe(true)
+    expect(fake.player.playVideo).not.toHaveBeenCalled()
+    manager.resumeExternalIfReason(second)
+    expect(fake.player.playVideo).toHaveBeenCalledTimes(1)
+  })
+  it('手動停止中に設定と横画面警告を開閉しても再生しない', () => {
+    const { fake, advanceTo } = setup()
+    advanceTo(11)
+    fake.notify(YouTubePlayerState.PAUSED)
+    manager.pauseExternal('settings')
+    manager.pauseExternalForOrientation()
+    vi.mocked(fake.player.playVideo).mockClear()
+    manager.resumeExternalIfReason('settings')
+    manager.resumeExternalIfReason('orientation')
+    expect(fake.player.playVideo).not.toHaveBeenCalled()
+    expect(manager.isExternalPaused()).toBe(true)
+    fake.notify(YouTubePlayerState.PLAYING)
+    expect(manager.isExternalPaused()).toBe(false)
+  })
+  it('横画面警告中にタブへ戻っても警告を閉じるまでは再生しない', () => {
+    const { fake, advanceTo } = setup()
+    advanceTo(11)
+    manager.pauseExternalForOrientation()
+    window.dispatchEvent(new Event('pagehide'))
+    vi.mocked(fake.player.playVideo).mockClear()
+    manager.resumeExternalIfReason('orientation')
+    expect(fake.player.playVideo).not.toHaveBeenCalled()
+    window.dispatchEvent(new Event('pageshow'))
+    expect(fake.player.playVideo).toHaveBeenCalledTimes(1)
+  })
+  it.each(['tick', 'submit'])('タイマー通知が遅れても期限後の%sで時間切れになる', (action) => {
+    const { store, advanceTo } = setup({ answerTimeLimit: 3, maxAttempts: 1 })
+    advanceTo(11)
+    manager.handleButtonPress()
+    vi.advanceTimersByTime(100)
+    const now = performance.now()
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(now + 4000)
+    try {
+      if (action === 'tick') vi.advanceTimersByTime(1000)
+      else manager.handleAnswerSubmit('東京')
+      expect(store.results[0]?.submissionTypes).toEqual(['timeout'])
+      expect(store.results[0]?.isCorrect).toBe(false)
+    } finally {
+      clock.mockRestore()
+    }
+  })
+  it('開始演出中に設定を開いても、閉じた後に保留した動画を開始する', () => {
+    const { store, fake } = setup({ buttonCheckEnabled: true })
+    manager.pauseExternal('settings')
+    vi.advanceTimersByTime(4000)
+    expect(store.currentState).toBe(GameState.TALKING)
+    expect(fake.player.playVideo).not.toHaveBeenCalled()
+    manager.resumeExternalIfReason('settings')
+    expect(fake.player.playVideo).toHaveBeenCalledTimes(1)
+  })
   it('0秒開始は一度だけ開始し、リプレイでも開始する', () => {
     const { store, tick, advanceTo } = setup({}, true)
     tick(0)

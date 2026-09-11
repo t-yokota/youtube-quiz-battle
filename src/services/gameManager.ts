@@ -17,7 +17,11 @@ import { logger } from '@/utils/logger'
 import { createInternalPlayerControl, InternalPlayerControl } from './internalPlayerControl'
 import { createThresholdEngine, ThresholdEngine } from './thresholdEngine'
 import { createAnswerFlowController, AnswerFlowController } from './answerFlowController'
-import { createExternalPauseController, ExternalPauseController } from './externalPauseController'
+import {
+  createExternalPauseController,
+  ExternalPauseController,
+  type ExternalPauseReason,
+} from './externalPauseController'
 import type { AudioManager } from './audioManager'
 import { SOUND_TYPE } from '@/constants/audio'
 
@@ -273,15 +277,8 @@ export class GameManager {
           this.gameStore.transitionToState(GameState.TALKING)
           // 動画再生開始は少し遅らせ、正解音と動画音声の重なりを避ける
           this.scheduleButtonStep(() => {
-            // 遅延中にタブ切替等で External Pause になった場合は再生しない
-            // （復帰時の resumeExternal が再生を担う）。リセット等で TALKING を
-            // 離れた場合も再生しない
-            if (
-              this.externalPause.isExternalPaused() ||
-              this.gameStore.currentState !== GameState.TALKING
-            ) {
-              return
-            }
+            // 外部停止中の再生要求は制御層で保留し、最後の停止解除後に開始する。
+            if (this.gameStore.currentState !== GameState.TALKING) return
             this.playerControl.playVideo()
           }, VIDEO_START_DELAY_MS)
         }, BUTTON_CHECK_RELEASE_MS)
@@ -308,7 +305,7 @@ export class GameManager {
    * External Pauseを開始
    * @param reason 一時停止の要因
    */
-  pauseExternal(reason: 'visibility' | 'user' | 'stall' | 'orientation'): void {
+  pauseExternal(reason: ExternalPauseReason): void {
     this.externalPause.pauseExternal(reason)
   }
 
@@ -330,7 +327,7 @@ export class GameManager {
    * 指定した reason で一時停止中の場合のみ External Pauseを解除
    * @param reason 解除条件として照合する一時停止の要因
    */
-  resumeExternalIfReason(reason: 'visibility' | 'user' | 'stall' | 'orientation'): void {
+  resumeExternalIfReason(reason: ExternalPauseReason): void {
     this.externalPause.resumeExternalIfReason(reason)
   }
 

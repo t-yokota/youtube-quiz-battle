@@ -10,6 +10,7 @@ type PlaybackIntent = typeof YouTubePlayerState.PLAYING | typeof YouTubePlayerSt
  * 最後に指示した再生状態と通知された状態を比較して内部操作由来かを判定する。
  */
 export class InternalPlayerControl {
+  private playbackGuard: () => boolean = () => true
   private playerManager: YouTubePlayerManager
   private playbackIntent: PlaybackIntent = YouTubePlayerState.PAUSED
 
@@ -53,8 +54,16 @@ export class InternalPlayerControl {
     this.playerManager.onStateChange(cb)
   }
 
+  setPlaybackGuard(guard: () => boolean): void {
+    this.playbackGuard = guard
+  }
+
   // 再生意図を先に更新してからPlayerへ委譲する
   playVideo(): void {
+    if (!this.playbackGuard()) {
+      this.pauseVideo()
+      return
+    }
     const previousIntent = this.playbackIntent
     this.playbackIntent = YouTubePlayerState.PLAYING
     try {

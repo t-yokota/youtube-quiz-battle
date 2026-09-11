@@ -339,10 +339,10 @@ export const useGameStore = defineStore('game', () => {
   }
 
   /**
-   * answerTimeRemaining を 1 減らし、減算後の値を返す
+   * answerTimeRemaining を経過秒数分減らし、減算後の値を返す
    */
-  function decrementAnswerTime(): number {
-    answerTimeRemaining.value--
+  function decrementAnswerTime(seconds = 1): number {
+    answerTimeRemaining.value -= seconds
     return answerTimeRemaining.value
   }
 

@@ -962,7 +962,7 @@ describe('External Pause: ANSWERING中の可視性変化', () => {
     vi.useRealTimers()
   })
 
-  it('ANSWERING中にタブを隠すとカウントダウンが停止し、戻ると再開する', () => {
+  it('ANSWERING中にタブを隠すとカウントダウンが継続し、復帰しても期限を延長しない', () => {
     const player = makePlayerMock()
     // ANSWERING中は動画がPAUSED状態
     ;(player.getPlayerState as ReturnType<typeof vi.fn>).mockReturnValue(YouTubePlayerState.PAUSED)
@@ -980,21 +980,21 @@ describe('External Pause: ANSWERING中の可視性変化', () => {
     vi.advanceTimersByTime(2000)
     expect(store.answerTimeRemaining).toBe(8)
 
-    // タブを隠す → カウントダウン停止
+    // タブを隠しても期限は維持
     Object.defineProperty(document, 'hidden', { value: true, configurable: true })
     document.dispatchEvent(new Event('visibilitychange'))
 
-    // 3秒経過してもカウントダウンは停止したまま
+    // 非表示中も3秒経過 → 5
     vi.advanceTimersByTime(3000)
-    expect(store.answerTimeRemaining).toBe(8)
+    expect(store.answerTimeRemaining).toBe(5)
 
-    // タブを戻す → カウントダウン再開
+    // タブを戻してもタイマーを再生成しない
     Object.defineProperty(document, 'hidden', { value: false, configurable: true })
     document.dispatchEvent(new Event('visibilitychange'))
 
-    // 2秒経過 → 6
+    // 2秒経過 → 3
     vi.advanceTimersByTime(2000)
-    expect(store.answerTimeRemaining).toBe(6)
+    expect(store.answerTimeRemaining).toBe(3)
   })
 })
 
