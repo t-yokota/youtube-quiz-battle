@@ -8,6 +8,8 @@ import {
   VIDEO_START_DELAY_MS,
   GATE_WARMUP_PLAY_MS,
   SEEK_TOLERANCE_SEC,
+  INTERNAL_SEEK_TIMEOUT_MS,
+  END_SEEK_RETRY_MS,
 } from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
 import type { useSettingsStore } from '@/stores/settingsStore'
@@ -38,6 +40,12 @@ export class GameManager {
   // ゲートのウォームアップ停止タイマー（ボタン押下と競合しないよう管理する）
   private warmupStopTimer: number | null = null
   private buttonTimers = new Set<number>()
+  private endRecovery: {
+    target: number
+    resume: boolean
+    retryAt: number
+    deadline: number
+  } | null = null
   private destroyed = false
 
   private scheduleButtonStep(callback: () => void, delay: number): void {
@@ -57,6 +65,7 @@ export class GameManager {
   }
 
   private cancelPendingTimers(): void {
+    this.endRecovery = null
     for (const timer of this.buttonTimers) window.clearTimeout(timer)
     this.buttonTimers.clear()
     this.clearWarmupStop(false)
@@ -360,32 +369,87 @@ export class GameManager {
     const state = this.gameStore.currentState
     if (state === GameState.READY || state === GameState.LOADING || state === GameState.FINISHED)
       return false
+    if (this.endRecovery) return false
+    const target = this.timeManager.getInternalSeekTarget()
+    if (target === null && state !== GameState.ANSWERING && !this.isSeekbarDisabled()) return true
+
     const current = this.playerControl.getCurrentTime()
-    if (this.timeManager.shouldWaitForInternalSeek(current)) return false
-    if (state !== GameState.ANSWERING && !this.isSeekbarDisabled()) return true
-
     const duration = this.playerControl.getDuration()
-    // 戻した後に届いた古いENDEDを、自然な終了と誤認しない。
-    if (!Number.isFinite(current) || !Number.isFinite(duration) || duration <= 0) return false
-    if (current < duration - SEEK_TOLERANCE_SEC) return false
-    if (!this.timeManager.isSeekDetected(current) && state !== GameState.ANSWERING) return true
-
     const previous = this.timeManager.getPreviousVideoTime()
-    const resumeVideo =
+    // 現在時刻だけではなく、最後に確認した正常位置も終端付近なら自然終了とする。
+    // ENDEDより時刻通知が遅れても、離れた位置からの終了を単に無視せず復帰させる。
+    if (
+      target === null &&
       state !== GameState.ANSWERING &&
-      !this.externalPause.isExternalPaused() &&
-      this.playerControl.isPlaybackStateExpected(YouTubePlayerState.PLAYING)
-    this.timeManager.beginInternalSeek(previous)
+      Number.isFinite(duration) &&
+      duration > 0 &&
+      Math.abs(previous - duration) <= SEEK_TOLERANCE_SEC &&
+      Math.abs(current - duration) <= SEEK_TOLERANCE_SEC
+    )
+      return true
+
+    const now = performance.now()
+    this.endRecovery = {
+      target: target ?? previous,
+      resume:
+        state !== GameState.ANSWERING &&
+        !this.externalPause.isExternalPaused() &&
+        this.playerControl.isPlaybackStateExpected(YouTubePlayerState.PLAYING),
+      retryAt: now,
+      deadline: now + INTERNAL_SEEK_TIMEOUT_MS,
+    }
+    this.timeManager.beginInternalSeek(this.endRecovery.target)
+    this.retryEndRecovery()
+    return false
+  }
+
+  private retryEndRecovery(): void {
+    const recovery = this.endRecovery
+    if (!recovery) return
+    this.endRecovery = { ...recovery, retryAt: performance.now() + END_SEEK_RETRY_MS }
     try {
-      this.playerControl.seekTo(previous)
+      // 終端でplayVideoが先頭へ戻す場合にも、最後の指示を目的位置へのseekにする。
+      if (
+        recovery.resume &&
+        !this.externalPause.isExternalPaused() &&
+        this.gameStore.currentState !== GameState.ANSWERING
+      )
+        this.playerControl.playVideo()
+      else this.playerControl.pauseVideo()
+      this.playerControl.seekTo(recovery.target)
+      this.timeManager.updateCurrentVideoTime(recovery.target)
     } catch (error) {
+      this.endRecovery = null
       this.timeManager.cancelInternalSeek()
       throw error
     }
-    this.timeManager.updateCurrentVideoTime(previous)
-    if (resumeVideo) this.playerControl.playVideo()
-    else this.playerControl.pauseVideo()
-    return false
+  }
+
+  /** 外部停止中でも復帰位置を確認する。新しい内部操作・reset/destroyでは旧復帰を失効。 */
+  private waitForEndRecovery(current: number): boolean {
+    const recovery = this.endRecovery
+    if (!recovery) return false
+    if (this.timeManager.getInternalSeekTarget() !== recovery.target) {
+      this.endRecovery = null
+      return false
+    }
+    if (
+      Math.abs(current - recovery.target) <= SEEK_TOLERANCE_SEC &&
+      this.playerControl.getPlayerState() !== YouTubePlayerState.ENDED
+    ) {
+      this.endRecovery = null
+      this.timeManager.shouldWaitForInternalSeek(current)
+      if (recovery.resume) this.externalPause.resumeExternalIfReason('stall')
+      return false
+    }
+    const now = performance.now()
+    if (now >= recovery.deadline) {
+      this.endRecovery = null
+      this.timeManager.cancelInternalSeek()
+      return false
+    }
+    if (now >= recovery.retryAt) this.retryEndRecovery()
+    return true
   }
 
   /**
@@ -394,6 +458,7 @@ export class GameManager {
    */
   updateVideoTime(current: number): void {
     if (this.destroyed || this.gameStore.currentState === GameState.READY) return
+    if (this.waitForEndRecovery(current)) return
     // External Pause中は時間更新をスキップ（ただし user 一時停止中はシーク検出のため通す）
     if (this.externalPause.shouldSkipTimeUpdate()) {
       return

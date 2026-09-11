@@ -16,6 +16,10 @@ export class TimeManager {
     this.internalSeek = { target, deadline: performance.now() + INTERNAL_SEEK_TIMEOUT_MS }
   }
 
+  getInternalSeekTarget(): number | null {
+    return this.internalSeek?.target ?? null
+  }
+
   cancelInternalSeek(): void {
     this.internalSeek = null
   }

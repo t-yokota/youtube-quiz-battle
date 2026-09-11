@@ -111,3 +111,6 @@ export const INTERNAL_SEEK_TIMEOUT_MS = 10000
 
 /** Playerのready通知を待つ期限（ミリ秒）。 */
 export const YT_PLAYER_READY_TIMEOUT_MS = 10000
+
+/** 終端からの復帰指示が反映されない場合の再試行間隔。 */
+export const END_SEEK_RETRY_MS = 500

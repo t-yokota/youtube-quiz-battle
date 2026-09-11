@@ -70,6 +70,94 @@ describe('ゲーム進行の境界', () => {
     tick(11.15)
     expect(store.currentState).toBe(GameState.QUESTIONING)
   })
+  it('ENDED通知時に取得時刻が古くても戻し指示を出す', () => {
+    const { store, fake, advanceTo } = setup()
+    advanceTo(11)
+    vi.mocked(fake.player.seekTo).mockClear()
+    // 時刻キャッシュは11秒のまま、終了通知が先に届く。
+    fake.notify(YouTubePlayerState.ENDED)
+    expect(fake.player.seekTo).toHaveBeenCalledWith(11)
+    expect(store.currentState).toBe(GameState.QUESTIONING)
+  })
+  it.each([false, true])(
+    '最初の戻しが反映されなくても再試行して到達する（停止中=%s）',
+    (paused) => {
+      const { store, fake, advanceTo } = setup()
+      advanceTo(11)
+      if (paused) fake.notify(YouTubePlayerState.PAUSED)
+      vi.mocked(fake.player.seekTo)
+        .mockClear()
+        .mockImplementationOnce(() => {})
+      fake.setTime(70)
+      fake.notify(YouTubePlayerState.ENDED)
+      expect(fake.player.getCurrentTime()).toBe(70)
+      vi.advanceTimersByTime(500)
+      manager.updateVideoTime(fake.player.getCurrentTime())
+      expect(fake.player.getCurrentTime()).toBe(11)
+      expect(fake.player.seekTo).toHaveBeenCalledTimes(2)
+      manager.updateVideoTime(11)
+      vi.advanceTimersByTime(500)
+      manager.updateVideoTime(11)
+      expect(fake.player.seekTo).toHaveBeenCalledTimes(2)
+      expect(fake.player.getPlayerState()).toBe(
+        paused ? YouTubePlayerState.PAUSED : YouTubePlayerState.PLAYING,
+      )
+      expect(store.results).toEqual([])
+    },
+  )
+  it('再生指示が終端から先頭へ戻すPlayerでも復帰位置を維持する', () => {
+    const { fake, advanceTo } = setup()
+    advanceTo(11)
+    const play = fake.player.playVideo
+    vi.mocked(play).mockImplementationOnce(() => fake.setTime(0))
+    fake.setTime(70)
+    fake.notify(YouTubePlayerState.ENDED)
+    expect(fake.player.getCurrentTime()).toBe(11)
+  })
+  it.each(['reset', 'destroy'])('終端復帰待機中の%sで再試行を解除する', (action) => {
+    const { store, fake, advanceTo } = setup()
+    advanceTo(11)
+    vi.mocked(fake.player.seekTo).mockImplementationOnce(() => {})
+    fake.setTime(70)
+    fake.notify(YouTubePlayerState.ENDED)
+    if (action === 'reset') {
+      manager.resetGame()
+      store.transitionToState(GameState.READY)
+    } else manager.destroy()
+    vi.mocked(fake.player.seekTo).mockClear()
+    vi.advanceTimersByTime(500)
+    manager.updateVideoTime(70)
+    expect(fake.player.seekTo).not.toHaveBeenCalled()
+  })
+  it.each(['stall', 'orientation'] as const)(
+    '復帰中の%sでも到達確認し停止理由を尊重する',
+    (reason) => {
+      const { fake, advanceTo } = setup()
+      advanceTo(11)
+      vi.mocked(fake.player.seekTo).mockImplementationOnce(() => {})
+      fake.setTime(70)
+      fake.notify(YouTubePlayerState.ENDED)
+      manager.pauseExternal(reason)
+      vi.advanceTimersByTime(500)
+      manager.updateVideoTime(70)
+      expect(fake.player.getCurrentTime()).toBe(11)
+      manager.updateVideoTime(11)
+      expect(manager.isExternalPaused()).toBe(reason === 'orientation')
+      expect(fake.player.getPlayerState()).toBe(
+        reason === 'orientation' ? YouTubePlayerState.PAUSED : YouTubePlayerState.PLAYING,
+      )
+    },
+  )
+  it('到達しない復帰も期限後には通常監視へ戻る', () => {
+    const { fake, advanceTo } = setup()
+    advanceTo(11)
+    vi.mocked(fake.player.seekTo).mockImplementationOnce(() => {})
+    fake.setTime(70)
+    fake.notify(YouTubePlayerState.ENDED)
+    vi.advanceTimersByTime(10001)
+    manager.updateVideoTime(70)
+    expect(fake.player.getCurrentTime()).toBe(11)
+  })
   it('シーク許可中でも解答中の終端移動は解答状態を維持する', () => {
     const { store, fake, advanceTo } = setup({ disableSeekbar: false })
     advanceTo(11)
@@ -111,6 +199,7 @@ describe('ゲーム進行の境界', () => {
     fake.notify(YouTubePlayerState.ENDED)
     expect(store.currentState).toBe(GameState.REVEALING)
     expect(store.results).toHaveLength(1)
+    expect(fake.player.getCurrentTime()).toBe(20)
     tick(20)
     tick(20.15)
     expect(store.currentState).toBe(GameState.REVEALING)
