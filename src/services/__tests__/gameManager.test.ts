@@ -1441,6 +1441,7 @@ describe('解答カウントダウンタイマー', () => {
     })
     gm.initializeExternalPauseHandling()
 
+    store.transitionToState(GameState.TALKING)
     simulatePlayback(gm, 5.0)
 
     // シーク操作でユーザー一時停止（PAUSED）→ External Pause
@@ -1469,6 +1470,7 @@ describe('解答カウントダウンタイマー', () => {
     })
     gm.initializeExternalPauseHandling()
 
+    store.transitionToState(GameState.TALKING)
     simulatePlayback(gm, 5.0)
 
     // 一時停止イベントを経ずに ENDED が直接到達（時刻ベースの検出に依存しない）

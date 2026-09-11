@@ -41,6 +41,10 @@ export class InternalPlayerControl {
     return this.playerManager.getCurrentTime()
   }
 
+  getDuration(): number {
+    return this.playerManager.getDuration()
+  }
+
   getPlayerState(): number {
     return this.playerManager.getPlayerState()
   }

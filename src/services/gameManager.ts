@@ -1,12 +1,13 @@
 // ゲーム管理サービス（ファサード）
 import type { QuizData, YouTubePlayerManager } from '@/types'
-import { GameState, ButtonState } from '@/types'
+import { GameState, ButtonState, YouTubePlayerState } from '@/types'
 import { createTimeManager, TimeManager } from './timeManager'
 import {
   BUTTON_PUSHED_DURATION_MS,
   BUTTON_CHECK_RELEASE_MS,
   VIDEO_START_DELAY_MS,
   GATE_WARMUP_PLAY_MS,
+  SEEK_TOLERANCE_SEC,
 } from '@/constants/timing'
 import type { useGameStore } from '@/stores/gameStore'
 import type { useSettingsStore } from '@/stores/settingsStore'
@@ -92,6 +93,7 @@ export class GameManager {
       this.timeManager,
       this.thresholdEngine,
       this.answerFlow,
+      () => this.acceptVideoEnd(),
     )
   }
 
@@ -351,6 +353,39 @@ export class GameManager {
    */
   initializeExternalPauseHandling(): void {
     this.externalPause.initialize()
+  }
+
+  /** 終了イベントにも通常のシーク禁止を適用し、残問確定より先に戻す。 */
+  private acceptVideoEnd(): boolean {
+    const state = this.gameStore.currentState
+    if (state === GameState.READY || state === GameState.LOADING || state === GameState.FINISHED)
+      return false
+    const current = this.playerControl.getCurrentTime()
+    if (this.timeManager.shouldWaitForInternalSeek(current)) return false
+    if (state !== GameState.ANSWERING && !this.isSeekbarDisabled()) return true
+
+    const duration = this.playerControl.getDuration()
+    // 戻した後に届いた古いENDEDを、自然な終了と誤認しない。
+    if (!Number.isFinite(current) || !Number.isFinite(duration) || duration <= 0) return false
+    if (current < duration - SEEK_TOLERANCE_SEC) return false
+    if (!this.timeManager.isSeekDetected(current) && state !== GameState.ANSWERING) return true
+
+    const previous = this.timeManager.getPreviousVideoTime()
+    const resumeVideo =
+      state !== GameState.ANSWERING &&
+      !this.externalPause.isExternalPaused() &&
+      this.playerControl.isPlaybackStateExpected(YouTubePlayerState.PLAYING)
+    this.timeManager.beginInternalSeek(previous)
+    try {
+      this.playerControl.seekTo(previous)
+    } catch (error) {
+      this.timeManager.cancelInternalSeek()
+      throw error
+    }
+    this.timeManager.updateCurrentVideoTime(previous)
+    if (resumeVideo) this.playerControl.playVideo()
+    else this.playerControl.pauseVideo()
+    return false
   }
 
   /**

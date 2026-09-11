@@ -771,6 +771,10 @@ setInterval(tick, TIME_UPDATE_INTERVAL_MS)
 - READY/LOADING/FINISHED、またはユーザー一時停止: `player.playVideo()`を呼ばず停止を維持
 - 再開時にYouTube Playerの巻き戻り仕様への補正判定を行う（詳細は次節）
 
+#### 動画終了とシーク禁止
+
+終了イベントの確定可否は`GameManager.acceptVideoEnd()`で判定する。READY/LOADING/FINISHEDや内部シーク未到達の通知は確定しない。シーク禁止（設定の上書きを優先）または解答中は、現在時刻・動画長・直前の正常位置を確認する。終端への不連続な移動は直前位置へ戻し、通常の内部シークと同じ到達待機で遅れた時刻通知を除外する。再生中だった動画だけ再開し、手動停止・外部停止・解答中は停止を維持する。戻した後の終端から離れた時刻で届く古いENDEDも確定しない。自然な連続再生による終了と、解答中以外のシーク許可ONでの終了は残問確定へ進める。シーク判定の許容差は通常監視と同じ`SEEK_TOLERANCE_SEC`（1秒）を用いる。
+
 #### External Pause中の時間更新スキップ
 
 `shouldSkipTimeUpdate()`は、要因が`'user'`以外の一時停止中のみ時間更新をスキップする。`'user'`一時停止中（プレイヤーコントロールでの手動停止）はスキップせず`updateVideoTime()`を通す。これは、停止中のシークバー操作（特に末尾へのシーク）を検出するため。動画時間は凍結しているので通常の窓走査は無害で、シークのジャンプだけが検出される。
@@ -809,8 +813,9 @@ setupPlayerStateHandlers(): void {
   this.playerControl.syncPlaybackIntentFromPlayer()
   this.playerControl.onStateChange((state) => {
     // 動画末尾（ENDED）: External Pauseを解除し、未消費の残り問題をすべて確定させてFINISHEDまで進める
-    // （終端付近は時刻ベースの判定が信用できないため、ENDEDイベントを終端シグナルとして扱う）
+    // GameManagerが禁止シーク・内部シーク待機・古い終了通知を判定する。
     if (state === YouTubePlayerState.ENDED) {
+      if (!this.acceptVideoEnd()) return
       if (this.externalPaused) {
         this.externalPaused = false
         this.externalPausedReason = null

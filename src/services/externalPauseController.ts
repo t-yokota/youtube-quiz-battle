@@ -67,6 +67,7 @@ export class ExternalPauseController {
     timeManager: TimeManager,
     thresholdEngine: ThresholdEngine,
     answerFlow: AnswerFlowController,
+    private readonly acceptVideoEnd: () => boolean = () => true,
   ) {
     this.playerControl = playerControl
     this.gameStore = gameStore
@@ -321,8 +322,9 @@ export class ExternalPauseController {
       if (this.destroyed) return
       // 動画末尾（ENDED）に到達した場合: External Pause を解除し、
       // 未消費の残り問題をすべて確定させて FINISHED まで進める
-      // （終端では時刻ベースのシーク検出が信用できないため、イベントで確定する）
+      // 終了確定の前に、ゲーム側で禁止シーク・遅延通知を判定する。
       if (state === YouTubePlayerState.ENDED) {
+        if (!this.acceptVideoEnd()) return
         if (this.externalPaused) {
           logger.log('[ExternalPauseController] Video ended - clearing external pause')
           this.externalPaused = false
@@ -534,6 +536,7 @@ export function createExternalPauseController(
   timeManager: TimeManager,
   thresholdEngine: ThresholdEngine,
   answerFlow: AnswerFlowController,
+  acceptVideoEnd?: () => boolean,
 ): ExternalPauseController {
   return new ExternalPauseController(
     playerControl,
@@ -541,5 +544,6 @@ export function createExternalPauseController(
     timeManager,
     thresholdEngine,
     answerFlow,
+    acceptVideoEnd,
   )
 }
