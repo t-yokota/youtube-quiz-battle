@@ -310,7 +310,7 @@ stateDiagram-v2
 | STANDBY → PUSHED | ボタン押下 | 即座 | QUESTIONING時は同期処理内で「動画停止→押下タイミング記録→押下音再生」の順 |
 | PUSHED → RELEASED | 自動遷移 | `BUTTON_PUSHED_DURATION_MS`後（100ms） | 視覚的フィードバック |
 | RELEASED → STANDBY | 自動遷移（ボタンチェック時） | `BUTTON_CHECK_RELEASE_MS`後（1800ms） | 正解音再生 → 同時にTALKING状態へ遷移 |
-| TALKING遷移 → 動画再生開始 | 自動遷移 | 上記STANDBY遷移からさらに`VIDEO_START_DELAY_MS`後（1200ms） | 正解音と動画音声の重なり回避。遅延中にExternal PauseまたはTALKING状態を離れていた場合は再生しない |
+| TALKING遷移 → 動画再生開始 | 自動遷移 | 上記STANDBY遷移からさらに`VIDEO_START_DELAY_MS`後（1200ms） | 正解音と動画音声の重なり回避。遅延中にExternal Pauseなら再生要求を保留し、最後の解除後に開始。TALKING状態を離れた場合は再生しない |
 | RELEASED → STANDBY | ゲーム状態変化（QUESTIONING） | 即座 | 早押し成功時 |
 | RELEASED → DISABLED | ゲーム状態変化 | 即座 | WAITING/REVEALING/TALKING状態時 |
 | STANDBY → DISABLED | ゲーム状態変化 | 即座 | WAITING/REVEALING/TALKING状態時 |
@@ -737,39 +737,27 @@ setInterval(tick, TIME_UPDATE_INTERVAL_MS)
 
 ### External Pause Handling（外部一時停止対応）
 
-ページ可視性・プレイヤー状態・再生停滞を検出し、ゲームの時間遷移・シーク検出・UIを一時停止/再開する。`ExternalPauseController`が一元的に担当する。
+`ExternalPauseController`は動画の停止理由を集合で保持する。解答カウントダウンとは独立しており、設定・横画面警告・タブ非表示でも解答期限は延長しない。
 
-**実装方針:**
+| 停止理由 | 検出・解除 | 動画の扱い |
+|---|---|---|
+| `settings` | Appの設定またはテーマ選択の表示状態 | 表示中は停止。設定→テーマ選択の切替でも継続して停止 |
+| `orientation` | タッチ端末の横画面・縦画面への復帰 | 横画面警告中は停止 |
+| `visibility` | visibilitychange/pagehide/pageshow | 非表示中は停止。すでに別の理由で停止中でも理由を追加 |
+| `user` | Player UIのPAUSED/PLAYING | 手動停止は設定等を閉じても解除しない |
+| `stall` | 再生意図がある状態の時刻停滞・進行の復帰 | 動画自体は止めず時刻処理を保留。能動的な停止が重なったらその理由へ引き継ぐ |
 
-- visibility/orientation検知時に `player.pauseVideo()` を明示的に呼び出す（ANSWERING中はボタン押下時点で既に停止済みのため、カウントダウン停止のみ行う）
-- 動画停止中は `getCurrentTime()` が進まないため、TimeManagerへの影響はない
-- GameManager（実体はExternalPauseController）側で状態管理を実施。UI表示への専用フックはない
-- TimeManagerに外部一時停止関連のコードは持たせない
+`resumeExternalIfReason(reason)`は指定した理由だけを解除し、すべてなくなってから復帰する。最初の停止時に再生中だった動画、または停止中にアプリから再生要求があった動画だけが再開対象となる。READY/LOADING/FINISHED、手動停止中の動画を画面の開閉だけで再開しない。復帰時のYouTube巻き戻り補正は維持する。
 
-**一時停止の要因（reason）は4種類:**
+`InternalPlayerControl`の再生ガードにより、解答の時間切れや開始演出の完了が`playVideo()`を呼んでも、停止理由がある間は再生を保留する。Playerから予期しないPLAYING通知が届いた場合も停止を維持する。解答期限後は結果処理・効果音が発生するが、動画再開は最後の停止理由の解除を待つ。
 
-`'visibility' | 'user' | 'stall' | 'orientation'`
+`useQuizSession`は設定・画面向きの表示状態を保持し、Player初期化後にも反映する。Appは設定とテーマ選択の表示を論理和で同期監視し、テーマを開いてから設定を閉じる順序で一時的な再開を防ぐ。
 
-**検出ポイント:**
+#### 解答期限
 
-- 可視性: `document.hidden` による検出（`visibilitychange`/`pagehide`/`pageshow）。動画再生状態（TALKING/QUESTIONING/WAITING/REVEALING）のPLAYING/BUFFERING、またはANSWERING中のみExternal Pauseにする。READY/LOADING/FINISHEDで残留したPLAYINGは停止だけ行い、復帰対象にはしない
-- プレイヤー状態: `onStateChange(PAUSED/PLAYING/ENDED)`。`InternalPlayerControl`が保持する再生意図と比較し、非同期の内部操作通知とPlayer UIなどによる外部操作を区別する
-- 再生停滞: TimeUpdate内で `wallDelta` と `videoDelta` を比較（前述）
-- 画面向き: `useOrientationGuard`がタッチデバイスの横画面を検出すると`pauseExternalForOrientation()`を呼ぶ
-- 広告再生: YouTube広告中は `getCurrentTime()` が進まないため特別な処理不要
+`AnswerFlowController`は解答開始時に`performance.now()`を基準とする期限を記録する。1秒ごとのタイマーは期限との差から残り秒数を計算し、遅延した通知の分も差し引く。外部停止でタイマーを停止・再生成しない。期限後の送信もtimeoutとして確定する。実行自体がブラウザにより停止された間は表示更新できないが、次のタイマー通知または送信時に期限を確認する。
 
-**一時停止時の動作:**
-
-- ANSWERING中: `player.pauseVideo()`は呼ばない（既に停止済み）。解答カウントダウンのみ停止
-- 動画再生状態: visibility/orientationでは`player.pauseVideo()`で動画を明示的に停止し、再開対象を`video`として記録。stallは動画を停止せず時刻処理を保留する
-- ユーザーがPlayer UIで一時停止した場合: 既に停止済みのため`pauseVideo()`は重ねず、再開対象を`none`として記録
-
-**再開時の動作:**
-
-- 一時停止時に記録した再開対象が`answer-countdown`で、復帰時もANSWERING中: カウントダウンのみ再開
-- 一時停止時に記録した再開対象が`video`で、復帰時も動画再生状態: `player.playVideo()`で動画を再開
-- READY/LOADING/FINISHED、またはユーザー一時停止: `player.playVideo()`を呼ばず停止を維持
-- 再開時にYouTube Playerの巻き戻り仕様への補正判定を行う（詳細は次節）
+設定・テーマ選択・横画面警告の間は解答操作できず、そのまま時間切れになる場合がある。各画面へ「解答中の制限時間は止まりません」と表示する。エラー時・解答確定時・reset/destroyでは従来どおり解答タイマーを破棄する。
 
 #### 動画終了とシーク禁止
 
@@ -781,85 +769,7 @@ setInterval(tick, TIME_UPDATE_INTERVAL_MS)
 
 `shouldSkipTimeUpdate()`は、要因が`'user'`以外の一時停止中のみ時間更新をスキップする。`'user'`一時停止中（プレイヤーコントロールでの手動停止）はスキップせず`updateVideoTime()`を通す。これは、停止中のシークバー操作（特に末尾へのシーク）を検出するため。動画時間は凍結しているので通常の窓走査は無害で、シークのジャンプだけが検出される。
 
-```typescript
-shouldSkipTimeUpdate(): boolean {
-  return this.externalPaused && this.externalPausedReason !== 'user'
-}
-
-updateVideoTime(current: number): void {
-  if (this.externalPause.shouldSkipTimeUpdate()) {
-    return
-  }
-  // ... 以下、通常の時間更新処理
-}
-```
-
-**可視性・プレイヤー状態のイベントハンドラ（要旨）:**
-
-```typescript
-setupVisibilityHandlers(): void {
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      this.pauseForVisibility()
-    } else {
-      this.resumeFromVisibility()
-    }
-  })
-
-  // pagehide/pageshowも同じ共通処理を呼ぶ。resumeExternalは一度状態を解除するため冪等
-  window.addEventListener('pagehide', () => { /* 同上 */ })
-  window.addEventListener('pageshow', () => { /* 同上 */ })
-}
-
-setupPlayerStateHandlers(): void {
-  this.playerControl.syncPlaybackIntentFromPlayer()
-  this.playerControl.onStateChange((state) => {
-    // 動画末尾（ENDED）: External Pauseを解除し、未消費の残り問題をすべて確定させてFINISHEDまで進める
-    // GameManagerが禁止シーク・内部シーク待機・古い終了通知を判定する。
-    if (state === YouTubePlayerState.ENDED) {
-      if (!this.acceptVideoEnd()) return
-      if (this.externalPaused) {
-        this.externalPaused = false
-        this.externalPausedReason = null
-      }
-      if (gameStore.currentState !== GameState.FINISHED) {
-        this.thresholdEngine.finalizeAtVideoEnd()
-      }
-      return
-    }
-
-    if (state === YouTubePlayerState.PAUSED) {
-      if (this.playerControl.isPlaybackStateExpected(state)) return
-      this.playerControl.acceptExternalPlaybackState(state)
-      if (gameStore.currentState === GameState.ANSWERING) return
-      if (gameStore.currentState === GameState.READY) return
-      this.pauseExternal('user')
-    }
-
-    if (state === YouTubePlayerState.PLAYING) {
-      const expected = this.playerControl.isPlaybackStateExpected(state)
-      if (gameStore.currentState === GameState.ANSWERING) {
-        this.playerControl.pauseVideo()
-        return
-      }
-      if (!isVideoPlaybackState(gameStore.currentState)) {
-        if (gameStore.currentState === GameState.READY && this.gateWarmupActive && expected) return
-        this.playerControl.pauseVideo()
-        return
-      }
-      if (this.externalPausedReason === 'stall') { this.resumeExternal(); return }
-      if (expected) return
-
-      this.playerControl.acceptExternalPlaybackState(state)
-      if (this.externalPausedReason === 'user') {
-        this.resumeExternal() // 状態だけ解除。Playerは既に再生中なのでplayVideoは重ねない
-      } else if (this.externalPaused) {
-        this.playerControl.pauseVideo() // lifecycle側の復帰処理まで停止を維持
-      }
-    }
-  })
-}
-```
+`shouldSkipTimeUpdate()`は、停止理由に`user`以外が一つでもあれば通常の時刻走査を保留する。終端シークの復帰確認はこれより先に行う。`resetPauseState()`で全理由と再開対象を消去し、destroy後はガードが再生要求を拒否する。
 
 ### YouTube Player Rewind Handling（動画プレイヤーによる巻き戻し仕様対応）
 
@@ -1698,8 +1608,8 @@ _Privacy Info_
 - **Loading**: ダイアログ形式
 - **Error**: ダイアログ表示 → ページ再読み込み誘導
 - **対象デバイス**: `useOrientationGuard`は`pointer: coarse`（タッチデバイス）のみを対象とする。PC（`pointer: fine`）では何もしない
-- **External Pause 連動**: 横画面検出時に`GameManager.pauseExternalForOrientation()`を呼ぶ（内部的には`ExternalPauseController`が再生中またはANSWERING中のときのみ`pauseExternal('orientation')`を発火するガード付き。READY中に無条件でpauseすると、縦復帰時のresumeが誤ってタップなしで再生を始めてしまう事故を防ぐため）。
-  縦画面復帰時は`resumeExternalIfReason('orientation')`により、pause要因がorientationの場合のみ再開する（visibility等、他要因によるpause中は再開しない）
+- **External Pause 連動**: `useQuizSession`が横画面の状態を保持し、初期化後にも`orientation`を反映する。縦画面復帰ではその理由だけを解除し、設定や非表示など別の停止理由が残っていれば再開しない。初期化前からの横画面警告を閉じても、未開始の動画は自動再生しない。
+- **解答時間**: 横画面警告中も期限は継続し、入力できない間に時間切れになる場合がある。警告内にもその旨を表示する。
 
 ### Visual Reference
 
