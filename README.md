@@ -6,14 +6,14 @@ Vue 3・TypeScript・Pinia・Vite・Tailwind CSS v4で構成し、動画再生�
 
 ## 遊び方
 
-[公開アプリ](https://t-yokota.github.io/youtube-quiz-battle/)を開き、読み込み後に「タップしてはじめる」を押す。ボタンを押して動画の再生を開始し、出題される問題に早押しで解答する。設定から効果音・シーク許可・ボタンチェック演出・UIテーマを変更できる。
+[公開アプリ](https://youtube-quiz-battle.pages.dev/)を開き、読み込み後に「タップしてはじめる」を押す。ボタンを押して動画の再生を開始し、出題される問題に早押しで解答する。設定から効果音・シーク許可・ボタンチェック演出・UIテーマを変更できる。
 
 設定・テーマ選択・横画面警告の表示中は動画を停止する。解答中の制限時間は止まらず、画面を閉じる前に時間切れになる場合がある。
 
 クイズはURLの`?quiz=`で指定する。省略時は`sample`を読み込む。
 
 ```text
-https://t-yokota.github.io/youtube-quiz-battle/?quiz=sample
+https://youtube-quiz-battle.pages.dev/?quiz=sample
 ```
 
 PCではSpaceで早押し、解答欄ではEnterまたは送信ボタンで解答できる。
@@ -92,7 +92,7 @@ npm run test:coverage
 
 ## デプロイとドキュメント
 
-Cloudflare Pagesへの移行準備として公開パスを`/`に変更済み。本番ビルドは`dist/`に生成され、その内容をPagesのDirect Uploadで公開できる。既存のGitHub Pages向けworkflowは移行前のままであり、このルート配信ビルドを旧サブパスへ公開しない。操作手順は[デプロイ手順](docs/deployment.md)を参照する。
+公開パスは`/`。GitHub ActionsでLint・型チェック・カバレッジ付きテスト・ビルドを実行し、成功した`dist/`をCloudflare PagesへDirect Uploadする。mainは本番、developは[HTTPS検証用](https://develop.youtube-quiz-battle.pages.dev/)へ公開する（developのURLは初回デプロイ後に有効）。操作手順は[デプロイ手順](docs/deployment.md)を参照する。
 
 - [タスクと計画の窓口](docs/tasks.md)
 - [要件定義](docs/requirements.md) / [詳細設計](docs/design.md)

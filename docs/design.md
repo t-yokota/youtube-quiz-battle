@@ -1224,7 +1224,7 @@ enum SOUND_TYPE {
   INCORRECT = 'incorrect', // 不正解音
 }
 
-// BASE_URL前置: GitHub Pagesのサブパス配信に対応
+// BASE_URL前置: Viteの公開パスに追従
 const DEFAULT_AUDIO_SPRITE = {
   src: `${import.meta.env.BASE_URL}assets/sounds/quiz-sounds.mp3`,
   sprite: {
@@ -2056,14 +2056,14 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 
 ### Build Configuration
 
-- **Environment Variables**: 環境変数による設定管理は行っていない。GA4測定ID（`GA_MEASUREMENT_ID`）はソースコード直書き（`src/constants/analytics.ts`。Web測定IDは公開前提の識別子であり秘密ではないため）
+- **Environment Variables**: GA4測定IDはビルド時の`VITE_GA_MEASUREMENT_ID`で指定できる。未指定なら`src/constants/analytics.ts`の本番ID、空文字なら送信しない。Actionsではmainに本番ID、develop・PRに空文字を設定する。Web測定IDは公開前提の識別子であり秘密ではない。
 - **Base Path**: Cloudflare Pages・独自ドメインのルート配信に合わせ、`vite.config.ts`で`base: '/'`を設定。PWAの`id`・`start_url`・`scope`とアイコンURLも同じ`BASE_PATH`に従う
 - **Asset Optimization**: 画像・音声ファイルの最適化
 - **Code Splitting**: 必要に応じたコード分割
 
 ### Hosting Requirements
 
-- **Static Hosting**: SPA対応の静的ホスティング（GitHub Pages）
+- **Static Hosting**: SPA対応の静的ホスティング（Cloudflare Pages / Direct Upload）
 - **HTTPS**: セキュア接続の必須化
 - **CDN**: 静的アセットの配信最適化
 

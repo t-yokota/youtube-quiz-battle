@@ -2,15 +2,29 @@
 
 旧改善サイクルの主要実装は完了し、計画・実行spec・完了タスクを履歴へ移動した（2026-09-10）。直近の文書整備状況を2026-09-11に更新した。
 
+## Cloudflare Actions移行（2026-09-14・ローカル検証完了）
+
+- [x] Direct Uploadプロジェクト`youtube-quiz-battle`の作成と認証情報の登録をユーザーから確認
+- [x] Quality checksをPR・main・developへ適用し、検証成功後の同一artifactだけをCloudflareへ公開する構成に変更
+- [x] 旧GitHub Pagesのdeploy workflowを削除。Pagesの本番ブランチがmainでない場合は公開を停止
+- [x] mainは本番GA4、develop・PRはGA4無効にするビルド設定を追加
+- [x] 全591テスト、カバレッジ全指標80%以上、型チェック、Lint、両環境のビルド成功
+- [x] ビルド成果物のGA4 ID有無、YAML構文、検証ジョブへの認証情報非提供、本番ブランチ確認処理の成功・異常系を確認
+- [ ] developへpushしてActionsの認証・アップロードと固定HTTPS URLを確認
+- [ ] mainへ反映し本番公開、独自ドメイン設定、旧GitHub PagesのUnpublish
+
+アカウントIDはRepository variable／secretの両方に対応。初回のリモート実行は未実施。設定と手順は[デプロイ手順](deployment.md)を参照。
+
 ## Cloudflare移行準備：ルート配信（2026-09-14完了）
 
 - [x] Viteの公開パスを`/`に変更し、PWAのid/start_url/scopeとアイコンURLを同期
 - [x] 開発・実機確認のURLと設計書を更新。旧公開URLは移行前の公開先として保持
 - [x] 588テスト・全指標80%以上のcoverage・型チェック・本番ビルド・Lint成功
 - [x] 生成物のHTML・アイコンの参照実在と、JS/CSS/Service Workerに旧サブパスがないことを検証
-- [ ] Cloudflareのプロジェクト作成、ActionsによるDirect Upload、環境別GA4、本番ドメイン設定
+- [x] Cloudflareのプロジェクト作成、ActionsによるDirect Uploadの実装、環境別GA4（上記参照）
+- [ ] Actionsでの初回公開、本番ドメイン設定
 
-アップロード対象は`dist/`の内容。旧GitHub Pages向けworkflowは未変更で、push・公開は行っていない。mainへ反映する前にCloudflare向けの公開設定へ切り替える。
+アップロード対象は`dist/`の内容。ルート配信変更時点では旧workflowを保持していたが、上記の後続作業でCloudflare向けへ変更済み。push・公開は未実施。
 
 ## 動画停止と解答期限の統一（2026-09-12完了）
 

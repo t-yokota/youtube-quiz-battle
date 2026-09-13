@@ -1,45 +1,70 @@
 # デプロイ手順
 
-> 2026-09-14: Cloudflare Pagesへの移行準備として公開パスを`/`へ変更済み。`npm run build`で生成した`dist/`の内容をDirect Uploadに使用する。Cloudflare向けActionsとドメイン設定は未整備。以下は旧GitHub Pagesの手順であり、移行が完了するまでmainへのマージ・pushによる旧サイトへの公開は行わない。
+Cloudflare PagesのDirect Uploadプロジェクト`youtube-quiz-battle`へ、GitHub Actionsから検証済みの成果物を公開する。Cloudflare側のGit連携は使用しない。公開パスは`/`。
 
-GitHub Pages でホスティングしている。**main ブランチへの push が GitHub Actions（`.github/workflows/deploy.yml`）を発火させ、自動でビルド・デプロイされる。**
+| ブランチ | 公開先 | GA4 |
+| --- | --- | --- |
+| main | https://youtube-quiz-battle.pages.dev/ | 本番測定IDで送信 |
+| develop | https://develop.youtube-quiz-battle.pages.dev/ | 無効 |
 
-- 公開 URL: https://t-yokota.github.io/youtube-quiz-battle/
-- ワークフロー: checkout → mise（Node）→ `npm ci` → `npm run test` → `npm run build` → Pages へアップロード
+developの固定URLは初回のブランチデプロイ後に有効になる。独自ドメインは後からPagesのCustom domainsで設定する。
 
-## 手順
+## 初期設定
 
-開発は develop ブランチで行い、デプロイしたいタイミングで main へ取り込む。
+GitHubリポジトリのSettings → Secrets and variables → Actionsへ登録する。
+
+| 種類 | 名前 | 内容 |
+| --- | --- | --- |
+| Repository secret | `CLOUDFLARE_API_TOKEN` | 対象アカウントのCloudflare Pages → Edit権限を持つAPIトークン |
+| Repository variable | `CLOUDFLARE_ACCOUNT_ID` | PagesプロジェクトのアカウントID |
+
+アカウントIDをRepository secretに登録しても利用できる。両方にある場合はVariableを優先する。プロジェクト名はワークフローに直接記載しているため、Variableは不要。
+
+Cloudflare PagesのProduction branchは`main`にする。ワークフローはデプロイ前にAPIで確認し、異なる場合は公開を止める。Direct Uploadで本番ブランチを変更する場合は、[公式手順](https://developers.cloudflare.com/pages/get-started/direct-upload/#production-branch-control)に従ってプロジェクトAPIへ`{"production_branch":"main"}`をPATCHする。
+
+GitHubのEnvironmentはmain用の`production`、develop用の`preview`を使用する。承認必須ルールは設定しなくてもよい。認証情報は上記Repository secretを参照する。
+
+## ワークフロー
+
+`.github/workflows/check.yml`（Quality checks）で実行する。
+
+1. PR、main・developへのpush、または手動実行で検証を開始する。
+2. `npm ci` → `npm run lint:check` → `npm run type-check` → `npm run test:coverage` → `npm run build-only`を実行する。カバレッジは全指標80%以上が必要。
+3. main・developのpush／手動実行のみ、生成した`dist/`をartifactとして保存する。
+4. 検証成功後のdeployジョブが同じartifactを取得し、Cloudflareの本番ブランチ設定を確認してWranglerで公開する。再ビルドはしない。
+
+PRでは公開ジョブを実行せず、検証・ビルドにもCloudflareトークンを渡さない。同じブランチの実行は直列化する（進行中は完了させ、待機中の古い実行はGitHubのconcurrency制御で置き換わる）。
+
+GA4はビルド時の`VITE_GA_MEASUREMENT_ID`で切り替える。mainは本番ID、develop・PRは空文字にする。Cloudflare側に環境変数を設定しても、アップロード済みのJavaScriptには反映されない。
+
+## 通常の公開
+
+1. developをpushし、Actionsのcheck・deploy成功を確認する。
+2. developの固定URLで実YouTube・スマホ操作・PWA更新を確認する。
+3. 確認後にmainへ取り込み、pushする。
 
 ```bash
-# 1. develop を push
 git push origin develop
-
-# 2. main に切り替えて develop を取り込み、push（← これがデプロイのトリガー）
+# HTTPS検証後
 git checkout main
 git merge --ff-only develop
 git push origin main
-
-# 3. develop に戻る
 git checkout develop
 ```
 
-未コミットの変更（例: .claude/settings.json）がありブランチ切替がブロックされる場合は、前後で退避・復元する:
+Actionsの成功後、対象URLでアプリの起動を確認する。PWAは更新通知から更新し、インストール済みアプリも確認する。
 
-```bash
-git stash push -m "wip" <ファイル>   # 手順 2 の前
-git stash pop                        # 手順 3 の後
-```
+## 移行時の確認
 
-## 確認
-
-- GitHub の **Actions タブ**で「Deploy to GitHub Pages」が success になれば反映完了
-- 反映直後はブラウザキャッシュが残ることがあるため、スーパーリロードで確認する
+- このワークフローでの初回公開と、本番ブランチ設定の実確認は未完了。
+- 旧GitHub Pages用の`deploy.yml`は削除済み。Cloudflareでの公開確認後、GitHubのSettings → Pagesから旧サイトをUnpublishする。
+- 独自ドメインを設定したらREADMEと本書の本番URLを更新する。
 
 ## 失敗時
 
-- `Error: Deployment failed, try again later.` は **Pages 側の一時障害**のことが多い。
-  Actions の失敗した run から **Re-run failed jobs** で再実行すれば大抵通る（過去実績: 最大 3 回目で成功）
-- 繰り返し失敗する場合は Settings → Environments → github-pages に
-  In progress のまま固まったデプロイがないか確認し、あればキャンセルする
-- テスト失敗などビルド側のエラーの場合はログを見てコードを修正する
+- check失敗: Lint・型・テスト・カバレッジ・ビルドの該当ログを確認する。公開は行われない。
+- 認証エラー: Secret名、トークン期限、Pages編集権限、アカウントIDを確認する。
+- 本番ブランチ検証エラー: CloudflareプロジェクトのProduction branchを`main`へ修正する。
+- アップロードの一時障害: 最新コミットのrunであることを確認し、失敗したジョブを再実行する。古いrunを再実行すると古い成果物を再公開するため、通常は最新ブランチから手動実行する。
+
+Direct Uploadの仕様は[Cloudflare公式CI手順](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/)を参照。
