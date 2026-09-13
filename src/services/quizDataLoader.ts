@@ -52,7 +52,7 @@ export async function loadQuizData(quizId: string, signal?: AbortSignal): Promis
       throw new Error('QUIZ_DATA_NOT_FOUND')
     }
 
-    // BASE_URL 前置: GitHub Pages のサブパス配信に対応（末尾スラッシュ付き）
+    // BASE_URL 前置: Vite の公開パスに合わせる（末尾スラッシュ付き）
     const dataPath = `${import.meta.env.BASE_URL}data/${quizId}/data.json`
 
     const response = await withRetry(

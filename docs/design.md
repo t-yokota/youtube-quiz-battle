@@ -1869,7 +1869,7 @@ public/
         └── silence.wav        # 無音ループ（iOS対策）
 ```
 
-パスは`import.meta.env.BASE_URL`を前置して解決する（GitHub Pagesのサブパス配信 `/youtube-quiz-battle/` に対応するため）。`src/data/`ディレクトリは存在しない。
+パスは`import.meta.env.BASE_URL`を前置して解決する（現在の公開パスはルート `/`）。`src/data/`ディレクトリは存在しない。
 
 #### データ取得フロー
 
@@ -2057,7 +2057,7 @@ const ERROR_TITLES: Partial<Record<keyof typeof ERROR_MESSAGES, string>> = {
 ### Build Configuration
 
 - **Environment Variables**: 環境変数による設定管理は行っていない。GA4測定ID（`GA_MEASUREMENT_ID`）はソースコード直書き（`src/constants/analytics.ts`。Web測定IDは公開前提の識別子であり秘密ではないため）
-- **Base Path**: GitHub Pagesのプロジェクトページ配信に合わせ、`vite.config.ts`で`base: '/youtube-quiz-battle/'`を固定設定
+- **Base Path**: Cloudflare Pages・独自ドメインのルート配信に合わせ、`vite.config.ts`で`base: '/'`を設定。PWAの`id`・`start_url`・`scope`とアイコンURLも同じ`BASE_PATH`に従う
 - **Asset Optimization**: 画像・音声ファイルの最適化
 - **Code Splitting**: 必要に応じたコード分割
 
@@ -2349,7 +2349,7 @@ src/
 
 **vite.config.ts の構成**
 
-- `base: '/youtube-quiz-battle/'`: GitHub Pagesのプロジェクトページ配信に合わせたサブパス固定
+- `base: '/'`: Cloudflare Pages・独自ドメイン向けのルート配信
 - `analyze`モード: `npm run analyze`（`vite build --mode analyze`）実行時のみ`rollup-plugin-visualizer`を追加し、バンドル構成を`stats.html`に出力する
 - Vitest設定: 別ファイルに分離せず、`defineConfig`（`vitest/config`）内の`test`フィールドとして同居させている（`environment: 'jsdom'`, `globals: true`）
 

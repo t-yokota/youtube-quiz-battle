@@ -7,11 +7,11 @@ import tailwindcss from '@tailwindcss/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { VitePWA } from 'vite-plugin-pwa'
 
-const BASE_PATH = '/youtube-quiz-battle/'
+const BASE_PATH = '/'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  // GitHub Pages（プロジェクトページ）のサブパス配信
+  // Cloudflare Pages・独自ドメインのルート配信
   base: BASE_PATH,
   plugins: [
     vue(),

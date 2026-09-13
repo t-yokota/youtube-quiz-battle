@@ -50,7 +50,7 @@ npm run dev -- --host 0.0.0.0 --port 5173 --strictPort
 WSL内から次のURLを開けることを確認します。
 
 ```text
-http://localhost:5173/youtube-quiz-battle/?quiz=sample
+http://localhost:5173/?quiz=sample
 ```
 
 ## 3. WindowsからWSLへポートを転送する
@@ -113,7 +113,7 @@ Test-NetConnection 192.168.2.200 -Port 5173
 `TcpTestSucceeded`が`True`なら、スマートフォンのブラウザで次を開きます。
 
 ```text
-http://192.168.2.200:5173/youtube-quiz-battle/?quiz=sample
+http://192.168.2.200:5173/?quiz=sample
 ```
 
 Viteの起動ログに表示される`172.*`や`10.*`のアドレスはWSL内部側のものです。スマートフォンからは、転送を待ち受けているWindowsの`192.168.*`アドレスを使用します。
@@ -179,7 +179,7 @@ iOS SafariとAndroid Chromeで、それぞれOS・ブラウザのバージョン
 
 ### PWAの確認環境と手順
 
-PWAは開発サーバーではなく、`npm run build`で生成した本番資産を使います。PC内での確認は`npm run preview -- --host 127.0.0.1 --port 4173 --strictPort`で起動し、`http://localhost:4173/youtube-quiz-battle/?quiz=sample`を開きます。
+PWAは開発サーバーではなく、`npm run build`で生成した本番資産を使います。PC内での確認は`npm run preview -- --host 127.0.0.1 --port 4173 --strictPort`で起動し、`http://localhost:4173/?quiz=sample`を開きます。
 
 スマートフォンからのLAN内HTTP接続は通常の画面・操作確認用です。Service Workerとインストール・更新の確認にはHTTPSで配信した検証環境を使います。push・デプロイは[デプロイ手順](deployment.md)に従って別途行います。
 

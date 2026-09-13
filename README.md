@@ -30,7 +30,7 @@ npm run dev
 
 mise以外でNode.jsを用意する場合も、同ファイルのバージョンに合わせて`npm ci`以降を実行する。
 
-通常の開発URLは`http://localhost:5173/youtube-quiz-battle/?quiz=sample`。ポートが使用中の場合は、起動ログに表示されたURLを使う。動画の読み込みにはインターネット接続が必要。
+通常の開発URLは`http://localhost:5173/?quiz=sample`。ポートが使用中の場合は、起動ログに表示されたURLを使う。動画の読み込みにはインターネット接続が必要。
 
 WSL2上の開発画面を同一ネットワークのスマートフォンから確認する場合は、[スマートフォン実機確認手順](docs/local-device-testing.md)を参照する。
 
@@ -60,7 +60,7 @@ npm run test:coverage
 
 `public/data/<quizId>/data.json`を作成する。`quizId`は英小文字・数字・ハイフンからなる1〜64文字の識別子。YouTubeの動画IDはJSON内の`videoId`で別に指定する。
 
-次は[sampleデータ](public/data/sample/data.json)の第1問を使った最小構成の例。`public/data/my-quiz/data.json`に保存すると、`/youtube-quiz-battle/?quiz=my-quiz`で読み込める。
+次は[sampleデータ](public/data/sample/data.json)の第1問を使った最小構成の例。`public/data/my-quiz/data.json`に保存すると、`/?quiz=my-quiz`で読み込める。
 
 ```json
 {
@@ -92,7 +92,7 @@ npm run test:coverage
 
 ## デプロイとドキュメント
 
-GitHub Pages向けのサブパスは`/youtube-quiz-battle/`。mainへのpushでGitHub Actionsがテスト・ビルド・デプロイを実行する。操作手順は[デプロイ手順](docs/deployment.md)を参照する。
+Cloudflare Pagesへの移行準備として公開パスを`/`に変更済み。本番ビルドは`dist/`に生成され、その内容をPagesのDirect Uploadで公開できる。既存のGitHub Pages向けworkflowは移行前のままであり、このルート配信ビルドを旧サブパスへ公開しない。操作手順は[デプロイ手順](docs/deployment.md)を参照する。
 
 - [タスクと計画の窓口](docs/tasks.md)
 - [要件定義](docs/requirements.md) / [詳細設計](docs/design.md)

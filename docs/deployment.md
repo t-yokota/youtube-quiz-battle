@@ -1,5 +1,7 @@
 # デプロイ手順
 
+> 2026-09-14: Cloudflare Pagesへの移行準備として公開パスを`/`へ変更済み。`npm run build`で生成した`dist/`の内容をDirect Uploadに使用する。Cloudflare向けActionsとドメイン設定は未整備。以下は旧GitHub Pagesの手順であり、移行が完了するまでmainへのマージ・pushによる旧サイトへの公開は行わない。
+
 GitHub Pages でホスティングしている。**main ブランチへの push が GitHub Actions（`.github/workflows/deploy.yml`）を発火させ、自動でビルド・デプロイされる。**
 
 - 公開 URL: https://t-yokota.github.io/youtube-quiz-battle/

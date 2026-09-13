@@ -14,7 +14,7 @@ export enum SOUND_TYPE {
  * 実ファイル（8.125s / mono 48kHz）のスプライト位置に合わせて定義
  */
 export const DEFAULT_AUDIO_SPRITE = {
-  // BASE_URL 前置: GitHub Pages のサブパス配信に対応（末尾スラッシュ付き）
+  // BASE_URL 前置: Vite の公開パスに合わせる（末尾スラッシュ付き）
   src: `${import.meta.env.BASE_URL}assets/sounds/quiz-sounds.mp3`,
   sprite: {
     [SOUND_TYPE.BUTTON]: { start: 0, duration: 2.0 },

@@ -7,10 +7,12 @@ const appSource = readFileSync(resolve(root, 'src/App.vue'), 'utf8')
 const indexHtml = readFileSync(resolve(root, 'index.html'), 'utf8')
 
 describe('PWA configuration', () => {
-  it('GitHub Pages配下へprompt方式のManifestとService Workerを生成する', () => {
+  it('ルート配信へprompt方式のManifestとService Workerを生成する', () => {
     expect(viteConfig).toContain("import { VitePWA } from 'vite-plugin-pwa'")
-    expect(viteConfig).toContain("const BASE_PATH = '/youtube-quiz-battle/'")
+    expect(viteConfig).toContain("const BASE_PATH = '/'")
     expect(viteConfig).toContain("registerType: 'prompt'")
+    expect(viteConfig).toContain('base: BASE_PATH')
+    expect(viteConfig).toContain('id: BASE_PATH')
     expect(viteConfig).toContain('start_url: BASE_PATH')
     expect(viteConfig).toContain('scope: BASE_PATH')
     expect(viteConfig).toContain("display: 'standalone'")
