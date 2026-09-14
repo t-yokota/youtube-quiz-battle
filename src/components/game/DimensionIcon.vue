@@ -67,13 +67,22 @@ const shape = computed(() => {
     <g :transform="shape.textTransform" class="dimension-text">
       <text
         x="18"
-        y="19"
+        y="18"
+        dy="0.31em"
+        dominant-baseline="alphabetic"
         :font-size="shape.flatTextSize"
         :opacity="Math.max(0, 1 - progress * 2.5)"
       >
         2D
       </text>
-      <text class="dimension-text-3d" x="18" y="19" :opacity="Math.max(0, (progress - 0.6) * 2.5)">
+      <text
+        class="dimension-text-3d"
+        x="18"
+        y="18"
+        dy="0.35em"
+        dominant-baseline="alphabetic"
+        :opacity="Math.max(0, (progress - 0.6) * 2.5)"
+      >
         3D
       </text>
     </g>
@@ -106,7 +115,6 @@ const shape = computed(() => {
   font-family: system-ui, sans-serif;
   font-size: 16px;
   font-weight: 500;
-  dominant-baseline: middle;
   text-anchor: middle;
 }
 .dimension-text-3d {
