@@ -431,3 +431,25 @@ it('iOSではタップ内でフォーカスし、追加の演出待ちなしで�
     agent.mockRestore()
   }
 })
+
+it.each([GameState.WAITING, GameState.TALKING])(
+  '%sへの遷移時は入力を無効化・除去する前にフォーカスを外す',
+  async (nextState) => {
+    host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+    await flush()
+    store.setCurrentQuestionIndex(0)
+    store.transitionToState(GameState.ANSWERING)
+    await flush()
+    const input = host.querySelector<HTMLInputElement>('.answer-input')!
+    input.focus()
+    expect(document.activeElement).toBe(input)
+    const disabledAtFocusOut: boolean[] = []
+    input.addEventListener('focusout', () => disabledAtFocusOut.push(input.disabled))
+    store.transitionToState(nextState)
+    await flush()
+    expect(disabledAtFocusOut).toEqual([false])
+    expect(document.activeElement).not.toBe(input)
+    if (nextState === GameState.WAITING) expect(input.disabled).toBe(true)
+    else expect(input.isConnected).toBe(false)
+  },
+)

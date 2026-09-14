@@ -1,4 +1,5 @@
 const VIEWPORT_RETRY_DELAYS_MS = [100, 500, 1000] as const
+const KEYBOARD_RESTORE_GRACE_MS = 1000
 const KEYBOARD_CONTRACTION_RATIO = 0.8
 const SOFT_KEYBOARD_INPUT_TYPES = new Set([
   'email',
@@ -38,15 +39,31 @@ export function installViewportHeightSync(): () => void {
     visualViewport?.height,
   )
   let keyboardBaseline: { height: number; width: number } | null = null
+  let restoreUntil: number | null = null
+  let focusGeneration = 0
+  let disposed = false
 
   const update = () => {
-    const height = resolveVisibleViewportHeight(window.innerHeight, visualViewport?.height)
+    let height = resolveVisibleViewportHeight(window.innerHeight, visualViewport?.height)
     const viewportWidthChanged =
       keyboardBaseline !== null && Math.abs(window.innerWidth - keyboardBaseline.width) >= 1
     const keyboardIsContractingViewport =
       keyboardBaseline !== null && height < keyboardBaseline.height * KEYBOARD_CONTRACTION_RATIO
 
-    if (viewportWidthChanged) keyboardBaseline = null
+    if (viewportWidthChanged) {
+      keyboardBaseline = null
+      restoreUntil = null
+    }
+    if (restoreUntil !== null) {
+      if (
+        keyboardBaseline &&
+        keyboardIsContractingViewport &&
+        !isSoftKeyboardTarget(document.activeElement) &&
+        performance.now() < restoreUntil
+      ) {
+        height = keyboardBaseline.height
+      } else restoreUntil = null
+    }
     if (
       keyboardBaseline === null ||
       (!isSoftKeyboardTarget(document.activeElement) && !keyboardIsContractingViewport)
@@ -81,7 +98,41 @@ export function installViewportHeightSync(): () => void {
 
   const handleFocusIn = (event: FocusEvent) => {
     if (!isSoftKeyboardTarget(event.target)) return
+    focusGeneration++
+    const wasRestoring = restoreUntil !== null
+    restoreUntil = null
     keyboardBaseline = { height: layoutViewportHeight, width: window.innerWidth }
+    if (wasRestoring) scheduleUpdate()
+  }
+
+  // Safariの下部アドレスバー表示時は、キーボード終了アニメーションが終わるまで
+  // visualViewport.height自体が縮小値のままになる（WebKit #265578）。
+  // https://bugs.webkit.org/show_bug.cgi?id=265578
+  // 実機で毎フレーム読み直しても改善せず、アドレスバーを上部へ移すと解消したため、
+  // 再描画頻度ではなくfocusoutを契機に表示前の高さへ先行復元する。
+  // 後続resizeの古い値による再縮小も抑え、実測高の回復・回転・再フォーカス、
+  // または最大1秒で実測値へ戻す。フォーカスを残したまま閉じる操作は対象外。
+  const handleFocusOut = (event: FocusEvent) => {
+    if (!isSoftKeyboardTarget(event.target)) return
+    const generation = ++focusGeneration
+    // focusout中は次のactiveElementが未確定なので、入力欄間の移動が完了してから判定する。
+    void Promise.resolve().then(() => {
+      if (
+        disposed ||
+        generation !== focusGeneration ||
+        isSoftKeyboardTarget(document.activeElement)
+      )
+        return
+      const height = resolveVisibleViewportHeight(window.innerHeight, visualViewport?.height)
+      if (
+        !keyboardBaseline ||
+        Math.abs(window.innerWidth - keyboardBaseline.width) >= 1 ||
+        height >= keyboardBaseline.height * KEYBOARD_CONTRACTION_RATIO
+      )
+        return
+      restoreUntil = performance.now() + KEYBOARD_RESTORE_GRACE_MS
+      scheduleUpdate()
+    })
   }
 
   window.addEventListener('resize', scheduleUpdate)
@@ -90,9 +141,11 @@ export function installViewportHeightSync(): () => void {
   visualViewport?.addEventListener('resize', scheduleUpdate)
   document.addEventListener('visibilitychange', handleVisibilityChange)
   document.addEventListener('focusin', handleFocusIn)
+  document.addEventListener('focusout', handleFocusOut)
   scheduleUpdate()
 
   return () => {
+    disposed = true
     clearScheduledUpdates()
     window.removeEventListener('resize', scheduleUpdate)
     window.removeEventListener('pageshow', scheduleUpdate)
@@ -100,5 +153,6 @@ export function installViewportHeightSync(): () => void {
     visualViewport?.removeEventListener('resize', scheduleUpdate)
     document.removeEventListener('visibilitychange', handleVisibilityChange)
     document.removeEventListener('focusin', handleFocusIn)
+    document.removeEventListener('focusout', handleFocusOut)
   }
 }

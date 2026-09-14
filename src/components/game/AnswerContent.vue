@@ -73,12 +73,17 @@ const handleInput = (event: Event) => {
 watch(
   () => gameStore.isInputDisabled,
   (disabled) => {
-    if (!disabled) {
+    if (disabled) {
+      // disabled属性の反映前に明示的にblurし、送信・時間切れでも
+      // キーボード終了時のviewport先行復元（focusout）を確実に開始する。
+      if (document.activeElement === inputRef.value) inputRef.value?.blur()
+    } else {
       nextTick(() => {
         inputRef.value?.focus()
       })
     }
   },
+  { flush: 'sync' },
 )
 
 // 誤答リトライ時のフォーカス復帰（ANSWERING維持のまま answerResult が 'incorrect' に変わる場合）

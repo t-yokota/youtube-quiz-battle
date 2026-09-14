@@ -93,6 +93,83 @@ describe('viewportHeight', () => {
     stop()
   })
 
+  it('フォーム外へフォーカスが移ると、古い縮小値を無視して閉じる前の高さを先行復元する', async () => {
+    const stop = installViewportHeightSync()
+    const input = document.createElement('input')
+    const outside = document.createElement('button')
+    document.body.append(input, outside)
+    input.focus()
+    visualViewport.height = 420
+    visualViewport.dispatchEvent(new Event('resize'))
+    outside.focus()
+    await Promise.resolve()
+    expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe('700px')
+    visualViewport.dispatchEvent(new Event('resize'))
+    vi.advanceTimersByTime(100)
+    expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe('700px')
+    visualViewport.height = 680
+    visualViewport.dispatchEvent(new Event('resize'))
+    expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe('680px')
+    stop()
+  })
+
+  it('入力欄間の移動では先行復元せず、再フォーカスでも復元を取り消す', async () => {
+    const stop = installViewportHeightSync()
+    const first = document.createElement('input')
+    const second = document.createElement('textarea')
+    document.body.append(first, second)
+    first.focus()
+    visualViewport.height = 420
+    visualViewport.dispatchEvent(new Event('resize'))
+    second.focus()
+    await Promise.resolve()
+    expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe('420px')
+    second.blur()
+    await Promise.resolve()
+    expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe('700px')
+    first.focus()
+    expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe('420px')
+    stop()
+  })
+
+  it.each(['expiry', 'rotation', 'stop'] as const)(
+    '先行復元は%sで解除され古い高さを残さない',
+    async (reason) => {
+      const width = window.innerWidth
+      const stop = installViewportHeightSync()
+      try {
+        const input = document.createElement('input')
+        document.body.append(input)
+        input.focus()
+        visualViewport.height = 420
+        visualViewport.dispatchEvent(new Event('resize'))
+        input.blur()
+        if (reason === 'stop') {
+          stop()
+          await Promise.resolve()
+          expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe(
+            '420px',
+          )
+          return
+        }
+        await Promise.resolve()
+        expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe(
+          '700px',
+        )
+        if (reason === 'rotation') {
+          Object.defineProperty(window, 'innerWidth', { configurable: true, value: width + 100 })
+          visualViewport.dispatchEvent(new Event('resize'))
+        } else vi.advanceTimersByTime(1000)
+        expect(document.documentElement.style.getPropertyValue('--ui-viewport-height')).toBe(
+          '420px',
+        )
+      } finally {
+        stop()
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
+      }
+    },
+  )
+
   it('resize・pageshow・フォア復帰で再同期し、停止後は更新しない', () => {
     const stop = installViewportHeightSync()
 
