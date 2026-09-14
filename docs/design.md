@@ -1618,13 +1618,15 @@ _Privacy Info_
 
 ### 3D早押しボタン（2026-09-14）
 
-- QuizButtonが2D／3Dの表示を切り替え、3DはBuzzer3DViewからview.tsを遅延ロードする。Three.jsのrendererは表示領域につき1つで、円形・早稲田式風のfactoryだけを交換する。
-- 設定は表示方式→3Dボタンタイプの階層。既定は2D。settingsStore.buzzerへschemaVersion／renderMode／modelId／appearancePresetIdを保存し、旧形式・不明値は既定へ戻す。変更可能なのはREADY／FINISHED。
+- QuizButtonが2D／3Dの表示を切り替え、3DはButton3DViewからview.tsを遅延ロードする。Three.jsのrendererは表示領域につき1つで、丸型・箱型（大ランプ）のfactoryだけを交換する。
+- 設定は表示方式→3Dボタンタイプの階層。既定は2D。settingsStore.buttonへschemaVersion／renderMode／modelId／appearancePresetIdを保存し、旧buzzerキーからも引き継ぐ。不明な形式・値は既定へ戻す。プレイ中も設定画面から表示方式・タイプを変更でき、ゲーム状態と解答期限は変更しない。
+- プレイ画面の左下に44px角の表示切替ボタンを絶対配置する。BUTTON CHECKは従来の右寄せフロー配置を維持し、切替アイコンは行の高さや上下余白に影響させない。指定キットcube-dimension-toggleの正面の四角／等角投影の立方体を表示し、押すと反対の表示へ切り替える。設定画面と同期し、3Dタイプとゲーム状態は保持する。アイコンの面は64単位中、2Dの一辺32単位、3Dの一辺24.12単位とし、立体化に合わせて縮小する。2Dを最初に縮小する前（一辺36単位）の中心(18, 46)を固定し、縮小・立体化ともに中心位置を維持する。44pxの操作領域は輪郭の中心に合わせ、絵の配置は維持する。SVGの輪郭はクリップしない。420msで形状を補間し、面内の2D／3D文字も面に追従して傾きながら切り替わる。途中反転は現在の形から再開し、reduced-motionでは即時切替。
 - 早押しは透明なネイティブbuttonのclick→既存press経路。Appの同期focus・動画停止・受理判定・100ms遷移は維持する。演出は40ms押下＋20ms保持＋80ms復帰で独立し、ゲーム側の状態通知に従う。
 - RELEASED中は500ms周期でキャップ／ランプが発光。DISABLED（WAIT）は通常位置に戻して減光・消灯。3DのPUSH／ON!／WAIT文字は表示しない。読み上げ用操作名は維持する。
+- 3D表示領域は箱型（大ランプ）が左右10%余白（幅80%）、丸型が左右20%余白（幅60%）で中央に配置し、canvasは領域全体を使用する。モデルは余白8pxを残して最大表示し、姿勢リセット操作はcanvasの外側で2D／3D切替アイコンの真上に配置する。
 - 台座・余白は回転専用。キャップの操作領域は最低44pxで、回転後の遮蔽判定を行う。設定・テーマ・横画面警告中はinertと入力ガードで操作を止める。
 - 非表示時はRAFを停止し、reduced-motionでは押下補間を省略して発光を定常表示する。初期化／描画失敗やcontext lossでは2Dへ復帰する。資産は生成途中の例外を含めて明示的に解放する。
-- 3Dコードは遅延ロードするが、PWAでは他のJSと同様にprecacheする。実機確認の残件と詳細は[組み込み計画](buzzer-3d-integration-plan.md)を参照。
+- 3Dコードは遅延ロードするが、PWAでは他のJSと同様にprecacheする。実機確認の残件と詳細は[組み込み計画](button-3d-integration-plan.md)を参照。
 
 
 ## Data Models
