@@ -132,3 +132,25 @@ it('遅延ロード完了前のunmountではviewを生成しない', async () =>
   await new Promise((r) => setTimeout(r, 0))
   expect(mock.view.setState).not.toHaveBeenCalled()
 })
+
+it('タッチ終了時のpointerleaveがclickより先でも1回受理する', async () => {
+  const { host, press, props } = await mount()
+  const button = host.querySelector<HTMLButtonElement>('.button-hit')!
+  for (const type of ['pointerdown', 'pointerup', 'pointerleave']) {
+    const event = new Event(type)
+    Object.assign(event, {
+      isPrimary: true,
+      button: 0,
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 100,
+      clientY: 100,
+    })
+    button.dispatchEvent(event)
+  }
+  button.dispatchEvent(new MouseEvent('click', { detail: 1, clientX: 100, clientY: 100 }))
+  expect(press).toHaveBeenCalledOnce()
+  props.playMode = true
+  await nextTick()
+  expect(button.children).toHaveLength(0)
+})

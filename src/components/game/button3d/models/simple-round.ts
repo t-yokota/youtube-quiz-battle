@@ -82,7 +82,7 @@ export function createSimpleRound(appearance: Appearance): ButtonModel {
         red.emissiveIntensity =
           glowing && !disabled ? appearance.glowIntensity * Math.max(0, Math.min(1, glowLevel)) : 0
         red.color.set(appearance.capColor)
-        if (disabled) red.color.multiplyScalar(0.45)
+        if (disabled) red.color.multiplyScalar(0.25)
       },
     }
   })

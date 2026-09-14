@@ -19,7 +19,7 @@ const target = shallowRef<TargetRect>({ x: 0, y: 0, width: 44, height: 44, visib
 let view: ButtonView | undefined
 let mounted = false
 let failed = false
-let pointer: { x: number; y: number } | undefined
+let pointer: { id: number; x: number; y: number; released: boolean } | undefined
 let cancelled = false
 function fail(error: unknown) {
   if (!mounted || failed) return
@@ -76,13 +76,22 @@ watch(
 )
 function pointerDown(e: PointerEvent) {
   cancelled = !e.isPrimary || e.button !== 0 || !view?.acceptsPoint(e.clientX, e.clientY)
-  pointer = { x: e.clientX, y: e.clientY }
+  pointer = { id: e.pointerId, x: e.clientX, y: e.clientY, released: false }
 }
 function cancelPointer() {
   cancelled = true
 }
 function pointerMove(e: PointerEvent) {
   if (pointer && Math.hypot(e.clientX - pointer.x, e.clientY - pointer.y) > 8) cancelled = true
+}
+function pointerUp(e: PointerEvent) {
+  if (!pointer || pointer.id !== e.pointerId) return
+  pointerMove(e)
+  pointer = { ...pointer, released: true }
+}
+function pointerLeave() {
+  // タッチの正常終了ではpointerup→pointerleave→clickの順になる。
+  if (pointer && !pointer.released) cancelPointer()
 }
 function press(e: MouseEvent) {
   // Space/Enterによるネイティブclickも同じ経路。回転やドラッグは早押しに変えない。
@@ -97,31 +106,30 @@ function press(e: MouseEvent) {
 }
 </script>
 <template>
-  <div class="button-3d" :inert="blocked || !ready || undefined">
-    <div ref="host" class="button-canvas" />
-    <button
-      v-show="ready"
-      type="button"
-      class="button-hit"
-      :class="{ 'keyboard-only': !target.visible }"
-      :style="{
-        left: `${target.x}px`,
-        top: `${target.y}px`,
-        width: `${target.width}px`,
-        height: `${target.height}px`,
-      }"
-      :disabled="!enabled || blocked"
-      :aria-label="playMode ? '動画を再生' : '早押しボタン'"
-      @pointerdown="pointerDown"
-      @pointermove="pointerMove"
-      @pointercancel="cancelPointer"
-      @pointerleave="cancelPointer"
-      @click.stop="press"
-    >
-      <svg v-if="playMode" class="button-play" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M8 5.5 L18.5 12 L8 18.5 Z" fill="white" />
-      </svg>
-    </button>
+  <div class="button-3d-controls" :inert="blocked || !ready || undefined">
+    <div class="button-3d" :class="{ 'is-round': modelId === 'simple-round-v1' }">
+      <div ref="host" class="button-canvas" />
+      <button
+        v-show="ready"
+        type="button"
+        class="button-hit"
+        :class="{ 'keyboard-only': !target.visible }"
+        :style="{
+          left: `${target.x}px`,
+          top: `${target.y}px`,
+          width: `${target.width}px`,
+          height: `${target.height}px`,
+        }"
+        :disabled="!enabled || blocked"
+        :aria-label="playMode ? '動画を再生' : '早押しボタン'"
+        @pointerdown="pointerDown"
+        @pointermove="pointerMove"
+        @pointerup="pointerUp"
+        @pointercancel="cancelPointer"
+        @pointerleave="pointerLeave"
+        @click.stop="press"
+      />
+    </div>
     <button
       type="button"
       class="button-reset"
@@ -135,9 +143,16 @@ function press(e: MouseEvent) {
   </div>
 </template>
 <style scoped>
-.button-3d {
+.button-3d-controls {
   position: absolute;
   inset: 0;
+}
+.button-3d {
+  position: absolute;
+  inset: 0 10%;
+}
+.button-3d.is-round {
+  inset-inline: 20%;
 }
 .button-canvas {
   width: 100%;
@@ -169,19 +184,17 @@ function press(e: MouseEvent) {
   top: 50% !important;
   pointer-events: none;
 }
-.button-play {
-  width: 28px;
-  height: 28px;
-  pointer-events: none;
-}
+
 .button-reset {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  left: calc(-1 * var(--icon-hit-offset, 9.625px));
+  bottom: 5px;
   width: 44px;
   height: 44px;
   display: grid;
-  place-items: center;
+  align-items: center;
+  justify-items: center;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--color-text-dim);

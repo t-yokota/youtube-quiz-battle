@@ -16,6 +16,9 @@ vi.mock('three', async (importOriginal) => {
       domElement = document.createElement('canvas')
       setPixelRatio() {}
       setSize() {}
+      getSize(target: THREE.Vector2) {
+        return target.set(0, 0)
+      }
       render(scene: unknown) {
         if (fake.fail) throw new Error('GPU failure')
         fake.draw()

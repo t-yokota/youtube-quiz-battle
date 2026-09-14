@@ -213,9 +213,10 @@ export function createWasedaStyle(appearance: Appearance): ButtonModel {
           glowing && !disabled ? appearance.glowIntensity * Math.max(0, Math.min(1, glowLevel)) : 0
         capMaterial.color.set(appearance.capColor)
         lensMaterial.color.set(lampColor)
+        lensMaterial.roughness = disabled ? 0.6 : 0.23
         if (disabled) {
-          capMaterial.color.multiplyScalar(0.55)
-          lensMaterial.color.multiplyScalar(0.65)
+          capMaterial.color.multiplyScalar(0.25)
+          lensMaterial.color.multiplyScalar(0.12)
         }
       },
     }

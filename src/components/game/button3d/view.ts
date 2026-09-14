@@ -6,6 +6,7 @@ import { appearance } from './appearance'
 import { createModel } from './models'
 import { defaultMotion, sampleGlow, samplePress } from './motion'
 import { bindRotation } from './rotation'
+import { collectFitPoints, fitCamera } from './cameraFit'
 
 interface Options {
   modelId: ButtonModelId
@@ -45,6 +46,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)')
   let model: ButtonModel | undefined
   let selected = options.modelId
+  let fitPoints: THREE.Vector3[] = []
   let state = ButtonState.STANDBY
   let started: number | null = null
   let glowStarted = 0
@@ -136,15 +138,10 @@ export function createButtonView(container: HTMLElement, options: Options) {
     try {
       width = Math.max(1, container.clientWidth)
       height = Math.max(1, container.clientHeight)
-      renderer.setSize(width, height, false)
-      camera.aspect = width / height
-      // 全回転を包含する約半径2.1の球を表示領域へ収める。
-      const vertical = THREE.MathUtils.degToRad(camera.fov / 2)
-      const angle = Math.min(vertical, Math.atan(Math.tan(vertical) * camera.aspect))
-      const distance = 2.1 / Math.sin(angle)
-      camera.position.set(0, 4.5, Math.hypot(4, 6.2)).normalize().multiplyScalar(distance)
-      camera.lookAt(0, 0.2, 0)
-      camera.updateProjectionMatrix()
+      const size = renderer.getSize(new THREE.Vector2())
+      if (size.x !== width || size.y !== height) renderer.setSize(width, height, false)
+      rig.updateWorldMatrix(true, true)
+      fitCamera(camera, fitPoints, rig.matrixWorld, width, height)
       invalidate()
     } catch (error) {
       fail(error)
@@ -161,7 +158,8 @@ export function createButtonView(container: HTMLElement, options: Options) {
       model = next
       selected = id
       rig.add(model.root)
-      invalidate()
+      fitPoints = collectFitPoints(model)
+      resize()
     } catch (error) {
       fail(error)
     }
@@ -169,12 +167,13 @@ export function createButtonView(container: HTMLElement, options: Options) {
   try {
     model = createModel(selected)
     rig.add(model.root)
+    fitPoints = collectFitPoints(model)
     container.appendChild(canvas)
     rotation = bindRotation(canvas, (dx, dy) => {
       if (!interactionEnabled) return
       rig.rotation.y += dx * 0.009
       rig.rotation.x = Math.max(-0.45, Math.min(0.6, rig.rotation.x + dy * 0.006))
-      invalidate()
+      resize()
     })
     canvas.addEventListener(
       'webglcontextlost',
@@ -242,7 +241,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
     resetView() {
       if (!disposed) {
         rig.rotation.set(0, 0, 0)
-        invalidate()
+        resize()
       }
     },
     dispose,
