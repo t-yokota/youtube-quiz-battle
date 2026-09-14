@@ -100,8 +100,10 @@ function press(e: MouseEvent) {
     !props.blocked &&
     props.buttonState === ButtonState.STANDBY &&
     (e.detail === 0 || (pointer && !cancelled && view?.acceptsPoint(e.clientX, e.clientY)))
-  )
+  ) {
+    if (props.playMode) view?.playStartPress()
     emit('press')
+  }
   pointer = undefined
 }
 </script>

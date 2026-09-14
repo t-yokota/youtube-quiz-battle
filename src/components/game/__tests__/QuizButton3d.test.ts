@@ -21,6 +21,7 @@ vi.mock('../button3d/view', () => ({
         return true
       },
       resetView() {},
+      playStartPress() {},
     }
   },
 }))

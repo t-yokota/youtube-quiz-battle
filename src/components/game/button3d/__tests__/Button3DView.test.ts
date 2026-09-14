@@ -12,6 +12,7 @@ const mock = vi.hoisted(() => ({
     setInteractionEnabled: vi.fn(),
     acceptsPoint: vi.fn(() => true),
     setModel: vi.fn(),
+    playStartPress: vi.fn(),
     resetView: vi.fn(),
     dispose: vi.fn(),
   },
@@ -153,4 +154,17 @@ it('タッチ終了時のpointerleaveがclickより先でも1回受理する', a
   props.playMode = true
   await nextTick()
   expect(button.children).toHaveLength(0)
+})
+
+it('再生モードだけ通常色の押下演出を同期通知の前に開始する', async () => {
+  const { host, props, press } = await mount()
+  const button = host.querySelector<HTMLButtonElement>('.button-hit')!
+  button.click()
+  expect(mock.view.playStartPress).not.toHaveBeenCalled()
+  props.playMode = true
+  await nextTick()
+  mock.view.playStartPress.mockImplementationOnce(() => expect(press).toHaveBeenCalledTimes(1))
+  button.click()
+  expect(mock.view.playStartPress).toHaveBeenCalledOnce()
+  expect(press).toHaveBeenCalledTimes(2)
 })

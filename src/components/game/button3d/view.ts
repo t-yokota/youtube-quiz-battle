@@ -64,6 +64,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
   let fitPoints: THREE.Vector3[] = []
   let state = ButtonState.STANDBY
   let started: number | null = null
+  let playStartPressActive = false
   let glowStarted = 0
   let frame = 0
   let disposed = false
@@ -136,13 +137,16 @@ export function createButtonView(container: HTMLElement, options: Options) {
         travel: defaultMotion.travel,
         glowing: state === ButtonState.RELEASED,
         glowLevel: reduced.matches ? 1 : sampleGlow(now - glowStarted),
-        disabled: state === ButtonState.DISABLED,
+        disabled: state === ButtonState.DISABLED && (!playStartPressActive || press.done),
       })
       renderer.render(scene, camera)
       scene.updateMatrixWorld(true)
       camera.updateMatrixWorld(true)
       options.onTarget(targetRect())
-      if (press.done) started = null
+      if (press.done) {
+        started = null
+        playStartPressActive = false
+      }
       if (!press.done || (state === ButtonState.RELEASED && !reduced.matches)) invalidate()
     } catch (error) {
       fail(error)
@@ -253,10 +257,19 @@ export function createButtonView(container: HTMLElement, options: Options) {
         .getCenter(new THREE.Vector3())
       return first.distance >= ray.ray.origin.distanceTo(center)
     },
+    playStartPress() {
+      if (disposed || !interactionEnabled || state !== ButtonState.STANDBY || playStartPressActive)
+        return
+      playStartPressActive = true
+      started = performance.now()
+      invalidate()
+    },
     setState(next: ButtonState) {
       if (disposed) return
       if (next === ButtonState.PUSHED && state !== next) started = performance.now()
-      if (next === ButtonState.STANDBY || next === ButtonState.DISABLED) started = null
+      if (next === ButtonState.STANDBY || next === ButtonState.PUSHED) playStartPressActive = false
+      if (next === ButtonState.STANDBY || (next === ButtonState.DISABLED && !playStartPressActive))
+        started = null
       if (next === ButtonState.RELEASED && state !== next) glowStarted = performance.now()
       state = next
       invalidate()

@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { createButtonView } from '../view'
 import { ButtonState } from '@/types'
+import type { ButtonModelId } from '@/constants/button'
+import { appearance } from '../appearance'
 
 const fake = vi.hoisted(() => ({
   fail: false,
@@ -81,12 +83,12 @@ afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
-function mount() {
+function mount(modelId: ButtonModelId = 'waseda-style-v1') {
   const host = document.createElement('div')
   Object.defineProperties(host, { clientWidth: { value: 320 }, clientHeight: { value: 240 } })
   const onError = vi.fn()
   const onTarget = vi.fn()
-  const view = createButtonView(host, { modelId: 'waseda-style-v1', onError, onTarget })
+  const view = createButtonView(host, { modelId, onError, onTarget })
   return { view, host, onError, onTarget }
 }
 it('静止・非表示時は停止し、RELEASEDの位相を復帰後も保つ', () => {
@@ -202,6 +204,68 @@ it('モデルごとの初期姿勢・回転量を保持し、リセットは選�
     view.resetView()
     expect(rig.rotation.x).toBe(0.6)
     expect(rig.rotation.y).toBe(0)
+  } finally {
+    view.dispose()
+  }
+})
+
+it.each(['simple-round-v1', 'waseda-style-v1'] as const)(
+  '%sの再生押下は通常色で押し戻ってからDISABLEDになる',
+  (id) => {
+    const { view } = mount(id)
+    frame()
+    const scene = fake.scenes.at(-1) as THREE.Scene
+    let cap: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> | undefined
+    scene.traverse((object) => {
+      if (
+        object instanceof THREE.Mesh &&
+        object.material instanceof THREE.MeshStandardMaterial &&
+        object.material.color.equals(new THREE.Color(appearance.capColor))
+      )
+        cap = object
+    })
+    const button = cap!
+    const rest = button.parent!.position.y
+    const normal = button.material.color.clone()
+    try {
+      view.playStartPress()
+      view.setState(ButtonState.DISABLED)
+      time = 40
+      frame()
+      expect(button.parent!.position.y).toBeCloseTo(rest - 0.15)
+      expect(button.material.color.equals(normal)).toBe(true)
+      expect(button.material.emissive.getHex() * button.material.emissiveIntensity).toBe(0)
+      time = 100
+      frame()
+      expect(button.parent!.position.y).toBeGreaterThan(rest - 0.15)
+      expect(button.parent!.position.y).toBeLessThan(rest)
+      expect(button.material.color.equals(normal)).toBe(true)
+      time = 140
+      frame()
+      expect(button.parent!.position.y).toBe(rest)
+      expect(button.material.color.r).toBeCloseTo(normal.r * 0.4)
+      expect(callbacks.size).toBe(0)
+    } finally {
+      view.dispose()
+    }
+  },
+)
+
+it('再生押下は動きを減らす設定で即時消灯し、リセットで演出を残さない', () => {
+  const { view } = mount()
+  try {
+    frame()
+    reduced = true
+    view.playStartPress()
+    view.setState(ButtonState.DISABLED)
+    frame()
+    expect(callbacks.size).toBe(0)
+    reduced = false
+    view.setState(ButtonState.STANDBY)
+    view.playStartPress()
+    view.setState(ButtonState.STANDBY)
+    frame()
+    expect(callbacks.size).toBe(0)
   } finally {
     view.dispose()
   }
