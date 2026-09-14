@@ -17,10 +17,11 @@ async function applyUpdate() {
   isUpdating.value = true
   updateFailed.value = false
   try {
+    // このPromiseは更新要求の送信で完了し、再読み込み完了を待つものではない。
+    // 成功時は更新中表示を維持し、タップへの応答が一瞬で元に戻るのを防ぐ。
     await updateServiceWorker(true)
   } catch {
     updateFailed.value = true
-  } finally {
     isUpdating.value = false
   }
 }
@@ -30,7 +31,7 @@ async function applyUpdate() {
   <Teleport to="body">
     <Transition name="pwa-update">
       <aside
-        v-if="needRefresh"
+        v-if="needRefresh || isUpdating"
         class="pwa-update-prompt"
         role="status"
         aria-live="polite"
@@ -38,12 +39,14 @@ async function applyUpdate() {
       >
         <p class="pwa-update-message">
           {{
-            updateFailed
-              ? '更新できませんでした。もう一度お試しください'
-              : '新しいバージョンがあります'
+            isUpdating
+              ? '更新しています…'
+              : updateFailed
+                ? '更新できませんでした。もう一度お試しください'
+                : '新しいバージョンがあります'
           }}
         </p>
-        <div class="pwa-update-actions">
+        <div v-if="!isUpdating" class="pwa-update-actions">
           <button type="button" class="pwa-update-dismiss" @click="dismiss">あとで</button>
           <button
             type="button"

@@ -60,6 +60,29 @@ describe('PwaUpdatePrompt', () => {
     expect(swMock.updateServiceWorker).toHaveBeenCalledWith(true)
   })
 
+  it('タップ直後に更新中へ切り替え、要求完了後も再読み込みまで操作ボタンを隠す', async () => {
+    let resolveUpdate!: () => void
+    swMock.updateServiceWorker.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveUpdate = resolve
+      }),
+    )
+    swMock.needRefresh.value = true
+    await nextTick()
+    const action = document.querySelector<HTMLButtonElement>('.pwa-update-action')!
+    action.click()
+    action.click()
+    await nextTick()
+    expect(document.querySelector('.pwa-update-message')?.textContent).toContain('更新しています…')
+    expect(document.querySelector('.pwa-update-actions')).toBeNull()
+    expect(swMock.updateServiceWorker).toHaveBeenCalledOnce()
+    resolveUpdate()
+    await Promise.resolve()
+    await nextTick()
+    expect(document.querySelector('.pwa-update-message')?.textContent).toContain('更新しています…')
+    expect(document.querySelector('.pwa-update-actions')).toBeNull()
+  })
+
   it('あとでを選ぶと現在のバージョンのまま通知を閉じる', async () => {
     swMock.needRefresh.value = true
     await nextTick()
