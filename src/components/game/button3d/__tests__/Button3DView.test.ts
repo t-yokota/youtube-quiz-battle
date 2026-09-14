@@ -1,6 +1,6 @@
 import { createApp, h, nextTick, reactive } from 'vue'
 import { ButtonState } from '@/types'
-import Buzzer3DView from '../Buzzer3DView.vue'
+import Button3DView from '../Button3DView.vue'
 const mock = vi.hoisted(() => ({
   options: null as unknown as {
     onTarget(rect: { x: number; y: number; width: number; height: number; visible: boolean }): void
@@ -17,7 +17,7 @@ const mock = vi.hoisted(() => ({
   },
 }))
 vi.mock('../view', () => ({
-  createBuzzerView: (_: unknown, options: unknown) => {
+  createButtonView: (_: unknown, options: unknown) => {
     mock.options = options as typeof mock.options
     if (mock.fail) throw new Error('No WebGL')
     mock.options.onTarget({ x: 100, y: 100, width: 44, height: 44, visible: true })
@@ -44,7 +44,7 @@ async function mount() {
   const host = document.createElement('div')
   document.body.appendChild(host)
   const app = createApp(() =>
-    h(Buzzer3DView, { ...props, onPress: press, onFailed: failed, onReady: ready }),
+    h(Button3DView, { ...props, onPress: press, onFailed: failed, onReady: ready }),
   )
   app.mount(host)
   cleanup = () => {
@@ -58,7 +58,7 @@ async function mount() {
 it('文字なしのネイティブbuttonから同期通知し、状態を同期反映する', async () => {
   const { host, props, press, ready } = await mount()
   expect(ready).toHaveBeenCalled()
-  const button = host.querySelector<HTMLButtonElement>('.buzzer-hit')!
+  const button = host.querySelector<HTMLButtonElement>('.button-hit')!
   expect(button.textContent?.trim()).toBe('')
   expect(button.getAttribute('aria-label')).toBe('早押しボタン')
   button.click()
@@ -90,7 +90,7 @@ it('context loss後は再描画せず失敗を通知する', async () => {
 
 it('キャップのドラッグ・cancelは押下せず、次のクリックとキーボード操作は受け付ける', async () => {
   const { host, press, props } = await mount()
-  const button = host.querySelector<HTMLButtonElement>('.buzzer-hit')!
+  const button = host.querySelector<HTMLButtonElement>('.button-hit')!
   function pointer(type: string, x = 0) {
     const e = new Event(type)
     Object.assign(e, { isPrimary: true, button: 0, clientX: x, clientY: 0 })
@@ -112,14 +112,14 @@ it('キャップのドラッグ・cancelは押下せず、次のクリックと�
   expect(button.getAttribute('aria-label')).toBe('動画を再生')
   button.click()
   expect(press).toHaveBeenCalledTimes(2)
-  host.querySelector<HTMLButtonElement>('.buzzer-reset')!.click()
+  host.querySelector<HTMLButtonElement>('.button-reset')!.click()
   expect(mock.view.resetView).toHaveBeenCalledOnce()
 })
 
 it('遅延ロード完了前のunmountではviewを生成しない', async () => {
   const host = document.createElement('div')
   const app = createApp(() =>
-    h(Buzzer3DView, {
+    h(Button3DView, {
       buttonState: ButtonState.STANDBY,
       enabled: true,
       blocked: false,

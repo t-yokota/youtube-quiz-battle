@@ -1,20 +1,20 @@
 import * as THREE from 'three'
 import { ButtonState } from '@/types'
-import type { BuzzerModelId } from '@/constants/buzzer'
-import type { BuzzerModel, TargetRect } from './contracts'
+import type { ButtonModelId } from '@/constants/button'
+import type { ButtonModel, TargetRect } from './contracts'
 import { appearance } from './appearance'
 import { createModel } from './models'
 import { defaultMotion, sampleGlow, samplePress } from './motion'
 import { bindRotation } from './rotation'
 
 interface Options {
-  modelId: BuzzerModelId
+  modelId: ButtonModelId
   onError(error: unknown): void
   onTarget(rect: TargetRect): void
 }
-export type BuzzerView = ReturnType<typeof createBuzzerView>
+export type ButtonView = ReturnType<typeof createButtonView>
 
-export function createBuzzerView(container: HTMLElement, options: Options) {
+export function createButtonView(container: HTMLElement, options: Options) {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
@@ -43,7 +43,7 @@ export function createBuzzerView(container: HTMLElement, options: Options) {
   canvas.setAttribute('aria-hidden', 'true')
   canvas.style.cssText = 'display:block;width:100%;height:100%;touch-action:none'
   const reduced = matchMedia('(prefers-reduced-motion: reduce)')
-  let model: BuzzerModel | undefined
+  let model: ButtonModel | undefined
   let selected = options.modelId
   let state = ButtonState.STANDBY
   let started: number | null = null
@@ -150,7 +150,7 @@ export function createBuzzerView(container: HTMLElement, options: Options) {
       fail(error)
     }
   }
-  function setModel(id: BuzzerModelId) {
+  function setModel(id: ButtonModelId) {
     if (disposed || (model && selected === id)) return
     try {
       const next = createModel(id)

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { createBuzzerView } from '../view'
+import { createButtonView } from '../view'
 import { ButtonState } from '@/types'
 
 const fake = vi.hoisted(() => ({
@@ -83,7 +83,7 @@ function mount() {
   Object.defineProperties(host, { clientWidth: { value: 320 }, clientHeight: { value: 240 } })
   const onError = vi.fn()
   const onTarget = vi.fn()
-  const view = createBuzzerView(host, { modelId: 'waseda-style-v1', onError, onTarget })
+  const view = createButtonView(host, { modelId: 'waseda-style-v1', onError, onTarget })
   return { view, host, onError, onTarget }
 }
 it('静止・非表示時は停止し、RELEASEDの位相を復帰後も保つ', () => {

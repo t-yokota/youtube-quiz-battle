@@ -2,7 +2,7 @@
 // QuizButton コンポーネント
 // 早押しボタン（物理ボタン: 真上視点の円形キャップ + 同心円台座 + LED リング）
 import { computed, ref, watch } from 'vue'
-import Buzzer3DView from './buzzer3d/Buzzer3DView.vue'
+import Button3DView from './button3d/Button3DView.vue'
 import { ButtonState, GameState } from '@/types'
 import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -23,12 +23,12 @@ const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
 const threeReady = ref(false)
 const threeFailed = ref(false)
-const useThree = computed(() => settingsStore.buzzer.renderMode === '3d' && !threeFailed.value)
+const useThree = computed(() => settingsStore.button.renderMode === '3d' && !threeFailed.value)
 watch(
-  () => [settingsStore.buzzer.renderMode, settingsStore.buzzer.modelId],
+  () => [settingsStore.button.renderMode, settingsStore.button.modelId],
   () => {
     threeFailed.value = false
-    if (settingsStore.buzzer.renderMode === '2d') threeReady.value = false
+    if (settingsStore.button.renderMode === '2d') threeReady.value = false
   },
 )
 function fallbackToTwo() {
@@ -103,12 +103,12 @@ const handleButtonCheckToggle = () => {
 <template>
   <section class="quiz-button-container" :class="{ lit: isLit }">
     <div class="button-stage">
-      <Buzzer3DView
+      <Button3DView
         v-if="useThree"
         :button-state="buttonState"
         :enabled="gameStore.isButtonEnabled"
         :blocked="interactionBlocked"
-        :model-id="settingsStore.buzzer.modelId"
+        :model-id="settingsStore.button.modelId"
         :play-mode="isPlayMode"
         @press="handlePress"
         @ready="threeReady = true"

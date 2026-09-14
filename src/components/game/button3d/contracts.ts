@@ -6,7 +6,7 @@ export interface VisualState {
   glowLevel: number
   disabled: boolean
 }
-export interface BuzzerModel {
+export interface ButtonModel {
   root: Group
   hitTargets: Object3D[]
   setVisual(state: VisualState): void

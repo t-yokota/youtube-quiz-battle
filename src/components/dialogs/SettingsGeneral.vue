@@ -7,14 +7,14 @@ defineProps<{ volumeLevel: number }>()
 const emit = defineEmits<{ updateVolume: [level: number]; openThemeSwitcher: [] }>()
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
-const canChangeBuzzer = computed(
+const canChangeButton = computed(
   () => gameStore.currentState === GameState.READY || gameStore.currentState === GameState.FINISHED,
 )
 function changeMode(event: Event) {
-  if (canChangeBuzzer.value) settingsStore.setBuzzerMode((event.target as HTMLSelectElement).value)
+  if (canChangeButton.value) settingsStore.setButtonMode((event.target as HTMLSelectElement).value)
 }
 function changeModel(event: Event) {
-  if (canChangeBuzzer.value) settingsStore.setBuzzerModel((event.target as HTMLSelectElement).value)
+  if (canChangeButton.value) settingsStore.setButtonModel((event.target as HTMLSelectElement).value)
 }
 function handleVolumeChange(level: number) {
   emit('updateVolume', level)
@@ -166,30 +166,30 @@ const handleButtonCheckToggle = () => {
 
   <section class="settings-section">
     <div class="setting-row">
-      <label for="buzzer-mode" class="setting-label">ボタンの表示方式</label>
+      <label for="button-mode" class="setting-label">ボタンの表示方式</label>
       <select
-        id="buzzer-mode"
-        :value="settingsStore.buzzer.renderMode"
-        :disabled="!canChangeBuzzer"
+        id="button-mode"
+        :value="settingsStore.button.renderMode"
+        :disabled="!canChangeButton"
         @change="changeMode"
       >
         <option value="2d">2D</option>
         <option value="3d">3D</option>
       </select>
     </div>
-    <div v-if="settingsStore.buzzer.renderMode === '3d'" class="setting-row buzzer-model-row">
-      <label for="buzzer-model" class="setting-label">ボタンタイプ</label>
+    <div v-if="settingsStore.button.renderMode === '3d'" class="setting-row button-model-row">
+      <label for="button-model" class="setting-label">ボタンタイプ</label>
       <select
-        id="buzzer-model"
-        :value="settingsStore.buzzer.modelId"
-        :disabled="!canChangeBuzzer"
+        id="button-model"
+        :value="settingsStore.button.modelId"
+        :disabled="!canChangeButton"
         @change="changeModel"
       >
         <option value="simple-round-v1">円形</option>
         <option value="waseda-style-v1">早稲田式風</option>
       </select>
     </div>
-    <p v-if="!canChangeBuzzer" class="seek-description">クイズ開始前か終了後に変更できます。</p>
+    <p v-if="!canChangeButton" class="seek-description">クイズ開始前か終了後に変更できます。</p>
   </section>
 
   <!-- UI Theme -->
@@ -217,7 +217,7 @@ option {
   color: #111;
   background: #fff;
 }
-.buzzer-model-row {
+.button-model-row {
   margin-top: 12px;
   padding-left: 12px;
 }

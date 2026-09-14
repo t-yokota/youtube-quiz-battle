@@ -1,10 +1,10 @@
 // 提供元: quizbattle-waseda-model-addon / ADDON.md (2026-09-14)。形状の採用値を維持。
 import * as THREE from 'three'
 import type { Appearance } from '../appearance'
-import type { BuzzerModel } from '../contracts'
+import type { ButtonModel } from '../contracts'
 import { buildModel } from '../resources'
 
-export function createSimpleRound(appearance: Appearance): BuzzerModel {
+export function createSimpleRound(appearance: Appearance): ButtonModel {
   return buildModel((track) => {
     const root = new THREE.Group()
     // r128 の確認済みプレビューを再現するため台座は既存の線形値を維持。

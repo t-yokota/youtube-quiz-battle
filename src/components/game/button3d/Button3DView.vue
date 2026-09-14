@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { ref, shallowRef, onMounted, onBeforeUnmount, watch } from 'vue'
 import { ButtonState } from '@/types'
-import type { BuzzerModelId } from '@/constants/buzzer'
-import type { BuzzerView } from './view'
+import type { ButtonModelId } from '@/constants/button'
+import type { ButtonView } from './view'
 import type { TargetRect } from './contracts'
 import { logger } from '@/utils/logger'
 const props = defineProps<{
   buttonState: ButtonState
   enabled: boolean
   blocked: boolean
-  modelId: BuzzerModelId
+  modelId: ButtonModelId
   playMode: boolean
 }>()
 const emit = defineEmits<{ press: []; ready: []; failed: [] }>()
 const host = ref<HTMLElement>()
 const ready = ref(false)
 const target = shallowRef<TargetRect>({ x: 0, y: 0, width: 44, height: 44, visible: false })
-let view: BuzzerView | undefined
+let view: ButtonView | undefined
 let mounted = false
 let failed = false
 let pointer: { x: number; y: number } | undefined
@@ -25,15 +25,15 @@ function fail(error: unknown) {
   if (!mounted || failed) return
   failed = true
   view?.dispose()
-  logger.warn('[Buzzer3D] Switching to 2D:', error)
+  logger.warn('[Button3D] Switching to 2D:', error)
   emit('failed')
 }
 onMounted(async () => {
   mounted = true
   try {
-    const { createBuzzerView } = await import('./view')
+    const { createButtonView } = await import('./view')
     if (!mounted || !host.value) return
-    view = createBuzzerView(host.value, {
+    view = createButtonView(host.value, {
       modelId: props.modelId,
       onError: fail,
       onTarget: (rect) => {
@@ -97,12 +97,12 @@ function press(e: MouseEvent) {
 }
 </script>
 <template>
-  <div class="buzzer-3d" :inert="blocked || !ready || undefined">
-    <div ref="host" class="buzzer-canvas" />
+  <div class="button-3d" :inert="blocked || !ready || undefined">
+    <div ref="host" class="button-canvas" />
     <button
       v-show="ready"
       type="button"
-      class="buzzer-hit"
+      class="button-hit"
       :class="{ 'keyboard-only': !target.visible }"
       :style="{
         left: `${target.x}px`,
@@ -118,13 +118,13 @@ function press(e: MouseEvent) {
       @pointerleave="cancelPointer"
       @click.stop="press"
     >
-      <svg v-if="playMode" class="buzzer-play" viewBox="0 0 24 24" aria-hidden="true">
+      <svg v-if="playMode" class="button-play" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M8 5.5 L18.5 12 L8 18.5 Z" fill="white" />
       </svg>
     </button>
     <button
       type="button"
-      class="buzzer-reset"
+      class="button-reset"
       aria-label="ボタンの向きを戻す"
       @click="view?.resetView()"
     >
@@ -135,15 +135,15 @@ function press(e: MouseEvent) {
   </div>
 </template>
 <style scoped>
-.buzzer-3d {
+.button-3d {
   position: absolute;
   inset: 0;
 }
-.buzzer-canvas {
+.button-canvas {
   width: 100%;
   height: 100%;
 }
-.buzzer-hit {
+.button-hit {
   position: absolute;
   display: grid;
   place-items: center;
@@ -156,25 +156,25 @@ function press(e: MouseEvent) {
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
-.buzzer-hit:disabled {
+.button-hit:disabled {
   cursor: default;
 }
-.buzzer-hit:focus-visible,
-.buzzer-reset:focus-visible {
+.button-hit:focus-visible,
+.button-reset:focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 3px;
 }
-.buzzer-hit.keyboard-only {
+.button-hit.keyboard-only {
   left: 50% !important;
   top: 50% !important;
   pointer-events: none;
 }
-.buzzer-play {
+.button-play {
   width: 28px;
   height: 28px;
   pointer-events: none;
 }
-.buzzer-reset {
+.button-reset {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -187,7 +187,7 @@ function press(e: MouseEvent) {
   color: var(--color-text-dim);
   cursor: pointer;
 }
-.buzzer-reset svg {
+.button-reset svg {
   width: 20px;
   height: 20px;
 }
