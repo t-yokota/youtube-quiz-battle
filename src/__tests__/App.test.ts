@@ -453,3 +453,64 @@ it.each([GameState.WAITING, GameState.TALKING])(
     else expect(input.isConnected).toBe(false)
   },
 )
+
+it('動画非表示時は直前のボタン領域高を保持し、通常表示へ戻すと解除する', async () => {
+  host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+  await flush()
+  useDebugStore().setHideVideoPlayerDuringAnswerOverride(true)
+  store.setCurrentQuestionIndex(0)
+  store.transitionToState(GameState.QUESTIONING)
+  await flush()
+  const button = host.querySelector<HTMLElement>('.quiz-button-container')!
+  let height = 350
+  const bounds = vi
+    .spyOn(button, 'getBoundingClientRect')
+    .mockImplementation(() => ({ height }) as DOMRect)
+  try {
+    store.transitionToState(GameState.ANSWERING)
+    await flush()
+    const area = host.querySelector<HTMLElement>('.game-ui')!
+    expect(area.style.getPropertyValue('--answer-button-height')).toBe('350px')
+    height = 180
+    window.dispatchEvent(new Event('resize'))
+    await flush()
+    expect(area.style.getPropertyValue('--answer-button-height')).toBe('350px')
+    store.transitionToState(GameState.WAITING)
+    await flush()
+    expect(area.style.getPropertyValue('--answer-button-height')).toBe('')
+  } finally {
+    bounds.mockRestore()
+  }
+})
+
+it('iOSでは同期フォーカスでキーボードが開く前にボタン領域高を保存する', async () => {
+  const agent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('iPhone')
+  host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+  await flush()
+  useDebugStore().setHideVideoPlayerDuringAnswerOverride(true)
+  store.setCurrentQuestionIndex(0)
+  store.transitionToState(GameState.QUESTIONING)
+  await flush()
+  let height = 360
+  const button = host.querySelector<HTMLElement>('.quiz-button-container')!
+  const bounds = vi
+    .spyOn(button, 'getBoundingClientRect')
+    .mockImplementation(() => ({ height }) as DOMRect)
+  const focus = vi
+    .spyOn(host.querySelector<HTMLInputElement>('.answer-input')!, 'focus')
+    .mockImplementation(() => {
+      height = 180
+    })
+  try {
+    space()
+    vi.advanceTimersByTime(101)
+    await flush()
+    expect(
+      host.querySelector<HTMLElement>('.game-ui')!.style.getPropertyValue('--answer-button-height'),
+    ).toBe('360px')
+  } finally {
+    agent.mockRestore()
+    bounds.mockRestore()
+    focus.mockRestore()
+  }
+})

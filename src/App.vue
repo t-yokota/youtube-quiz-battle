@@ -83,6 +83,14 @@ function isGameInputBlocked(): boolean {
 
 function handleButtonPress() {
   if (isGameInputBlocked()) return
+  if (
+    gameStore.currentState === GameState.QUESTIONING &&
+    gameStore.isButtonEnabled &&
+    gameStore.effectiveSettings?.hideVideoPlayerDuringAnswer
+  ) {
+    // iOSの同期focusでキーボードが開く前の高さを保存する。
+    beforeAnswerButtonHeight = measureButtonHeight()
+  }
   // iOSではユーザー操作内の同期focusでキーボードを開く。
   if (isIOS() && gameStore.currentState === GameState.QUESTIONING && gameStore.isButtonEnabled) {
     const input = document.querySelector<HTMLInputElement>('.answer-input')
@@ -123,6 +131,31 @@ const shouldHidePlayer = computed(
   () =>
     (gameStore.effectiveSettings?.hideVideoPlayerDuringAnswer ?? false) &&
     gameStore.currentState === GameState.ANSWERING,
+)
+
+const gameUi = ref<HTMLElement>()
+const answerButtonHeight = ref<string>()
+let beforeAnswerButtonHeight: number | undefined
+function measureButtonHeight() {
+  const height = gameUi.value
+    ?.querySelector('.quiz-button-container')
+    ?.getBoundingClientRect().height
+  return height && height > 0 ? height : undefined
+}
+watch(
+  [shouldHidePlayer, () => gameStore.currentState],
+  ([hidden, state], [wasHidden]) => {
+    if (hidden && !wasHidden) {
+      // 領域を最低高へ縮めると3Dモデルも縮小されるため、実測した高さを保持する。
+      const height = beforeAnswerButtonHeight ?? measureButtonHeight()
+      answerButtonHeight.value = height ? `${height}px` : undefined
+      beforeAnswerButtonHeight = undefined
+    } else if (!hidden) {
+      answerButtonHeight.value = undefined
+      if (state !== GameState.QUESTIONING) beforeAnswerButtonHeight = undefined
+    }
+  },
+  { flush: 'sync' },
 )
 
 // タッチデバイス判定（初回評価のみ。useOrientationGuard と同じ基準）
@@ -218,7 +251,12 @@ onBeforeUnmount(() => {
         <!-- スコアボード（video 直下にフルブリードで密着） -->
         <GameInfo />
 
-        <div class="game-ui" :class="{ 'answering-player-hidden': shouldHidePlayer }">
+        <div
+          ref="gameUi"
+          class="game-ui"
+          :class="{ 'answering-player-hidden': shouldHidePlayer }"
+          :style="{ '--answer-button-height': answerButtonHeight }"
+        >
           <GamePanel @submit="handleAnswerSubmit" />
           <!-- 動画非表示時も解答エリア直下にボタンを配置する。 -->
           <QuizButton
@@ -429,8 +467,9 @@ onBeforeUnmount(() => {
   gap: 0.875rem;
 }
 .game-ui.answering-player-hidden :deep(.quiz-button-container) {
-  flex: 0 0 13.5rem;
-  height: 13.5rem;
+  flex: 0 0 var(--answer-button-height, 13.5rem);
+  height: var(--answer-button-height, 13.5rem);
+  min-height: var(--answer-button-height, 13.5rem);
 }
 
 /* Result UI（リザルトステージ: 上部に放射スポットライト） */
