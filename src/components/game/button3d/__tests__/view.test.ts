@@ -163,3 +163,46 @@ it.each(['context', 'render'])('%s障害で一度だけ通知して描画と資�
   view.dispose()
   expect(fake.dispose).toHaveBeenCalledOnce()
 })
+
+it('モデルごとの初期姿勢・回転量を保持し、リセットは選択中のモデルだけに適用する', () => {
+  const { view, host } = mount()
+  frame()
+  const scene = fake.scenes.at(-1) as THREE.Scene
+  const rig = scene.children[0]!.children[0] as THREE.Group
+  const canvas = host.querySelector('canvas')!
+  canvas.setPointerCapture = vi.fn()
+  canvas.hasPointerCapture = vi.fn(() => false)
+  function drag(x: number, y: number) {
+    for (const [type, clientX, clientY] of [
+      ['pointerdown', 0, 0],
+      ['pointermove', x, y],
+      ['pointerup', x, y],
+    ] as const) {
+      const event = new Event(type)
+      Object.assign(event, { isPrimary: true, button: 0, pointerId: 1, clientX, clientY })
+      canvas.dispatchEvent(event)
+    }
+  }
+  try {
+    expect(rig.rotation.x).toBe(0)
+    drag(20, 20)
+    const box = rig.rotation.clone()
+    view.setModel('simple-round-v1')
+    expect(rig.rotation.x).toBe(0.6)
+    expect(rig.rotation.y).toBe(0)
+    drag(-20, -20)
+    const round = rig.rotation.clone()
+    view.setModel('waseda-style-v1')
+    expect(rig.rotation.equals(box)).toBe(true)
+    view.resetView()
+    expect(rig.rotation.x).toBe(0)
+    expect(rig.rotation.y).toBe(0)
+    view.setModel('simple-round-v1')
+    expect(rig.rotation.equals(round)).toBe(true)
+    view.resetView()
+    expect(rig.rotation.x).toBe(0.6)
+    expect(rig.rotation.y).toBe(0)
+  } finally {
+    view.dispose()
+  }
+})

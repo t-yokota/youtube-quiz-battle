@@ -8,6 +8,12 @@ import { defaultMotion, sampleGlow, samplePress } from './motion'
 import { bindRotation } from './rotation'
 import { collectFitPoints, fitCamera } from './cameraFit'
 
+const MIN_ROTATION_X = -0.45
+const MAX_ROTATION_X = 0.6
+function initialRotation(id: ButtonModelId) {
+  return { x: id === 'simple-round-v1' ? MAX_ROTATION_X : 0, y: 0 }
+}
+
 interface Options {
   modelId: ButtonModelId
   onError(error: unknown): void
@@ -46,6 +52,15 @@ export function createButtonView(container: HTMLElement, options: Options) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)')
   let model: ButtonModel | undefined
   let selected = options.modelId
+  let modelRotations: Record<ButtonModelId, { x: number; y: number }> = {
+    'simple-round-v1': initialRotation('simple-round-v1'),
+    'waseda-style-v1': initialRotation('waseda-style-v1'),
+  }
+  function applyRotation() {
+    const { x, y } = modelRotations[selected]
+    rig.rotation.set(x, y, 0)
+  }
+  applyRotation()
   let fitPoints: THREE.Vector3[] = []
   let state = ButtonState.STANDBY
   let started: number | null = null
@@ -157,6 +172,8 @@ export function createButtonView(container: HTMLElement, options: Options) {
       }
       model = next
       selected = id
+      rotation?.clear()
+      applyRotation()
       rig.add(model.root)
       fitPoints = collectFitPoints(model)
       resize()
@@ -171,8 +188,14 @@ export function createButtonView(container: HTMLElement, options: Options) {
     container.appendChild(canvas)
     rotation = bindRotation(canvas, (dx, dy) => {
       if (!interactionEnabled) return
-      rig.rotation.y += dx * 0.009
-      rig.rotation.x = Math.max(-0.45, Math.min(0.6, rig.rotation.x + dy * 0.006))
+      modelRotations = {
+        ...modelRotations,
+        [selected]: {
+          x: Math.max(MIN_ROTATION_X, Math.min(MAX_ROTATION_X, rig.rotation.x + dy * 0.006)),
+          y: rig.rotation.y + dx * 0.009,
+        },
+      }
+      applyRotation()
       resize()
     })
     canvas.addEventListener(
@@ -240,7 +263,9 @@ export function createButtonView(container: HTMLElement, options: Options) {
     },
     resetView() {
       if (!disposed) {
-        rig.rotation.set(0, 0, 0)
+        rotation?.clear()
+        modelRotations = { ...modelRotations, [selected]: initialRotation(selected) }
+        applyRotation()
         resize()
       }
     },
