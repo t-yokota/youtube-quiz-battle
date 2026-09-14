@@ -8,6 +8,7 @@ const fake = vi.hoisted(() => ({
   fail: false,
   draw: vi.fn(),
   dispose: vi.fn(),
+  release: vi.fn(),
   scenes: [] as unknown[],
 }))
 vi.mock('three', async (importOriginal) => {
@@ -25,6 +26,9 @@ vi.mock('three', async (importOriginal) => {
         if (fake.fail) throw new Error('GPU failure')
         fake.draw()
         fake.scenes.push(scene)
+      }
+      forceContextLoss() {
+        fake.release()
       }
       dispose() {
         fake.dispose()
@@ -53,6 +57,7 @@ beforeEach(() => {
   fake.fail = false
   fake.draw.mockClear()
   fake.dispose.mockClear()
+  fake.release.mockClear()
   fake.scenes = []
   vi.spyOn(performance, 'now').mockImplementation(() => time)
   vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden)
@@ -269,4 +274,16 @@ it('再生押下は動きを減らす設定で即時消灯し、リセットで�
   } finally {
     view.dispose()
   }
+})
+
+it('静止画像は非表示タブでも同期描画し、専用ビューのWebGLを解放できる', () => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,test')
+  const { view } = mount()
+  hidden = true
+  expect(view.captureSnapshot()).toContain('data:image/png')
+  expect(fake.draw).toHaveBeenCalledOnce()
+  expect(callbacks.size).toBe(0)
+  view.dispose(true)
+  expect(fake.release).toHaveBeenCalledOnce()
+  expect(() => view.captureSnapshot()).toThrow('disposed')
 })

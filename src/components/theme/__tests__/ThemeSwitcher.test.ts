@@ -1,4 +1,5 @@
 import { createApp, nextTick } from 'vue'
+import { createPinia } from 'pinia'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -63,6 +64,13 @@ describe('ThemeSwitcher', () => {
   }
 
   beforeEach(async () => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    )
     cardLeft = 0
     cardTop = 160
     overlayLeft = 0
@@ -95,6 +103,7 @@ describe('ThemeSwitcher', () => {
     host = document.createElement('div')
     document.body.appendChild(host)
     app = createApp(ThemeSwitcher, { isOpen: true, onClose: close })
+    app.use(createPinia())
     app.mount(host)
     await nextTick()
     await nextTick()

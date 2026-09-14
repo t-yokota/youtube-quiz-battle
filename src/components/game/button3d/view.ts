@@ -75,8 +75,11 @@ export function createButtonView(container: HTMLElement, options: Options) {
   let rotation: ReturnType<typeof bindRotation> | undefined
   const events = new AbortController()
 
-  function dispose() {
-    if (disposed) return
+  function dispose(releaseContext = false) {
+    if (disposed) {
+      if (releaseContext) renderer.forceContextLoss()
+      return
+    }
     disposed = true
     cancelAnimationFrame(frame)
     frame = 0
@@ -86,6 +89,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
     reduced.removeEventListener('change', invalidate)
     model?.dispose()
     renderer.dispose()
+    if (releaseContext) renderer.forceContextLoss()
     canvas.remove()
   }
   function fail(error: unknown) {
@@ -123,9 +127,9 @@ export function createButtonView(container: HTMLElement, options: Options) {
       visible: !!first && model!.hitTargets.includes(first.object) && screen.z > -1 && screen.z < 1,
     }
   }
-  function draw() {
+  function draw(_time?: number, force = false) {
     frame = 0
-    if (disposed || document.hidden || !model) return
+    if (disposed || (document.hidden && !force) || !model) return
     try {
       const now = performance.now()
       const press =
@@ -231,6 +235,13 @@ export function createButtonView(container: HTMLElement, options: Options) {
   }
   return {
     setModel,
+    captureSnapshot() {
+      if (disposed) throw new Error('Button view is disposed')
+      cancelAnimationFrame(frame)
+      draw(undefined, true)
+      if (disposed) throw new Error('Button snapshot rendering failed')
+      return canvas.toDataURL('image/png')
+    },
     setInteractionEnabled(enabled: boolean) {
       interactionEnabled = enabled
       if (!enabled) rotation?.clear()

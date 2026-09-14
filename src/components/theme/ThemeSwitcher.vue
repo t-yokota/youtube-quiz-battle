@@ -9,6 +9,8 @@ import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useTheme, type ThemeInfo } from '@/composables/useTheme'
 import { calculateCardGeometry } from './themeSwitcherLayout'
 import ThemePreview from './ThemePreview.vue'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { useGameStore } from '@/stores/gameStore'
 
 const props = defineProps<{ isOpen: boolean }>()
 
@@ -17,6 +19,8 @@ const emit = defineEmits<{
 }>()
 
 const { themes, currentThemeId, setTheme } = useTheme()
+const settingsStore = useSettingsStore()
+const gameStore = useGameStore()
 
 const overlayRef = ref<HTMLElement | null>(null)
 const railRef = ref<HTMLElement | null>(null)
@@ -223,7 +227,12 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
                   '--card-preview-scale': cardPreviewScale,
                 }"
               >
-                <ThemePreview :preview-width="previewWidth" :preview-height="previewHeight" />
+                <ThemePreview
+                  :preview-width="previewWidth"
+                  :preview-height="previewHeight"
+                  :button-settings="settingsStore.button"
+                  :button-check-enabled="gameStore.isButtonCheckEnabled"
+                />
               </span>
             </span>
             <span class="card-label">{{ t.label }}</span>
@@ -239,7 +248,12 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
   <Teleport to="body">
     <div v-if="zoomThemeId" class="zoom-layer" :data-theme="zoomThemeId" :style="zoomStyle">
       <div class="zoom-fit" :style="{ width: previewWidth + 'px', height: previewHeight + 'px' }">
-        <ThemePreview :preview-width="previewWidth" :preview-height="previewHeight" />
+        <ThemePreview
+          :preview-width="previewWidth"
+          :preview-height="previewHeight"
+          :button-settings="settingsStore.button"
+          :button-check-enabled="gameStore.isButtonCheckEnabled"
+        />
       </div>
     </div>
   </Teleport>

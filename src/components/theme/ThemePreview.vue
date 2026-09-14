@@ -1,20 +1,31 @@
 <script setup lang="ts">
 // ThemePreview コンポーネント
 // スイッチャーのカードに表示する「問題中（早押し可）」画面の代表イメージ。
-// 実ストア・実プレイヤーに依存しない静的マークアップで、
+// 見た目の設定をpropsで受け取り、実ストア・実プレイヤーに依存せず描画する。
+// 3D画像は実モデルから生成し、同じ寸法のカード間で共有する。
 // スタイルはすべてテーマトークン参照 → 親の [data-theme] だけで任意テーマの見た目になる。
 // 新テーマ追加時にこのファイルの変更は不要。
+import { ref } from 'vue'
+import { defaultButton, type ButtonSettings } from '@/constants/button'
+import DimensionIcon from '@/components/game/DimensionIcon.vue'
+import { useButtonPreviewImage } from './useButtonPreviewImage'
 import SettingsIcon from '@/components/common/SettingsIcon.vue'
 
 interface Props {
   previewWidth?: number
   previewHeight?: number
+  buttonSettings?: ButtonSettings
+  buttonCheckEnabled?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   previewWidth: 315,
   previewHeight: 700,
+  buttonSettings: () => ({ ...defaultButton }),
+  buttonCheckEnabled: true,
 })
+const threeHost = ref<HTMLElement>()
+const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
 </script>
 
 <template>
@@ -73,15 +84,38 @@ withDefaults(defineProps<Props>(), {
       <!-- 早押しボタン領域（実画面と同じくトグルを内包） -->
       <div class="p-button-container">
         <div class="p-button-area">
-          <span class="p-pedestal"></span>
-          <span class="p-quiz-button">PUSH</span>
+          <div
+            ref="threeHost"
+            class="p-three"
+            :class="{ 'is-round': buttonSettings.modelId === 'simple-round-v1' }"
+          >
+            <img v-if="buttonImage" :src="buttonImage" alt="" class="p-three-image" />
+          </div>
+          <template v-if="!buttonImage">
+            <span class="p-pedestal"></span>
+            <span class="p-quiz-button">PUSH</span>
+          </template>
+          <span v-if="buttonImage" class="p-reset">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M4 10a8 8 0 1 1 1 8M4 4v6h6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+            </svg>
+          </span>
         </div>
 
+        <span class="p-dimension">
+          <DimensionIcon :key="buttonImage ? '3d' : '2d'" :solid="!!buttonImage" />
+        </span>
         <!-- BUTTON CHECK トグル -->
         <div class="p-toggle-row">
           <span class="p-toggle-label">BUTTON CHECK</span>
-          <span class="p-toggle"
-            ><span class="p-toggle-state">ON</span><span class="p-toggle-knob"></span
+          <span class="p-toggle" :class="{ off: !buttonCheckEnabled }"
+            ><span class="p-toggle-state">{{ buttonCheckEnabled ? 'ON' : 'OFF' }}</span
+            ><span class="p-toggle-knob"></span
           ></span>
         </div>
       </div>
@@ -326,6 +360,7 @@ withDefaults(defineProps<Props>(), {
 
 /* 早押しボタン */
 .p-button-container {
+  --icon-hit-offset: 9.625px;
   flex: 1;
   min-height: 13.5rem;
   display: flex;
@@ -423,5 +458,56 @@ withDefaults(defineProps<Props>(), {
     gap: 0.625rem;
     padding: 0.625rem 0.75rem;
   }
+}
+
+.p-three {
+  position: absolute;
+  inset: 0 10%;
+}
+.p-three.is-round {
+  inset-inline: 20%;
+}
+.p-three-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.p-dimension,
+.p-reset {
+  position: absolute;
+  left: calc(-1 * var(--icon-hit-offset));
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-dim);
+}
+.p-dimension {
+  bottom: calc(-1 * var(--icon-hit-offset));
+}
+.p-dimension :deep(svg) {
+  transform: translate(var(--icon-hit-offset), calc(-1 * var(--icon-hit-offset)));
+}
+.p-reset {
+  bottom: 5px;
+}
+.p-reset svg {
+  width: 20px;
+  height: 20px;
+}
+.p-toggle.off {
+  background: var(--toggle-track);
+  border-color: var(--toggle-track-border);
+  box-shadow: var(--toggle-track-shadow);
+}
+.p-toggle.off .p-toggle-state {
+  left: auto;
+  right: calc(0.3125 * var(--preview-toggle-unit));
+  color: var(--color-text-dim);
+}
+.p-toggle.off .p-toggle-knob {
+  right: auto;
+  left: calc(0.125 * var(--preview-toggle-unit));
+  background: var(--toggle-knob);
 }
 </style>

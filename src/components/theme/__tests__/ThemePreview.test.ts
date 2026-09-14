@@ -103,3 +103,12 @@ describe('ThemePreview', () => {
     expect(themePreviewSource).not.toContain('cqmin')
   })
 })
+
+it('設定のOFF表示と表示切替アイコンを描画し、プレビュー内に操作要素を追加しない', async () => {
+  const markup = await renderToString(createSSRApp(ThemePreview, { buttonCheckEnabled: false }))
+  const host = document.createElement('div')
+  host.innerHTML = markup
+  expect(host.querySelector('.p-toggle-state')?.textContent).toBe('OFF')
+  expect(host.querySelector('.p-dimension svg')).not.toBeNull()
+  expect(host.querySelector('button, input, [tabindex]')).toBeNull()
+})
