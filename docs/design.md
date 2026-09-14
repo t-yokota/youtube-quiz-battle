@@ -317,6 +317,8 @@ stateDiagram-v2
 | DISABLED → STANDBY | ゲーム状態変化（READY/QUESTIONING） | 即座 | 問題開始時・ゲーム開始準備完了時 |
 | DISABLED → 非表示 | ゲーム状態変化（FINISHED） | 即座 | ゲーム終了時 |
 
+早押し受理後はQUESTIONINGのまま点灯演出を見せ、押下から`ANSWER_START_DELAY_MS`（500ms）後にANSWERINGへ移る（iOS／iPadOSは追加待ちなしで100ms）。待ち時間中は再押下・解答入力を受け付けず、動画の再生要求を停止する。解答期限はANSWERING開始時から数え、リセット・破棄・問題変更で保留遷移を取り消す。
+
 表示ラベルはボタン状態へ即時追従し、DISABLEDへ変わった時点で必ず「WAIT」へ切り替える。
 
 ### Button Interaction Rules
@@ -1572,7 +1574,7 @@ _Privacy Info_
 - **Mobile Optimization**:
   - フォントサイズは実px 16を下回らない（`max(16px, 1rem)`。rem全体スケーリング環境でも16px未満にならずiOSズームを防止）
   - 入力エリアの高さは`max(44px, 2.75rem)`（タッチしやすさ）
-  - iOS向けタップ内同期フォーカス: `handleButtonPress()`内でタッチデバイス・QUESTIONING時に入力欄の`disabled`を直接falseにしてfocusする（ANSWERING遷移によるVueの正式なバインディング反映を待たない）
+  - iOS／iPadOSはタップ内の同期フォーカスを行い、従来の100msでANSWERINGへ移る。その他の端末は押下から`ANSWER_START_DELAY_MS`（500ms）後のANSWERING遷移時にフォーカスする。
 
 **Answer Submit Button**
 
@@ -1616,17 +1618,17 @@ _Privacy Info_
 採用デザイン: [wireframe-v2-case1.html](./assets/wireframe-v2-case1.html)（ケース2は不採用・アーカイブ）。実装のデザイントークン・レイアウトはこのHTMLから移植した。初期検討時の[wireframe.html](./assets/wireframe.html)は参考用プロトタイプで、採用デザインの直接の出典ではない。
 
 
-### 3D早押しボタン（2026-09-14）
+### 3D早押しボタン
 
-- QuizButtonが2D／3Dの表示を切り替え、3DはButton3DViewからview.tsを遅延ロードする。Three.jsのrendererは表示領域につき1つで、丸型・箱型（大ランプ）のfactoryだけを交換する。
-- 設定は表示方式→3Dボタンタイプの階層。既定は2D。settingsStore.buttonへschemaVersion／renderMode／modelId／appearancePresetIdを保存し、旧buzzerキーからも引き継ぐ。不明な形式・値は既定へ戻す。プレイ中も設定画面から表示方式・タイプを変更でき、ゲーム状態と解答期限は変更しない。
-- プレイ画面の左下に44px角の表示切替ボタンを絶対配置する。BUTTON CHECKは従来の右寄せフロー配置を維持し、切替アイコンは行の高さや上下余白に影響させない。指定キットcube-dimension-toggleの正面の四角／等角投影の立方体を表示し、押すと反対の表示へ切り替える。設定画面と同期し、3Dタイプとゲーム状態は保持する。アイコンの面は64単位中、2Dの一辺32単位、3Dの一辺24.12単位とし、立体化に合わせて縮小する。2Dを最初に縮小する前（一辺36単位）の中心(18, 46)を固定し、縮小・立体化ともに中心位置を維持する。44pxの操作領域は輪郭の中心に合わせ、絵の配置は維持する。SVGの輪郭はクリップしない。420msで形状を補間し、面内の2D／3D文字も面に追従して傾きながら切り替わる。途中反転は現在の形から再開し、reduced-motionでは即時切替。
-- 早押しは透明なネイティブbuttonのclick→既存press経路。Appの同期focus・動画停止・受理判定・100ms遷移は維持する。演出は40ms押下＋20ms保持＋80ms復帰で独立し、ゲーム側の状態通知に従う。
-- RELEASED中は500ms周期でキャップ／ランプが発光。DISABLED（WAIT）は通常位置に戻して減光・消灯。3DのPUSH／ON!／WAIT文字は表示しない。読み上げ用操作名は維持する。
+- QuizButtonが2D／3Dの表示を切り替え、3DはButton3DViewからview.tsを遅延ロードする。Three.jsのrendererは表示領域につき1つで、丸型（`simple-round-v1`）・箱型（大ランプ）（`waseda-style-v1`）のfactoryだけを交換する。モデルは手続き型メッシュで生成し、形状・材質・照明の共通値は`button3d/appearance.ts`で管理する。
+- 設定は表示方式を常に表示し、3D選択時だけボタンタイプ行を同じ字下げで追加する。説明「早押しボタンの見た目を切り替えます」はセクション最下部に置く。選択欄の幅は選択中の文字に合わせ、アクセント色の枠と共通gapを使う。既定は2D。settingsStore.buttonへschemaVersion／renderMode／modelId／appearancePresetIdを保存し、旧buzzerキーからも引き継ぐ。不明な形式・値は既定へ戻す。2Dへ戻しても最後に選んだ3Dタイプを保持する。プレイ中も設定画面から表示方式・タイプを変更でき、ゲーム状態と解答期限は変更しない。
+- プレイ画面の左下に44px角の表示切替ボタンを絶対配置する。BUTTON CHECKは従来の右寄せフロー配置を維持し、切替アイコンは行の高さや上下余白に影響させない。正面の四角／等角投影の立方体を表示し、押すと反対の表示へ切り替える。設定画面と同期し、3Dタイプとゲーム状態は保持する。アイコンの面は64単位中、2Dの一辺32単位、3Dの一辺24.12単位とし、立体化に合わせて縮小する。SVG座標で中心(18, 46)を固定し、縮小・立体化ともに中心位置を維持する。44pxの操作領域は輪郭の中心に合わせ、絵の配置は維持する。SVGの輪郭はクリップしない。420msで形状を補間し、面内の2D／3D文字も面に追従して傾きながら切り替わる。途中反転は現在の形から再開し、reduced-motionでは即時切替。
+- 早押しは透明なネイティブbuttonのclick→既存press経路。動画停止と受理判定は押下時に行い、100ms後にRELEASEDへ遷移する。iOS／iPadOSは即時フォーカス・100ms後にANSWERINGへ移り、その他は押下から500ms後にANSWERINGへ移ってフォーカスする。制限時間はANSWERINGから開始する。演出は40ms押下＋20ms保持＋80ms復帰で独立し、ゲーム側の状態通知に従う。
+- RELEASED中は500ms周期でキャップ／ランプが発光。DISABLED（WAIT）は通常位置に戻して減光・消灯。両モデルのキャップ色は通常の0.4倍、箱型のランプ色は0.3倍とする。ランプのroughnessは通常0.23、DISABLED時0.6で反射を抑える。3DのPUSH／ON!／WAIT文字は表示しない。再生アイコンもモデル上に重ねず、読み上げ用操作名は維持する。表示状態と入力可否は独立し、入力不可のRELEASEDも点灯を維持する。
 - 3D表示領域は箱型（大ランプ）が左右10%余白（幅80%）、丸型が左右20%余白（幅60%）で中央に配置し、canvasは領域全体を使用する。モデルは余白8pxを残して最大表示し、姿勢リセット操作はcanvasの外側で2D／3D切替アイコンの真上に配置する。
-- 台座・余白は回転専用。キャップの操作領域は最低44pxで、回転後の遮蔽判定を行う。設定・テーマ・横画面警告中はinertと入力ガードで操作を止める。
-- 非表示時はRAFを停止し、reduced-motionでは押下補間を省略して発光を定常表示する。初期化／描画失敗やcontext lossでは2Dへ復帰する。資産は生成途中の例外を含めて明示的に解放する。
-- 3Dコードは遅延ロードするが、PWAでは他のJSと同様にprecacheする。実機確認の残件と詳細は[組み込み計画](button-3d-integration-plan.md)を参照。
+- 台座・余白は回転専用。キャップの操作領域は最低44pxで、回転後の遮蔽判定を行う。正常なタッチ終了のpointerup→pointerleave→clickは受理し、ドラッグ・pointercancelは拒否する。DISABLED中も台座・余白の回転は可能だが、キャップ操作は回転へ読み替えない。設定・テーマ・横画面警告中はinertと入力ガードで操作を止める。
+- 非表示時はRAFを停止し、reduced-motionでは押下補間を省略して発光を定常表示する。ロード中・初期化／描画失敗・context lossでは2Dを表示する。一時的な失敗で保存済みの3D選択は消さず、再試行は明示的な表示切替で行う。モデル交換時は旧モデルの資産を解放し、終了時はRAF・ResizeObserver・イベント・rendererも解除する。生成途中の例外やロード中のunmountでも資産を残さない。
+- 3Dコードは遅延ロードするが、PWAでは他のJSと同様にprecacheする。実機確認の残件は[タスク](tasks.md)で管理する。
 
 
 ## Data Models
@@ -2308,12 +2310,12 @@ src/
 
 | 所有者 | 責務 |
 |---|---|
-| App.vue | 画面構成、overlayと入力ガード、同期focus、ゲート表示、画面向き監視と操作の接続 |
+| App.vue | 画面構成、overlayと入力ガード、ゲート表示、画面向き監視と操作の接続 |
 | useQuizSession | quizId解決、データ取得、GameManagerとループ、音声初期化・設定同期、エラー停止、セッション操作、終了処理 |
 | useQuizAnalytics | AnalyticsService、セッションID・動画タイトル・送信済み件数、実効設定のスナップショット、5イベントの組み立てと送信 |
 | VideoPlayer | Player生成・通知・abort・破棄 |
 
-`useQuizSession`はデータ・エラー・Player参照を読み取り用refとして公開し、GameManagerは外へ公開しない。クラスインスタンスの参照はshallowRefで保持する。`primeMedia()`はREADY時にwarmup→unlockを同期実行し、Appは成功時だけゲートを解除してAnalyticsを初期化する。App内の同期focusも維持する。
+`useQuizSession`はデータ・エラー・Player参照を読み取り用refとして公開し、GameManagerは外へ公開しない。クラスインスタンスの参照はshallowRefで保持する。`primeMedia()`はREADY時にwarmup→unlockを同期実行し、Appは成功時だけゲートを解除してAnalyticsを初期化する。フォーカスは通常は演出待ち後にAnswerContentが行い、iOS／iPadOSだけはAppでタップ内に先行させる。
 
 両composableはAppのsetupスコープで作成し、watcherはunmountで解除する。セッション側はライフサイクルテストで取得途中のabort・遅延通知の無視・音声設定・操作委譲を検証する。分析側は共通IDとタイトル、シーク設定の解決を集約し、既存の送信項目・正誤判定・送信タイミングを維持する。
 
