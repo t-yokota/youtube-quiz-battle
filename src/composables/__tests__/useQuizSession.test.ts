@@ -1,3 +1,4 @@
+import { ANSWER_START_DELAY_MS } from '@/constants/timing'
 import { createApp, nextTick } from 'vue'
 import { createPinia } from 'pinia'
 import { beforeEach, afterEach, expect, it, vi } from 'vitest'
@@ -152,7 +153,7 @@ it('早押しと解答を委譲し、画面向きによる停止・再開を維�
   store.initializeForQuestion()
   store.transitionToState(GameState.QUESTIONING)
   session.pressButton()
-  vi.advanceTimersByTime(100)
+  vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
   expect(store.currentState).toBe(GameState.ANSWERING)
   session.submitAnswer('東京')
   expect(store.currentState).toBe(GameState.WAITING)

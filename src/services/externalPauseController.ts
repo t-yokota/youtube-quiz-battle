@@ -201,7 +201,11 @@ export class ExternalPauseController {
     })
 
     // 解答中は期限が動き続けるため、復帰時にタイマーを作り直さない。
-    if (resumeTarget === 'video' && isVideoPlaybackState(this.gameStore.currentState)) {
+    if (
+      resumeTarget === 'video' &&
+      !this.gameStore.isAnswerPending &&
+      isVideoPlaybackState(this.gameStore.currentState)
+    ) {
       this.playerControl.playVideo()
     }
   }
@@ -350,8 +354,8 @@ export class ExternalPauseController {
       if (state === YouTubePlayerState.PLAYING) {
         const isExpectedPlayback = this.playerControl.isPlaybackStateExpected(state)
 
-        // ANSWERING中にユーザーが再生ボタンを押した場合、即座に停止
-        if (this.gameStore.currentState === GameState.ANSWERING) {
+        // 演出待ち・解答中の再生要求は即座に停止する。
+        if (this.gameStore.isAnswerPending || this.gameStore.currentState === GameState.ANSWERING) {
           this.playerControl.pauseVideo()
           return
         }

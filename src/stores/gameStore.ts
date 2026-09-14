@@ -74,6 +74,13 @@ export const useGameStore = defineStore('game', () => {
     )
   })
 
+  // 早押し受理後、押下・点灯演出を見せている待ち時間。
+  const isAnswerPending = computed(
+    () =>
+      currentState.value === GameState.QUESTIONING &&
+      (buttonState.value === ButtonState.PUSHED || buttonState.value === ButtonState.RELEASED),
+  )
+
   // 解答入力無効状態（入力欄の制御用）
   const isInputDisabled = computed(() => {
     return currentState.value !== GameState.ANSWERING
@@ -413,6 +420,7 @@ export const useGameStore = defineStore('game', () => {
     isButtonVisible,
     isButtonEnabled,
     isInputDisabled,
+    isAnswerPending,
     guideText,
     gamePanelMode,
     effectiveSettings,

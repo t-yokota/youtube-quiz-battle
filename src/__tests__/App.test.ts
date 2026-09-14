@@ -1,3 +1,4 @@
+import { ANSWER_START_DELAY_MS } from '@/constants/timing'
 import { createApp, nextTick, ref } from 'vue'
 import { createPinia } from 'pinia'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -130,7 +131,7 @@ it('ready後のPlayerエラーを表示し、ゲームループと解答タイ�
   store.setCurrentQuestionIndex(0)
   store.transitionToState(GameState.QUESTIONING)
   space()
-  vi.advanceTimersByTime(100)
+  vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
   expect(store.currentState).toBe(GameState.ANSWERING)
   // フェイクが保持する実行時エラー通知を発火する
   errorListener?.(new Error('YouTube Player Error: 150'))
@@ -373,4 +374,60 @@ it('設定からテーマ選択へ移っても停止を維持し、閉じたら�
   document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
   await flush()
   expect(player.playVideo).toHaveBeenCalledTimes(1)
+})
+
+it('タッチ端末でも押下直後はフォーカスせず500ms後の解答開始に合わせて移す', async () => {
+  app.unmount()
+  vi.mocked(window.matchMedia).mockImplementation(
+    (query) =>
+      ({
+        matches: query === '(pointer: coarse)',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }) as unknown as MediaQueryList,
+  )
+  const pinia = createPinia()
+  app = createApp(App).use(pinia)
+  app.mount(host)
+  store = useGameStore(pinia)
+  await flush()
+  host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+  await flush()
+  store.setCurrentQuestionIndex(0)
+  store.transitionToState(GameState.QUESTIONING)
+  await flush()
+  const input = host.querySelector<HTMLInputElement>('.answer-input')!
+  const focus = vi.spyOn(input, 'focus')
+  space()
+  await flush()
+  expect(focus).not.toHaveBeenCalled()
+  vi.advanceTimersByTime(499)
+  await flush()
+  expect(focus).not.toHaveBeenCalled()
+  expect(input.disabled).toBe(true)
+  vi.advanceTimersByTime(1)
+  await flush()
+  expect(input.disabled).toBe(false)
+  expect(focus).toHaveBeenCalledOnce()
+})
+
+it('iOSではタップ内でフォーカスし、追加の演出待ちなしで解答を開始する', async () => {
+  const agent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('iPhone')
+  try {
+    host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+    await flush()
+    store.setCurrentQuestionIndex(0)
+    store.transitionToState(GameState.QUESTIONING)
+    await flush()
+    const input = host.querySelector<HTMLInputElement>('.answer-input')!
+    const focus = vi.spyOn(input, 'focus')
+    space()
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+    expect(input.disabled).toBe(false)
+    vi.advanceTimersByTime(101)
+    await flush()
+    expect(store.currentState).toBe(GameState.ANSWERING)
+  } finally {
+    agent.mockRestore()
+  }
 })

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isIOS } from '@/utils/isIOS'
 // YouTube Quiz Battle - メインアプリケーション
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
@@ -82,16 +83,15 @@ function isGameInputBlocked(): boolean {
 
 function handleButtonPress() {
   if (isGameInputBlocked()) return
-  // iOS ではキーボードがユーザー操作内の同期 focus() でしか開かないため、
-  // ANSWERING 遷移（100ms 後）を待たずタップ内で入力欄を有効化して focus する
-  // （disabled の直書きは直後の ANSWERING 遷移で Vue の束縛が正式に引き継ぐ）
-  if (isTouchDevice && gameStore.currentState === GameState.QUESTIONING) {
+  // iOSではユーザー操作内の同期focusでキーボードを開く。
+  if (isIOS() && gameStore.currentState === GameState.QUESTIONING && gameStore.isButtonEnabled) {
     const input = document.querySelector<HTMLInputElement>('.answer-input')
     if (input) {
       input.disabled = false
       input.focus({ preventScroll: true })
     }
   }
+  // その他の端末は演出待ち後のANSWERING遷移に合わせてフォーカスする。
   session.pressButton()
 }
 

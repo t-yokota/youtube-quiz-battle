@@ -1,6 +1,7 @@
+import { ANSWER_START_DELAY_MS } from '@/constants/timing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { GameState, YouTubePlayerState } from '@/types'
+import { GameState, ButtonState, YouTubePlayerState } from '@/types'
 import { useGameStore } from '@/stores/gameStore'
 import { fakePlayer, quizFixture } from '@/__tests__/helpers/gameFixture'
 import { createGameManager, type GameManager } from '../gameManager'
@@ -35,13 +36,55 @@ describe('ゲーム進行の境界', () => {
     }
     return { store, fake, tick, advanceTo, data }
   }
+  it('押下音と動画停止を先に行い、点灯後も500msまでは解答期限を開始しない', () => {
+    const { store, fake, advanceTo } = setup({ answerTimeLimit: 3 })
+    advanceTo(11)
+    manager.handleButtonPress()
+    expect(fake.player.pauseVideo).toHaveBeenCalled()
+    expect(store.buttonState).toBe(ButtonState.PUSHED)
+    expect(store.isInputDisabled).toBe(true)
+    vi.advanceTimersByTime(100)
+    expect(store.buttonState).toBe(ButtonState.RELEASED)
+    expect(store.currentState).toBe(GameState.QUESTIONING)
+    manager.handleButtonPress()
+    vi.advanceTimersByTime(399)
+    expect(store.isInputDisabled).toBe(true)
+    expect(store.answerTimeRemaining).toBe(3)
+    vi.advanceTimersByTime(1)
+    expect(store.currentState).toBe(GameState.ANSWERING)
+    expect(store.answerTimeRemaining).toBe(3)
+    vi.advanceTimersByTime(1000)
+    expect(store.answerTimeRemaining).toBe(2)
+  })
+  it.each(['reset', 'destroy'] as const)(
+    '点灯後の演出待ち中に%sすると解答開始を取り消す',
+    (action) => {
+      const { store, advanceTo } = setup()
+      advanceTo(11)
+      manager.handleButtonPress()
+      vi.advanceTimersByTime(150)
+      if (action === 'reset') manager.resetGame()
+      else manager.destroy()
+      vi.advanceTimersByTime(1000)
+      expect(store.currentState).not.toBe(GameState.ANSWERING)
+    },
+  )
+  it('演出待ち中は動画の再生要求を止める', () => {
+    const { fake, advanceTo } = setup()
+    advanceTo(11)
+    manager.handleButtonPress()
+    vi.advanceTimersByTime(150)
+    vi.mocked(fake.player.pauseVideo).mockClear()
+    fake.notify(YouTubePlayerState.PLAYING)
+    expect(fake.player.pauseVideo).toHaveBeenCalled()
+  })
   it.each(['settings', 'orientation', 'visibility'] as const)(
     '%s中も解答期限は進み、時間切れでは動画を再開しない',
     (reason) => {
       const { store, fake, advanceTo } = setup({ answerTimeLimit: 3, maxAttempts: 1 })
       advanceTo(11)
       manager.handleButtonPress()
-      vi.advanceTimersByTime(100)
+      vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
       manager.pauseExternal(reason)
       vi.mocked(fake.player.playVideo).mockClear()
       vi.advanceTimersByTime(2000)
@@ -99,7 +142,7 @@ describe('ゲーム進行の境界', () => {
     const { store, advanceTo } = setup({ answerTimeLimit: 3, maxAttempts: 1 })
     advanceTo(11)
     manager.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     const now = performance.now()
     const clock = vi.spyOn(performance, 'now').mockReturnValue(now + 4000)
     try {
@@ -247,7 +290,7 @@ describe('ゲーム進行の境界', () => {
     const { store, fake, advanceTo } = setup({ disableSeekbar: false })
     advanceTo(11)
     manager.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     fake.setTime(70)
     fake.notify(YouTubePlayerState.ENDED)
     expect(fake.player.getCurrentTime()).toBe(11)
@@ -278,7 +321,7 @@ describe('ゲーム進行の境界', () => {
     const { store, fake, advanceTo, tick } = setup({ jumpToRevealPeriod: true })
     advanceTo(11)
     manager.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     manager.handleAnswerSubmit('東京')
     fake.setTime(70)
     fake.notify(YouTubePlayerState.ENDED)
@@ -302,7 +345,7 @@ describe('ゲーム進行の境界', () => {
     const { store, advanceTo, tick } = setup({ disableSeekbar: false })
     advanceTo(11)
     manager.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     manager.handleAnswerSubmit('違う答え')
     tick(65)
     expect(store.results[0]).toMatchObject({ timesUntilPress: [1], submissionTypes: ['manual'] })
@@ -319,7 +362,7 @@ describe('ゲーム進行の境界', () => {
       const { store, fake, advanceTo, tick } = setup({ disableSeekbar, jumpToRevealPeriod: true })
       advanceTo(11)
       manager.handleButtonPress()
-      vi.advanceTimersByTime(100)
+      vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
       manager.handleAnswerSubmit('東京')
       expect(fake.player.getCurrentTime()).toBe(20)
       tick(11)
@@ -341,7 +384,7 @@ describe('ゲーム進行の境界', () => {
     const { store, advanceTo, tick } = setup({ jumpToRevealPeriod: true })
     advanceTo(11)
     manager.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     manager.handleAnswerSubmit('東京')
     tick(11)
     vi.advanceTimersByTime(10001)

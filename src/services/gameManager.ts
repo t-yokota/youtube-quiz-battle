@@ -1,9 +1,11 @@
 // ゲーム管理サービス（ファサード）
+import { isIOS } from '@/utils/isIOS'
 import type { QuizData, YouTubePlayerManager } from '@/types'
 import { GameState, ButtonState, YouTubePlayerState } from '@/types'
 import { createTimeManager, TimeManager } from './timeManager'
 import {
   BUTTON_PUSHED_DURATION_MS,
+  ANSWER_START_DELAY_MS,
   BUTTON_CHECK_RELEASE_MS,
   VIDEO_START_DELAY_MS,
   GATE_WARMUP_PLAY_MS,
@@ -222,6 +224,7 @@ export class GameManager {
     logger.log(`[GameManager] Button pressed in state: ${this.gameStore.currentState}`)
 
     const stateAtPress = this.gameStore.currentState
+    const answerStartDelay = isIOS() ? BUTTON_PUSHED_DURATION_MS : ANSWER_START_DELAY_MS
 
     // ボタンチェック演出 OFF: READY では単なる動画再生ボタンとして動作する（Task 19-4）
     // 演出（PUSHED→RELEASED→STANDBY）・効果音なしで即 TALKING へ遷移し再生開始
@@ -283,13 +286,19 @@ export class GameManager {
           }, VIDEO_START_DELAY_MS)
         }, BUTTON_CHECK_RELEASE_MS)
       } else if (stateAtPress === GameState.QUESTIONING) {
-        // 早押し: ANSWERING状態へ遷移（動画は押下の同期処理で停止済み）
-        // リトライ時は前回の不正解表示と入力内容をクリアしてから解答アクションに入る（Task 21-3）
-        this.gameStore.clearAnswerResult()
-        this.gameStore.updateAnswerInput('')
-        this.gameStore.transitionToState(GameState.ANSWERING)
-        // カウントダウンタイマー開始
-        this.answerFlow.startAnswerCountdown()
+        // 点灯を先に表示し、押下からの待ち時間が終わってから解答を開始する。
+        this.scheduleButtonStep(
+          () => {
+            // 早押し: ANSWERING状態へ遷移（動画は押下の同期処理で停止済み）
+            // リトライ時は前回の不正解表示と入力内容をクリアしてから解答アクションに入る（Task 21-3）
+            this.gameStore.clearAnswerResult()
+            this.gameStore.updateAnswerInput('')
+            this.gameStore.transitionToState(GameState.ANSWERING)
+            // カウントダウンタイマー開始
+            this.answerFlow.startAnswerCountdown()
+          },
+          Math.max(0, answerStartDelay - BUTTON_PUSHED_DURATION_MS),
+        )
       }
     }, BUTTON_PUSHED_DURATION_MS)
   }

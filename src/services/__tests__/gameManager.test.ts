@@ -1,3 +1,4 @@
+import { ANSWER_START_DELAY_MS } from '@/constants/timing'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { GameManager, createGameManager } from '../gameManager'
@@ -380,7 +381,7 @@ describe('Single-Shot Guard', () => {
     // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING → 不正解
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     gm.handleAnswerSubmit('間違い')
     // QUESTIONING状態（残り2回）
 
@@ -409,7 +410,7 @@ describe('Single-Shot Guard', () => {
     // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
 
     // ANSWERING中にシークを試みる（11 → 46）
@@ -436,7 +437,7 @@ describe('Single-Shot Guard', () => {
     // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
 
     // ANSWERING中にシークを試みる（11 → 46）→ 強制リセット
@@ -456,7 +457,7 @@ describe('Single-Shot Guard', () => {
     // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING → 不正解
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     store.updateAnswerInput('不正解')
     gm.handleAnswerSubmit('不正解')
     expect(store.currentState).toBe(GameState.QUESTIONING)
@@ -465,7 +466,7 @@ describe('Single-Shot Guard', () => {
 
     // 再度ボタン押下（解答アクション開始）→ 表示・入力内容ともクリア
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
     expect(store.answerResult).toBeNull()
     expect(store.answerInput).toBe('')
@@ -477,7 +478,7 @@ describe('Single-Shot Guard', () => {
     // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING（currentVideoTime < revealTime=20）
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
 
     const transitionSpy = vi.spyOn(store, 'transitionToState')
@@ -499,7 +500,7 @@ describe('Single-Shot Guard', () => {
     // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING（currentVideoTime < revealTime=20）
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
 
     const transitionSpy = vi.spyOn(store, 'transitionToState')
@@ -607,7 +608,7 @@ describe('ボタンチェック演出 OFF（Task 19-4）', () => {
 
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
 
     expect(store.currentState).toBe(GameState.ANSWERING)
     expect(playSound).toHaveBeenCalled()
@@ -628,7 +629,7 @@ describe('シーク離脱時の解答表示クリア', () => {
     // Q1 で不正解（解答権残あり）
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     store.updateAnswerInput('まちがい')
     gm.handleAnswerSubmit('まちがい')
     expect(store.answerResult).toBe('incorrect')
@@ -938,7 +939,7 @@ describe('destroy()', () => {
       // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING（カウントダウン開始）
       simulatePlayback(gm, 11, 0)
       gm.handleButtonPress()
-      vi.advanceTimersByTime(100)
+      vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
       expect(store.currentState).toBe(GameState.ANSWERING)
       expect(store.answerTimeRemaining).toBe(10)
 
@@ -972,7 +973,7 @@ describe('External Pause: ANSWERING中の可視性変化', () => {
     // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
     expect(store.answerTimeRemaining).toBe(10)
 
@@ -1081,7 +1082,7 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     expect(player.playVideo).toHaveBeenCalledTimes(1)
   })
 
-  it('QUESTIONING状態で押下: PUSHED → 100ms後 RELEASED + ANSWERING遷移 + pauseVideo', () => {
+  it('QUESTIONING状態で押下: PUSHED → 100ms後に点灯、500ms後にANSWERING遷移', () => {
     const player = makePlayerMock()
     const { gm, store } = makeGameManager(makeQuizData(), player)
     // QUESTIONING に進める
@@ -1093,8 +1094,8 @@ describe('handleButtonPress: ボタン状態遷移', () => {
     // 即座に PUSHED
     expect(store.buttonState).toBe(ButtonState.PUSHED)
 
-    // 100ms後: RELEASED + ANSWERING + pauseVideo
-    vi.advanceTimersByTime(100)
+    // 待ち時間完了後: RELEASED + ANSWERING（動画は押下時に停止済み）
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.buttonState).toBe(ButtonState.RELEASED)
     expect(store.currentState).toBe(GameState.ANSWERING)
     expect(player.pauseVideo).toHaveBeenCalled()
@@ -1251,9 +1252,9 @@ describe('解答カウントダウンタイマー', () => {
     simulatePlayback(gm, 11, 0)
     expect(store.currentState).toBe(GameState.QUESTIONING)
 
-    // ボタン押下 → 100ms後にANSWERING + カウントダウン開始
+    // ボタン押下 → 500ms後にANSWERING + カウントダウン開始
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
     expect(store.answerTimeRemaining).toBe(10)
 
@@ -1271,7 +1272,7 @@ describe('解答カウントダウンタイマー', () => {
 
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.answerTimeRemaining).toBe(3)
 
     // 3秒経過 → タイムアウト → 不正解確定
@@ -1287,7 +1288,7 @@ describe('解答カウントダウンタイマー', () => {
 
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
 
     // 3秒経過 → タイムアウト → 不正解確定
     vi.advanceTimersByTime(3000)
@@ -1300,7 +1301,7 @@ describe('解答カウントダウンタイマー', () => {
 
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
 
     // 正解を入力したまま送信せずタイムアウト
     store.updateAnswerInput('東京')
@@ -1316,7 +1317,7 @@ describe('解答カウントダウンタイマー', () => {
 
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
 
     vi.advanceTimersByTime(2000)
     expect(store.answerTimeRemaining).toBe(8)
@@ -1342,7 +1343,7 @@ describe('解答カウントダウンタイマー', () => {
 
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
     expect(store.answerTimeRemaining).toBe(10)
 
@@ -1654,9 +1655,9 @@ describe('recordSkippedQuestion', () => {
     simulatePlayback(gm, 11, 0)
     expect(store.currentState).toBe(GameState.QUESTIONING)
 
-    // ボタン押下 → 100ms後にANSWERING
+    // ボタン押下 → 500ms後にANSWERING
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
     // 正解を送信 → WAITING
     gm.handleAnswerSubmit('東京')
@@ -1679,7 +1680,7 @@ describe('recordSkippedQuestion', () => {
 
     // ボタン押下 → ANSWERING → 不正解（残り2回）→ QUESTIONING
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     gm.handleAnswerSubmit('間違い')
     expect(store.currentState).toBe(GameState.QUESTIONING)
 
@@ -1702,12 +1703,12 @@ describe('recordSkippedQuestion', () => {
 
     // 1回目不正解
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     gm.handleAnswerSubmit('間違い1')
 
     // 2回目不正解
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     gm.handleAnswerSubmit('間違い2')
 
     // リトライせずにendTime通過
@@ -1809,9 +1810,9 @@ describe('userAnswers蓄積（GameManager経由）', () => {
     // Q1 start(10)通過 → QUESTIONING
     simulatePlayback(gm, 11, 0)
 
-    // ボタン押下 → 100ms後にANSWERING
+    // ボタン押下 → 500ms後にANSWERING
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
 
     // 正解を送信
     gm.handleAnswerSubmit('東京')
@@ -1828,17 +1829,17 @@ describe('userAnswers蓄積（GameManager経由）', () => {
     // Q1 start(10)通過 → QUESTIONING
     simulatePlayback(gm, 11, 0)
 
-    // ボタン押下 → 100ms後にANSWERING
+    // ボタン押下 → 500ms後にANSWERING
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
 
     // 不正解を送信 → QUESTIONING（残り1回）
     gm.handleAnswerSubmit('間違い')
     expect(store.currentState).toBe(GameState.QUESTIONING)
 
-    // 再度ボタン押下 → 100ms後にANSWERING
+    // 再度ボタン押下 → 500ms後にANSWERING
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
 
     // 正解を送信
     gm.handleAnswerSubmit('東京')
@@ -1856,7 +1857,7 @@ describe('userAnswers蓄積（GameManager経由）', () => {
     // Q1 start(10)通過 → QUESTIONING → ボタン → ANSWERING → 正解
     simulatePlayback(gm, 11, 0)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     gm.handleAnswerSubmit('東京')
 
     // Q1のend(25)通過 → TALKING
@@ -1865,9 +1866,9 @@ describe('userAnswers蓄積（GameManager経由）', () => {
     // Q2 start(30)通過 → initializeForQuestion → QUESTIONING
     simulatePlayback(gm, 31, 26)
 
-    // Q2のボタン押下 → 100ms後にANSWERING → 正解
+    // Q2のボタン押下 → 500ms後にANSWERING → 正解
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     gm.handleAnswerSubmit('大阪')
 
     // Q2の結果にQ1の解答が混入していないことを確認
@@ -1985,7 +1986,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
 
     // ボタン押下 → ANSWERING
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
 
     // GameManager経由で正解を送信 → 結果が記録される
@@ -2023,7 +2024,7 @@ describe('YouTube巻き戻り補正でskipped結果を削除', () => {
     simulatePlayback(gm, 5, 0)
     expect(store.currentState).toBe(GameState.QUESTIONING)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     gm.handleAnswerSubmit('東京')
     expect(store.results.some((r) => r.questionNumber === 1 && r.isCorrect)).toBe(true)
     expect(store.correctCount).toBe(1)
@@ -2070,7 +2071,7 @@ describe('監査 2026-07-07: B-1/B-2 の回帰テスト', () => {
     simulatePlayback(gm, 31.5, 0)
     expect(store.currentState).toBe(GameState.QUESTIONING)
     gm.handleButtonPress()
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(ANSWER_START_DELAY_MS)
     expect(store.currentState).toBe(GameState.ANSWERING)
 
     // 停止遅延を模した小さな時間前進で期間開始（32）を跨ぐ → ANSWERING を維持
