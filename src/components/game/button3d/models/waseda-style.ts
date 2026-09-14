@@ -215,8 +215,8 @@ export function createWasedaStyle(appearance: Appearance): ButtonModel {
         lensMaterial.color.set(lampColor)
         lensMaterial.roughness = disabled ? 0.6 : 0.23
         if (disabled) {
-          capMaterial.color.multiplyScalar(0.25)
-          lensMaterial.color.multiplyScalar(0.12)
+          capMaterial.color.multiplyScalar(0.4)
+          lensMaterial.color.multiplyScalar(0.3)
         }
       },
     }
