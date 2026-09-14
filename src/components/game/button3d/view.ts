@@ -71,6 +71,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
   let interactionEnabled = true
   let width = 1
   let height = 1
+  let layoutDirty = true
   let observer: ResizeObserver | undefined
   let rotation: ReturnType<typeof bindRotation> | undefined
   const events = new AbortController()
@@ -131,6 +132,17 @@ export function createButtonView(container: HTMLElement, options: Options) {
     frame = 0
     if (disposed || (document.hidden && !force) || !model) return
     try {
+      // setSizeは描画バッファを消去するため、必ず同じフレーム内で再描画する。
+      // ResizeObserverの連続通知は最新寸法にまとめ、途中の空フレームを作らない。
+      if (layoutDirty) {
+        width = Math.max(1, container.clientWidth)
+        height = Math.max(1, container.clientHeight)
+        const size = renderer.getSize(new THREE.Vector2())
+        if (size.x !== width || size.y !== height) renderer.setSize(width, height, false)
+        rig.updateWorldMatrix(true, true)
+        fitCamera(camera, fitPoints, rig.matrixWorld, width, height)
+        layoutDirty = false
+      }
       const now = performance.now()
       const press =
         started === null
@@ -158,17 +170,8 @@ export function createButtonView(container: HTMLElement, options: Options) {
   }
   function resize() {
     if (disposed) return
-    try {
-      width = Math.max(1, container.clientWidth)
-      height = Math.max(1, container.clientHeight)
-      const size = renderer.getSize(new THREE.Vector2())
-      if (size.x !== width || size.y !== height) renderer.setSize(width, height, false)
-      rig.updateWorldMatrix(true, true)
-      fitCamera(camera, fitPoints, rig.matrixWorld, width, height)
-      invalidate()
-    } catch (error) {
-      fail(error)
-    }
+    layoutDirty = true
+    invalidate()
   }
   function setModel(id: ButtonModelId) {
     if (disposed || (model && selected === id)) return

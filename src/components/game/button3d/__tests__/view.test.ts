@@ -7,6 +7,7 @@ import { appearance } from '../appearance'
 const fake = vi.hoisted(() => ({
   fail: false,
   draw: vi.fn(),
+  operations: [] as string[],
   dispose: vi.fn(),
   release: vi.fn(),
   scenes: [] as unknown[],
@@ -18,12 +19,17 @@ vi.mock('three', async (importOriginal) => {
     WebGLRenderer: class {
       domElement = document.createElement('canvas')
       setPixelRatio() {}
-      setSize() {}
+      size = new THREE.Vector2()
+      setSize(width: number, height: number) {
+        this.size.set(width, height)
+        fake.operations.push(`size:${width}:${height}`)
+      }
       getSize(target: THREE.Vector2) {
-        return target.set(0, 0)
+        return target.copy(this.size)
       }
       render(scene: unknown) {
         if (fake.fail) throw new Error('GPU failure')
+        fake.operations.push('render')
         fake.draw()
         fake.scenes.push(scene)
       }
@@ -40,6 +46,7 @@ let callbacks: Map<number, FrameRequestCallback>
 let hidden = false
 let reduced = false
 let reducedChange: (() => void) | undefined
+let notifyResize: () => void
 let disconnect: ReturnType<typeof vi.fn>
 let frameId: number
 let time: number
@@ -59,6 +66,7 @@ beforeEach(() => {
   fake.dispose.mockClear()
   fake.release.mockClear()
   fake.scenes = []
+  fake.operations = []
   vi.spyOn(performance, 'now').mockImplementation(() => time)
   vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden)
   vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => {
@@ -79,6 +87,9 @@ beforeEach(() => {
   vi.stubGlobal(
     'ResizeObserver',
     class {
+      constructor(callback: () => void) {
+        notifyResize = callback
+      }
       observe() {}
       disconnect = disconnect
     },
@@ -90,7 +101,10 @@ afterEach(() => {
 })
 function mount(modelId: ButtonModelId = 'waseda-style-v1') {
   const host = document.createElement('div')
-  Object.defineProperties(host, { clientWidth: { value: 320 }, clientHeight: { value: 240 } })
+  Object.defineProperties(host, {
+    clientWidth: { value: 320 },
+    clientHeight: { value: 240, configurable: true },
+  })
   const onError = vi.fn()
   const onTarget = vi.fn()
   const view = createButtonView(host, { modelId, onError, onTarget })
@@ -286,4 +300,37 @@ it('静止画像は非表示タブでも同期描画し、専用ビューのWebG
   view.dispose(true)
   expect(fake.release).toHaveBeenCalledOnce()
   expect(() => view.captureSnapshot()).toThrow('disposed')
+})
+
+it('連続リサイズは最新寸法を同じ描画フレームで適用し、空のcanvasを挟まない', () => {
+  const { view, host } = mount()
+  try {
+    expect(fake.operations).toEqual([])
+    frame()
+    expect(fake.operations).toEqual(['size:320:240', 'render'])
+    fake.operations = []
+    for (const height of [230, 220, 210]) {
+      Object.defineProperty(host, 'clientHeight', { value: height, configurable: true })
+      notifyResize()
+    }
+    expect(fake.operations).toEqual([])
+    expect(callbacks.size).toBe(1)
+    frame()
+    expect(fake.operations).toEqual(['size:320:210', 'render'])
+    fake.operations = []
+    notifyResize()
+    frame()
+    expect(fake.operations).toEqual(['render'])
+    hidden = true
+    Object.defineProperty(host, 'clientHeight', { value: 200, configurable: true })
+    notifyResize()
+    expect(callbacks.size).toBe(0)
+    fake.operations = []
+    hidden = false
+    document.dispatchEvent(new Event('visibilitychange'))
+    frame()
+    expect(fake.operations).toEqual(['size:320:200', 'render'])
+  } finally {
+    view.dispose()
+  }
 })
