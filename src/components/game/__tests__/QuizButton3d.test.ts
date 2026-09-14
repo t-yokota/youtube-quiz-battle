@@ -68,3 +68,41 @@ it('3D切替と一時障害後の2D復帰で保存モデルと早押し経路を
     app.unmount()
   }
 })
+
+it('プレイ中の表示切替はモデルとゲーム状態を保ち、入力制限中は切り替えない', async () => {
+  localStorage.clear()
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  const settings = useSettingsStore()
+  const game = useGameStore()
+  settings.setButtonModel('waseda-style-v1')
+  game.transitionToState(GameState.QUESTIONING)
+  const host = document.createElement('div')
+  const { ref } = await import('vue')
+  const blocked = ref(false)
+  const press = vi.fn()
+  const app = createApp(() =>
+    h(QuizButton, { interactionBlocked: blocked.value, onPress: press }),
+  ).use(pinia)
+  app.mount(host)
+  try {
+    const toggle = host.querySelector<HTMLButtonElement>('.display-mode-toggle')!
+    expect(toggle).not.toBeNull()
+    toggle.click()
+    await nextTick()
+    expect(settings.button).toMatchObject({ renderMode: '3d', modelId: 'waseda-style-v1' })
+    expect(toggle.getAttribute('aria-label')).toContain('2Dに切り替え')
+    toggle.click()
+    await nextTick()
+    expect(settings.button.renderMode).toBe('2d')
+    blocked.value = true
+    await nextTick()
+    expect(toggle.disabled).toBe(true)
+    toggle.click()
+    expect(settings.button.renderMode).toBe('2d')
+    expect(game.currentState).toBe(GameState.QUESTIONING)
+    expect(press).not.toHaveBeenCalled()
+  } finally {
+    app.unmount()
+  }
+})

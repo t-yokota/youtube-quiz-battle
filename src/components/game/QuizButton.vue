@@ -3,6 +3,7 @@
 // 早押しボタン（物理ボタン: 真上視点の円形キャップ + 同心円台座 + LED リング）
 import { computed, ref, watch } from 'vue'
 import Button3DView from './button3d/Button3DView.vue'
+import DimensionIcon from './DimensionIcon.vue'
 import { ButtonState, GameState } from '@/types'
 import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -94,6 +95,16 @@ const handlePress = () => {
   }
 }
 
+const displayModeLabel = computed(() =>
+  useThree.value ? '現在3D表示。2Dに切り替え' : '現在2D表示。3Dに切り替え',
+)
+function toggleDisplayMode() {
+  if (props.interactionBlocked) return
+  const nextMode = useThree.value ? '2d' : '3d'
+  threeFailed.value = false
+  settingsStore.setButtonMode(nextMode)
+}
+
 // ボタンチェック演出のトグル（設定画面と同じ settingsStore を切り替える）
 const handleButtonCheckToggle = () => {
   settingsStore.setButtonCheckEnabled(!gameStore.isButtonCheckEnabled)
@@ -139,6 +150,16 @@ const handleButtonCheckToggle = () => {
       </div>
     </div>
 
+    <button
+      type="button"
+      class="display-mode-toggle"
+      :aria-label="displayModeLabel"
+      :title="displayModeLabel"
+      :disabled="interactionBlocked"
+      @click.stop="toggleDisplayMode"
+    >
+      <DimensionIcon class="display-mode-artwork" :solid="useThree" />
+    </button>
     <!-- ボタンチェック演出のトグル（画面右下） -->
     <button
       type="button"
@@ -158,12 +179,43 @@ const handleButtonCheckToggle = () => {
 </template>
 
 <style scoped>
-/* ボタンチェック演出のトグル（フロー配置・右寄せ。ボタンはこの上の残り空間で中央配置される） */
+.display-mode-toggle {
+  /* SVG内の輪郭中心(18, 46)に44pxの操作領域を合わせ、絵の位置は維持する。 */
+  position: absolute;
+  left: calc(-1 * var(--icon-hit-offset));
+  bottom: calc(-1 * var(--icon-hit-offset));
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-dim);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.display-mode-artwork {
+  transform: translate(var(--icon-hit-offset), calc(-1 * var(--icon-hit-offset)));
+}
+.display-mode-toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.display-mode-toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* ボタンチェック演出のトグル */
 .check-toggle {
+  align-self: flex-end;
   --_check-toggle-unit: var(--ui-font-unit);
   --_check-toggle-knob-size: calc(0.9375 * var(--_check-toggle-unit));
   --_check-toggle-knob-inset: calc(0.125 * var(--_check-toggle-unit));
-  align-self: flex-end;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -262,6 +314,7 @@ const handleButtonCheckToggle = () => {
 
 /* ボタンエリア（縦スタック: 中央のボタン領域 + 右下のトグル） */
 .quiz-button-container {
+  --icon-hit-offset: 9.625px;
   flex: 1;
   /* iPhone Safari（下部バー表示時）で 1 画面に収まる高さ。トグル行を含む */
   min-height: 13.5rem;

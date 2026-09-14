@@ -1,20 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { GameState } from '@/types'
 import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 defineProps<{ volumeLevel: number }>()
 const emit = defineEmits<{ updateVolume: [level: number]; openThemeSwitcher: [] }>()
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
-const canChangeButton = computed(
-  () => gameStore.currentState === GameState.READY || gameStore.currentState === GameState.FINISHED,
-)
 function changeMode(event: Event) {
-  if (canChangeButton.value) settingsStore.setButtonMode((event.target as HTMLSelectElement).value)
+  settingsStore.setButtonMode((event.target as HTMLSelectElement).value)
 }
 function changeModel(event: Event) {
-  if (canChangeButton.value) settingsStore.setButtonModel((event.target as HTMLSelectElement).value)
+  settingsStore.setButtonModel((event.target as HTMLSelectElement).value)
 }
 function handleVolumeChange(level: number) {
   emit('updateVolume', level)
@@ -167,29 +163,39 @@ const handleButtonCheckToggle = () => {
   <section class="settings-section">
     <div class="setting-row">
       <label for="button-mode" class="setting-label">ボタンの表示方式</label>
-      <select
-        id="button-mode"
-        :value="settingsStore.button.renderMode"
-        :disabled="!canChangeButton"
-        @change="changeMode"
-      >
-        <option value="2d">2D</option>
-        <option value="3d">3D</option>
-      </select>
+      <span class="settings-select-wrap">
+        <span class="settings-select-size" aria-hidden="true">{{
+          settingsStore.button.renderMode.toUpperCase()
+        }}</span>
+        <select
+          class="settings-select"
+          id="button-mode"
+          :value="settingsStore.button.renderMode"
+          @change="changeMode"
+        >
+          <option value="2d">2D</option>
+          <option value="3d">3D</option>
+        </select>
+      </span>
     </div>
     <div v-if="settingsStore.button.renderMode === '3d'" class="setting-row button-model-row">
       <label for="button-model" class="setting-label">ボタンタイプ</label>
-      <select
-        id="button-model"
-        :value="settingsStore.button.modelId"
-        :disabled="!canChangeButton"
-        @change="changeModel"
-      >
-        <option value="simple-round-v1">円形</option>
-        <option value="waseda-style-v1">早稲田式風</option>
-      </select>
+      <span class="settings-select-wrap">
+        <span class="settings-select-size" aria-hidden="true">{{
+          settingsStore.button.modelId === 'simple-round-v1' ? '丸型' : '箱型（大ランプ）'
+        }}</span>
+        <select
+          class="settings-select"
+          id="button-model"
+          :value="settingsStore.button.modelId"
+          @change="changeModel"
+        >
+          <option value="simple-round-v1">丸型</option>
+          <option value="waseda-style-v1">箱型（大ランプ）</option>
+        </select>
+      </span>
     </div>
-    <p v-if="!canChangeButton" class="seek-description">クイズ開始前か終了後に変更できます。</p>
+    <p class="seek-description">早押しボタンの見た目を切り替えます</p>
   </section>
 
   <!-- UI Theme -->
@@ -203,22 +209,48 @@ const handleButtonCheckToggle = () => {
 </template>
 
 <style scoped>
-select {
+.settings-select-wrap {
+  position: relative;
   max-width: 55%;
-  min-height: 44px;
-  border: 1px solid var(--color-text-dim);
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  padding: 4px 8px;
+  min-width: 0;
+  font-size: var(--settings-font-unit);
+  font-weight: 700;
+  line-height: 1.4;
+}
+.settings-select-size {
+  display: block;
+  visibility: hidden;
+  white-space: nowrap;
+  overflow: hidden;
+  min-height: var(--settings-control-height);
+  padding: calc(0.375 * var(--settings-layout-unit)) calc(2 * var(--settings-layout-unit))
+    calc(0.375 * var(--settings-layout-unit)) calc(0.625 * var(--settings-layout-unit));
+  border: 1px solid transparent;
+}
+select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: var(--settings-control-height);
+  padding: calc(0.375 * var(--settings-layout-unit)) calc(0.625 * var(--settings-layout-unit));
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  color: var(--color-text-main);
+  font-family: inherit;
+  font-size: var(--settings-font-unit);
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+}
+select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 option {
-  color: #111;
-  background: #fff;
-}
-.button-model-row {
-  margin-top: 12px;
-  padding-left: 12px;
+  color: var(--color-text-main);
+  background: var(--input-bg);
 }
 </style>
