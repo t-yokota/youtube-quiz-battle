@@ -128,7 +128,7 @@ const shouldHidePlayer = computed(
 // タッチデバイス判定（初回評価のみ。useOrientationGuard と同じ基準）
 const isTouchDevice = window.matchMedia('(pointer: coarse)').matches
 
-// タッチデバイスの ANSWERING 中は動画とボタン領域を高さごと畳み、
+// タッチデバイスの ANSWERING 中は動画領域を畳み、
 // 解答エリアを画面上部に出してソフトキーボードと共存させる（Task 22-1）。
 // hideVideoPlayerDuringAnswer の実効値に従う（OFF ならキーボードが解答エリアに
 // 重なり得るが、短答想定のため致命的ではない — 2026-07-05 裁定）
@@ -218,12 +218,11 @@ onBeforeUnmount(() => {
         <!-- スコアボード（video 直下にフルブリードで密着） -->
         <GameInfo />
 
-        <div class="game-ui">
+        <div class="game-ui" :class="{ 'answering-player-hidden': shouldHidePlayer }">
           <GamePanel @submit="handleAnswerSubmit" />
-          <!-- 動画を畳んだ分の高さを margin で補い、ボタンの画面上の位置を保つ（Task 22-1 改定） -->
+          <!-- 動画非表示時も解答エリア直下にボタンを配置する。 -->
           <QuizButton
             v-if="gameStore.isButtonVisible"
-            :class="{ 'keyboard-offset': shouldCollapseForKeyboard }"
             :button-state="gameStore.buttonState"
             :interaction-blocked="isGameInputBlocked()"
             @press="handleButtonPress"
@@ -405,12 +404,6 @@ onBeforeUnmount(() => {
   visibility: hidden;
 }
 
-/* 動画を畳んだ分の高さ補填（フルブリード幅 × 9/16 + 下ボーダー 1px）。
-   margin 方式なら game-ui の gap 数が変わらず、ボタン位置が正確に保たれる */
-.keyboard-offset {
-  margin-top: calc(100vw * 9 / 16 + 1px);
-}
-
 .main-content {
   flex: 1;
   display: flex;
@@ -428,6 +421,16 @@ onBeforeUnmount(() => {
   gap: 0.875rem;
   padding: 0.875rem 0.75rem;
   min-height: 0;
+}
+
+/* 動画非表示中は解答エリアを基準に固定配置する。
+   キーボードによる残り高さの変化を、ボタンの位置・大きさに反映しない。 */
+.game-ui.answering-player-hidden {
+  gap: 0.875rem;
+}
+.game-ui.answering-player-hidden :deep(.quiz-button-container) {
+  flex: 0 0 13.5rem;
+  height: 13.5rem;
 }
 
 /* Result UI（リザルトステージ: 上部に放射スポットライト） */

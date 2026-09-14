@@ -1545,7 +1545,7 @@ _Privacy Info_
   - 解答入力フィールド: 有効、自動フォーカス
   - 送信ボタン: 有効、結果表示: 非表示
 - **Quiz Button**: PUSHED状態 → RELEASED状態に自動遷移、操作不可
-- **キーボード折りたたみ**（タッチデバイスかつ`hideVideoPlayerDuringAnswer`実効値がtrueの場合のみ）: Video PlayerとQuizButtonの高さを畳み、解答エリアを画面上部へ押し出してソフトウェアキーボードと共存させる（詳細は後述の専用節を参照）
+- **キーボード折りたたみ**（タッチデバイスかつ`hideVideoPlayerDuringAnswer`実効値がtrueの場合のみ）: Video Playerの高さを畳み、解答エリアと早押しボタンを上へ詰めてソフトウェアキーボードと共存させる（詳細は後述の専用節を参照）
 
 **WAITING/REVEALING State**
 
@@ -1600,8 +1600,8 @@ _Privacy Info_
 
 タッチデバイスでソフトウェアキーボードが解答エリアに重なる問題への対策。`hideVideoPlayerDuringAnswer`の実効値がtrueかつANSWERING中の場合のみ発動する（OFFの場合はキーボードが解答エリアに重なり得るが、短答想定のため許容する裁定）。
 
-- Video Player（`v-show`で非表示）とQuizButton（`.keyboard-offset`クラスでmargin-topを動画分だけ確保）の高さを畳み、解答エリアを画面上部に押し出す
-- QuizButtonのmargin補填はフルブリード幅×9/16（動画のアスペクト比）+ 下ボーダー1pxで計算し、ボタンの画面上の位置がずれないようにする
+- タッチデバイスではVideo Playerを`v-show`で非表示にして高さを畳み、解答エリアとQuizButtonを上へ詰める。
+- 端末種別にかかわらず動画非表示中は、解答エリアとボタンの間隔を0.875rem、ボタン領域の高さを13.5remに固定し、キーボード開閉による残り高さに追従させない。動画の高さを補う余白は設けない
 - キーボード表示に伴うiOSの自動スクロールを打ち消すため、折りたたみ発生時に`window.scrollTo(0, 0)`と`.main-content`の`scrollTop`リセットを`requestAnimationFrame`内で実行する
 
 ### Screen Orientation Control
