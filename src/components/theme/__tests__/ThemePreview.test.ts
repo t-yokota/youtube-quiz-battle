@@ -93,13 +93,10 @@ describe('ThemePreview', () => {
 
     expect(buttonContainer?.querySelector(':scope > .p-button-area')).not.toBeNull()
     expect(buttonContainer?.querySelector(':scope > .p-toggle-row')).not.toBeNull()
-    expect(themePreviewSource).toMatch(/\.p-button-container\s*{[^}]*min-height:\s*13\.5rem;/s)
-    expect(themePreviewSource).toMatch(
-      /\.p-pedestal\s*{[^}]*width:\s*12\.25rem;[^}]*height:\s*12\.25rem;/s,
-    )
-    expect(themePreviewSource).toMatch(
-      /\.p-quiz-button\s*{[^}]*width:\s*9\.375rem;[^}]*height:\s*9\.375rem;/s,
-    )
+    expect(themePreviewSource).toMatch(/\.p-button-container\s*{[^}]*min-height:\s*9rem;/s)
+    expect(themePreviewSource).toContain('container-type: size')
+    expect(themePreviewSource).toContain('width: calc(12.25 * var(--button-unit))')
+    expect(themePreviewSource).toContain('width: calc(9.375 * var(--button-unit))')
     expect(themePreviewSource).not.toContain('cqmin')
   })
 })

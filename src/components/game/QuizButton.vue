@@ -305,8 +305,8 @@ const handleButtonCheckToggle = () => {
 
 /* 再生ボタンモードの三角形（Task 19-4） */
 .play-icon {
-  width: 4.5rem;
-  height: 4.5rem;
+  width: calc(4.5 * var(--button-unit));
+  height: calc(4.5 * var(--button-unit));
   display: block;
   margin: 0 auto;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
@@ -317,7 +317,7 @@ const handleButtonCheckToggle = () => {
   --icon-hit-offset: 9.625px;
   flex: 1;
   /* iPhone Safari（下部バー表示時）で 1 画面に収まる高さ。トグル行を含む */
-  min-height: 13.5rem;
+  min-height: 9rem;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -325,6 +325,7 @@ const handleButtonCheckToggle = () => {
 
 /* ボタン本体の領域（残り空間の中央にボタンを置く） */
 .button-stage {
+  container-type: size;
   position: relative;
   flex: 1;
   min-height: 0;
@@ -349,6 +350,7 @@ const handleButtonCheckToggle = () => {
 }
 
 .button-rig {
+  --button-unit: min(1rem, calc(100cqh / 12.25), calc(100cqw / 12.25));
   position: relative;
   display: grid;
   place-items: center;
@@ -360,8 +362,8 @@ const handleButtonCheckToggle = () => {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 12.25rem;
-  height: 12.25rem;
+  width: calc(12.25 * var(--button-unit));
+  height: calc(12.25 * var(--button-unit));
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: var(--pedestal-bg);
@@ -373,8 +375,8 @@ const handleButtonCheckToggle = () => {
 /* QUESTIONING時のパルスリング */
 .pulse-ring {
   position: absolute;
-  width: 10rem;
-  height: 10rem;
+  width: calc(10 * var(--button-unit));
+  height: calc(10 * var(--button-unit));
   border-radius: 50%;
   border: 2px solid var(--pulse-color);
   opacity: 0;
@@ -405,8 +407,8 @@ const handleButtonCheckToggle = () => {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
-  width: 9.375rem;
-  height: 9.375rem;
+  width: calc(9.375 * var(--button-unit));
+  height: calc(9.375 * var(--button-unit));
   border-radius: 50%;
   border: none;
   cursor: pointer;

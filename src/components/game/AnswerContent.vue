@@ -108,6 +108,12 @@ watch(
           / {{ gameStore.effectiveSettings?.maxAttempts ?? gameStore.remainingAttempts }}</span
         ></span
       >
+      <!-- 結果の高さもレイアウトに含め、入力欄との間隔を確保する。 -->
+      <div class="answer-result-slot" aria-live="polite">
+        <span v-if="gameStore.answerResult" :class="['answer-result', gameStore.answerResult]">
+          {{ gameStore.answerResult === 'correct' ? '正解！' : '不正解' }}
+        </span>
+      </div>
       <span
         v-if="!gameStore.isInputDisabled"
         class="answer-timer"
@@ -119,13 +125,6 @@ watch(
       >
         <span class="timer-ring"></span>
         <span class="sec">{{ gameStore.answerTimeRemaining }}s</span>
-      </span>
-    </div>
-
-    <!-- 結果バナー（正解/不正解）。aria-live 領域は常設して変化を通知する -->
-    <div aria-live="polite">
-      <span v-if="gameStore.answerResult" :class="['answer-result', gameStore.answerResult]">
-        {{ gameStore.answerResult === 'correct' ? '正解！' : '不正解' }}
       </span>
     </div>
 
@@ -163,14 +162,16 @@ watch(
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 0.5rem;
 }
 
 /* Answer Meta Information */
 .answer-meta {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  height: 1.625rem;
+  min-height: 1.625rem;
+  gap: 0.375rem;
   /* 両端の残り回数・タイマーを枠から数 px 内側に寄せる */
   padding: 0 0.25rem;
   font-size: calc(0.75 * var(--ui-font-unit));
@@ -191,6 +192,7 @@ watch(
 
 /* タイマー: conic-gradient リング + 残秒数（12時から時計回りに減る） */
 .answer-timer {
+  grid-column: 3;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -256,12 +258,16 @@ watch(
   }
 }
 
-/* 結果バナー（answer-area 上端中央にポップ表示） */
+/* 結果バナーも通常フローに含め、縦に短い画面で入力欄へ重ならないようにする。 */
+.answer-result-slot {
+  grid-column: 2;
+  margin-inline: auto;
+}
+.answer-result-slot:empty {
+  display: none;
+}
 .answer-result {
-  position: absolute;
-  left: 50%;
-  top: 0.5rem;
-  transform: translateX(-50%);
+  display: block;
   font-size: calc(0.875 * var(--ui-font-unit));
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -273,7 +279,7 @@ watch(
 
 @keyframes pop {
   from {
-    transform: translateX(-50%) scale(0.7);
+    transform: scale(0.7);
     opacity: 0;
   }
 }
@@ -299,7 +305,7 @@ watch(
 .answer-input {
   flex: 1;
   min-width: 0;
-  height: max(44px, 2.75rem);
+  height: max(36px, 2.5rem);
   padding: 0 0.875rem;
   font-size: max(16px, var(--ui-font-unit)); /* iOSズーム防止（実 px 16 を下回らない） */
   color: var(--color-text-main);
@@ -327,8 +333,8 @@ watch(
 }
 
 .submit-button {
-  height: max(44px, 2.75rem);
-  min-width: max(44px, 2.75rem);
+  height: max(36px, 2.5rem);
+  min-width: max(36px, 2.5rem);
   padding: 0 1rem;
   font-size: calc(0.9375 * var(--ui-font-unit));
   font-weight: 800;

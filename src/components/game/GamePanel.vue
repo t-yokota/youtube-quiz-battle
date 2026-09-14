@@ -25,6 +25,7 @@ const handleSubmit = (answer: string) => {
   <section
     class="answer-area"
     :class="{
+      'is-guide': gameStore.gamePanelMode === 'guide',
       'flash-correct': gameStore.gamePanelMode === 'answer' && gameStore.answerResult === 'correct',
       'flash-incorrect':
         gameStore.gamePanelMode === 'answer' && gameStore.answerResult === 'incorrect',
@@ -46,13 +47,17 @@ const handleSubmit = (answer: string) => {
   border: var(--panel-border);
   border-radius: var(--radius-lg);
   padding: 0.75rem 0.875rem;
-  height: 6.875rem;
+  min-height: 6.875rem;
   display: flex;
   align-items: stretch;
   position: relative;
   overflow: hidden;
   box-shadow: var(--panel-shadow);
   transition: border-color var(--duration-base);
+}
+
+.answer-area.is-guide {
+  height: 6.875rem;
 }
 
 /* 正解/不正解時はエリア全体の枠色だけを切り替える */

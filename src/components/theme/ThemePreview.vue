@@ -304,7 +304,8 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
   border-radius: var(--radius-lg);
   box-shadow: var(--panel-shadow);
   padding: 0.75rem 0.875rem;
-  height: 6.875rem;
+  min-height: 6.875rem;
+  gap: 0.5rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -331,7 +332,7 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
 .p-input {
   flex: 1;
   min-width: 0;
-  height: max(44px, 2.75rem);
+  height: max(36px, 2.5rem);
   padding: 0 0.875rem;
   font-size: max(16px, var(--ui-font-unit));
   color: var(--color-placeholder);
@@ -345,8 +346,8 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
 }
 
 .p-submit {
-  height: max(44px, 2.75rem);
-  min-width: max(44px, 2.75rem);
+  height: max(36px, 2.5rem);
+  min-width: max(36px, 2.5rem);
   padding: 0 1rem;
   font-size: calc(0.9375 * var(--ui-font-unit));
   font-weight: 800;
@@ -362,13 +363,14 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
 .p-button-container {
   --icon-hit-offset: 9.625px;
   flex: 1;
-  min-height: 13.5rem;
+  min-height: 9rem;
   display: flex;
   flex-direction: column;
   position: relative;
 }
 
 .p-button-area {
+  container-type: size;
   flex: 1;
   min-height: 0;
   display: grid;
@@ -377,9 +379,10 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
 }
 
 .p-pedestal {
+  --button-unit: min(1rem, calc(100cqh / 12.25), calc(100cqw / 12.25));
   grid-area: 1 / 1;
-  width: 12.25rem;
-  height: 12.25rem;
+  width: calc(12.25 * var(--button-unit));
+  height: calc(12.25 * var(--button-unit));
   border-radius: 50%;
   background: var(--pedestal-bg);
   border: var(--pedestal-border);
@@ -387,9 +390,10 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
 }
 
 .p-quiz-button {
+  --button-unit: min(1rem, calc(100cqh / 12.25), calc(100cqw / 12.25));
   grid-area: 1 / 1;
-  width: 9.375rem;
-  height: 9.375rem;
+  width: calc(9.375 * var(--button-unit));
+  height: calc(9.375 * var(--button-unit));
   border-radius: 50%;
   display: grid;
   place-items: center;
