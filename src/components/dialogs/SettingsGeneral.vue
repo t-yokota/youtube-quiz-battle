@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { GameState } from '@/types'
 import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 defineProps<{ volumeLevel: number }>()
 const emit = defineEmits<{ updateVolume: [level: number]; openThemeSwitcher: [] }>()
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
+const canChangeBuzzer = computed(
+  () => gameStore.currentState === GameState.READY || gameStore.currentState === GameState.FINISHED,
+)
+function changeMode(event: Event) {
+  if (canChangeBuzzer.value) settingsStore.setBuzzerMode((event.target as HTMLSelectElement).value)
+}
+function changeModel(event: Event) {
+  if (canChangeBuzzer.value) settingsStore.setBuzzerModel((event.target as HTMLSelectElement).value)
+}
 function handleVolumeChange(level: number) {
   emit('updateVolume', level)
 }
@@ -154,6 +164,34 @@ const handleButtonCheckToggle = () => {
     </p>
   </section>
 
+  <section class="settings-section">
+    <div class="setting-row">
+      <label for="buzzer-mode" class="setting-label">ボタンの表示方式</label>
+      <select
+        id="buzzer-mode"
+        :value="settingsStore.buzzer.renderMode"
+        :disabled="!canChangeBuzzer"
+        @change="changeMode"
+      >
+        <option value="2d">2D</option>
+        <option value="3d">3D</option>
+      </select>
+    </div>
+    <div v-if="settingsStore.buzzer.renderMode === '3d'" class="setting-row buzzer-model-row">
+      <label for="buzzer-model" class="setting-label">ボタンタイプ</label>
+      <select
+        id="buzzer-model"
+        :value="settingsStore.buzzer.modelId"
+        :disabled="!canChangeBuzzer"
+        @change="changeModel"
+      >
+        <option value="simple-round-v1">円形</option>
+        <option value="waseda-style-v1">早稲田式風</option>
+      </select>
+    </div>
+    <p v-if="!canChangeBuzzer" class="seek-description">クイズ開始前か終了後に変更できます。</p>
+  </section>
+
   <!-- UI Theme -->
   <section class="settings-section">
     <div class="setting-row">
@@ -163,3 +201,24 @@ const handleButtonCheckToggle = () => {
     <p class="seek-description">アプリ全体の見た目を切り替えます。</p>
   </section>
 </template>
+
+<style scoped>
+select {
+  max-width: 55%;
+  min-height: 44px;
+  border: 1px solid var(--color-text-dim);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 4px 8px;
+}
+option {
+  color: #111;
+  background: #fff;
+}
+.buzzer-model-row {
+  margin-top: 12px;
+  padding-left: 12px;
+}
+</style>

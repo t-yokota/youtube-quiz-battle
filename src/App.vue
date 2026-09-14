@@ -225,6 +225,7 @@ onBeforeUnmount(() => {
             v-if="gameStore.isButtonVisible"
             :class="{ 'keyboard-offset': shouldCollapseForKeyboard }"
             :button-state="gameStore.buttonState"
+            :interaction-blocked="isGameInputBlocked()"
             @press="handleButtonPress"
           />
         </div>

@@ -1,3 +1,9 @@
+import {
+  defaultBuzzer,
+  isBuzzerModel,
+  readBuzzerSettings,
+  type BuzzerSettings,
+} from '@/constants/buzzer'
 import { readStoredValue, writeStoredValue } from '@/utils/browserStorage'
 // 音声設定などのユーザー設定を管理する Pinia ストア
 import { ref } from 'vue'
@@ -6,6 +12,7 @@ import { LOCALSTORAGE_KEY_SETTINGS, DEFAULT_VOLUME_LEVEL } from '@/constants/aud
 import { logger } from '@/utils/logger'
 
 interface PersistedSettings {
+  buzzer: BuzzerSettings
   soundEnabled: boolean
   volumeLevel: number
   /** シーク許可のユーザー上書き（null = クイズデータの設定に従う） */
@@ -16,6 +23,7 @@ interface PersistedSettings {
 
 function loadPersistedSettings(): PersistedSettings {
   const defaults: PersistedSettings = {
+    buzzer: { ...defaultBuzzer },
     soundEnabled: true,
     volumeLevel: DEFAULT_VOLUME_LEVEL,
     disableSeekbarOverride: null,
@@ -28,6 +36,7 @@ function loadPersistedSettings(): PersistedSettings {
   try {
     const parsed = JSON.parse(raw) as Partial<PersistedSettings>
     return {
+      buzzer: readBuzzerSettings(parsed.buzzer),
       soundEnabled:
         typeof parsed.soundEnabled === 'boolean' ? parsed.soundEnabled : defaults.soundEnabled,
       volumeLevel:
@@ -58,6 +67,7 @@ function persistSettings(settings: PersistedSettings): void {
 export const useSettingsStore = defineStore('settings', () => {
   const initial = loadPersistedSettings()
 
+  const buzzer = ref(initial.buzzer)
   const soundEnabled = ref(initial.soundEnabled)
   const volumeLevel = ref(initial.volumeLevel)
   const disableSeekbarOverride = ref<boolean | null>(initial.disableSeekbarOverride)
@@ -65,6 +75,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function persist(): void {
     persistSettings({
+      buzzer: buzzer.value,
       soundEnabled: soundEnabled.value,
       volumeLevel: volumeLevel.value,
       disableSeekbarOverride: disableSeekbarOverride.value,
@@ -94,7 +105,21 @@ export const useSettingsStore = defineStore('settings', () => {
     persist()
   }
 
+  function setBuzzerMode(value: unknown): void {
+    if (value !== '2d' && value !== '3d') return
+    buzzer.value = { ...buzzer.value, renderMode: value }
+    persist()
+  }
+  function setBuzzerModel(value: unknown): void {
+    if (!isBuzzerModel(value)) return
+    buzzer.value = { ...buzzer.value, modelId: value }
+    persist()
+  }
+
   return {
+    buzzer,
+    setBuzzerMode,
+    setBuzzerModel,
     soundEnabled,
     volumeLevel,
     disableSeekbarOverride,

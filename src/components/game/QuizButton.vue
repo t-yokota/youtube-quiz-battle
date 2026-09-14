@@ -1,23 +1,40 @@
 <script setup lang="ts">
 // QuizButton コンポーネント
 // 早押しボタン（物理ボタン: 真上視点の円形キャップ + 同心円台座 + LED リング）
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import Buzzer3DView from './buzzer3d/Buzzer3DView.vue'
 import { ButtonState, GameState } from '@/types'
 import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 interface Props {
+  interactionBlocked?: boolean
   buttonState?: ButtonState
   buttonText?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  interactionBlocked: false,
   buttonState: ButtonState.STANDBY,
   buttonText: undefined,
 })
 
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
+const threeReady = ref(false)
+const threeFailed = ref(false)
+const useThree = computed(() => settingsStore.buzzer.renderMode === '3d' && !threeFailed.value)
+watch(
+  () => [settingsStore.buzzer.renderMode, settingsStore.buzzer.modelId],
+  () => {
+    threeFailed.value = false
+    if (settingsStore.buzzer.renderMode === '2d') threeReady.value = false
+  },
+)
+function fallbackToTwo() {
+  threeReady.value = false
+  threeFailed.value = true
+}
 
 // イベント定義
 const emit = defineEmits<{
@@ -68,7 +85,11 @@ const isLit = computed(
 const isPulsing = computed(() => gameStore.currentState === GameState.QUESTIONING)
 
 const handlePress = () => {
-  if (props.buttonState !== ButtonState.DISABLED) {
+  if (
+    !props.interactionBlocked &&
+    props.buttonState !== ButtonState.DISABLED &&
+    (!useThree.value || gameStore.isButtonEnabled)
+  ) {
     emit('press')
   }
 }
@@ -82,7 +103,18 @@ const handleButtonCheckToggle = () => {
 <template>
   <section class="quiz-button-container" :class="{ lit: isLit }">
     <div class="button-stage">
-      <div class="button-rig">
+      <Buzzer3DView
+        v-if="useThree"
+        :button-state="buttonState"
+        :enabled="gameStore.isButtonEnabled"
+        :blocked="interactionBlocked"
+        :model-id="settingsStore.buzzer.modelId"
+        :play-mode="isPlayMode"
+        @press="handlePress"
+        @ready="threeReady = true"
+        @failed="fallbackToTwo"
+      />
+      <div v-show="!useThree || !threeReady" class="button-rig">
         <div class="pulse-ring" :class="{ active: isPulsing }"></div>
         <button
           :class="['quiz-button', buttonStateClass]"
@@ -240,6 +272,7 @@ const handleButtonCheckToggle = () => {
 
 /* ボタン本体の領域（残り空間の中央にボタンを置く） */
 .button-stage {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
