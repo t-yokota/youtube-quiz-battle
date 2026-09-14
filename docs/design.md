@@ -1332,7 +1332,7 @@ App.vue
 │   │   ├── GuideText (game/) — LOADING/READY/TALKING状態。READY時は下向き矢印アニメーション付き
 │   │   └── AnswerContent (game/) — QUESTIONING/ANSWERING/WAITING/REVEALING状態
 │   │       （残り回数・conic-gradientタイマーリング・結果バナー・input+送信buttonをインラインで保持）
-│   └── QuizButton (game/) — 早押しボタン（円形物理ボタン）+ BUTTON CHECKトグル（settingsStore連動）
+│   └── QuizButton (game/) — 早押しボタン（2D／3D表示切替）+ BUTTON CHECKトグル（settingsStore連動）
 ├── FinalScore (result/) — FINISHED状態で.result-content内に配置
 ├── ResultTable (result/) — 同上。ResultChip + 正答 + あなたの解答をカード行リストで表示
 ├── ResultActions (result/) — 「もう一度プレイ」ボタンのみ
@@ -1614,6 +1614,18 @@ _Privacy Info_
 ### Visual Reference
 
 採用デザイン: [wireframe-v2-case1.html](./assets/wireframe-v2-case1.html)（ケース2は不採用・アーカイブ）。実装のデザイントークン・レイアウトはこのHTMLから移植した。初期検討時の[wireframe.html](./assets/wireframe.html)は参考用プロトタイプで、採用デザインの直接の出典ではない。
+
+
+### 3D早押しボタン（2026-09-14）
+
+- QuizButtonが2D／3Dの表示を切り替え、3DはBuzzer3DViewからview.tsを遅延ロードする。Three.jsのrendererは表示領域につき1つで、円形・早稲田式風のfactoryだけを交換する。
+- 設定は表示方式→3Dボタンタイプの階層。既定は2D。settingsStore.buzzerへschemaVersion／renderMode／modelId／appearancePresetIdを保存し、旧形式・不明値は既定へ戻す。変更可能なのはREADY／FINISHED。
+- 早押しは透明なネイティブbuttonのclick→既存press経路。Appの同期focus・動画停止・受理判定・100ms遷移は維持する。演出は40ms押下＋20ms保持＋80ms復帰で独立し、ゲーム側の状態通知に従う。
+- RELEASED中は500ms周期でキャップ／ランプが発光。DISABLED（WAIT）は通常位置に戻して減光・消灯。3DのPUSH／ON!／WAIT文字は表示しない。読み上げ用操作名は維持する。
+- 台座・余白は回転専用。キャップの操作領域は最低44pxで、回転後の遮蔽判定を行う。設定・テーマ・横画面警告中はinertと入力ガードで操作を止める。
+- 非表示時はRAFを停止し、reduced-motionでは押下補間を省略して発光を定常表示する。初期化／描画失敗やcontext lossでは2Dへ復帰する。資産は生成途中の例外を含めて明示的に解放する。
+- 3Dコードは遅延ロードするが、PWAでは他のJSと同様にprecacheする。実機確認の残件と詳細は[組み込み計画](buzzer-3d-integration-plan.md)を参照。
+
 
 ## Data Models
 
