@@ -5,6 +5,8 @@ import { useRegisterSW } from 'virtual:pwa-register/vue'
 const { needRefresh, updateServiceWorker } = useRegisterSW()
 const isUpdating = ref(false)
 const updateFailed = ref(false)
+const prompt = ref<HTMLElement>()
+const updatingHeight = ref<number>()
 
 function dismiss() {
   needRefresh.value = false
@@ -14,6 +16,8 @@ function dismiss() {
 async function applyUpdate() {
   if (isUpdating.value) return
 
+  // ボタンの削除や文言の折り返し変更で通知が縮まないよう、切り替え前の高さを保持する。
+  updatingHeight.value = prompt.value?.getBoundingClientRect().height
   isUpdating.value = true
   updateFailed.value = false
   try {
@@ -32,7 +36,9 @@ async function applyUpdate() {
     <Transition name="pwa-update">
       <aside
         v-if="needRefresh || isUpdating"
+        ref="prompt"
         class="pwa-update-prompt"
+        :style="{ minHeight: isUpdating && updatingHeight ? `${updatingHeight}px` : undefined }"
         role="status"
         aria-live="polite"
         aria-atomic="true"
