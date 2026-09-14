@@ -47,8 +47,7 @@ useModalLayer(overlayRef, () => props.isOpen, {
           <h3 class="dialog-title">画面を縦向きにしてください</h3>
           <p class="dialog-message">
             このアプリは縦画面専用です。<br />
-            デバイスを縦向きに回転させてください。<br />
-            解答中の制限時間は止まりません。
+            デバイスを縦向きに回転させてください。
           </p>
         </div>
       </div>

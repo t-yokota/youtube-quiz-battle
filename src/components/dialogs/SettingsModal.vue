@@ -108,7 +108,6 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
 
           <!-- Modal Content -->
           <div class="modal-content">
-            <p class="privacy-text">動画は停止します。解答中の制限時間は止まりません。</p>
             <SettingsGeneral
               :volume-level="volumeLevel"
               @update-volume="emit('updateVolume', $event)"
