@@ -406,8 +406,8 @@ onBeforeUnmount(() => {
   inset: 0;
   content: '';
   background-color: #fff;
-  -webkit-mask: url('/quiz-battle-concept-white-fill.svg') center / contain no-repeat;
-  mask: url('/quiz-battle-concept-white-fill.svg') center / contain no-repeat;
+  -webkit-mask: url('/assets/images/quiz-battle-concept-fill-white.svg') center / contain no-repeat;
+  mask: url('/assets/images/quiz-battle-concept-fill-white.svg') center / contain no-repeat;
 }
 
 .start-gate-concept::after {
@@ -415,8 +415,8 @@ onBeforeUnmount(() => {
   inset: 0;
   content: '';
   background-color: var(--color-accent);
-  -webkit-mask: url('/quiz-battle-concept-mc.svg') center / contain no-repeat;
-  mask: url('/quiz-battle-concept-mc.svg') center / contain no-repeat;
+  -webkit-mask: url('/assets/images/quiz-battle-concept-line.svg') center / contain no-repeat;
+  mask: url('/assets/images/quiz-battle-concept-line.svg') center / contain no-repeat;
 }
 
 .start-gate-concept--accent-only::before {

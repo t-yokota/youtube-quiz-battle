@@ -1888,6 +1888,9 @@ public/
 │   └── {quizId}/
 │       └── data.json          # クイズデータ（metadata.jsonは存在しない）
 └── assets/
+    ├── icons/                # favicon・Apple Touch Icon・PWAアイコン
+    ├── images/               # 背景用SVG（線画・白塗り）
+    ├── fonts/                # ローカル配信フォント
     └── sounds/
         ├── quiz-sounds.mp3    # Web Audio用スプライト
         ├── button.wav         # HTMLAudioフォールバック用（個別ファイル）
