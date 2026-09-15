@@ -5,8 +5,6 @@ import { useRegisterSW } from 'virtual:pwa-register/vue'
 const { needRefresh, updateServiceWorker } = useRegisterSW()
 const isUpdating = ref(false)
 const updateFailed = ref(false)
-const prompt = ref<HTMLElement>()
-const updatingHeight = ref<number>()
 
 function dismiss() {
   needRefresh.value = false
@@ -16,8 +14,6 @@ function dismiss() {
 async function applyUpdate() {
   if (isUpdating.value) return
 
-  // ボタンの削除や文言の折り返し変更で通知が縮まないよう、切り替え前の高さを保持する。
-  updatingHeight.value = prompt.value?.getBoundingClientRect().height
   isUpdating.value = true
   updateFailed.value = false
   try {
@@ -36,9 +32,8 @@ async function applyUpdate() {
     <Transition name="pwa-update">
       <aside
         v-if="needRefresh || isUpdating"
-        ref="prompt"
         class="pwa-update-prompt"
-        :style="{ minHeight: isUpdating && updatingHeight ? `${updatingHeight}px` : undefined }"
+        :class="{ 'pwa-update-toast': isUpdating }"
         role="status"
         aria-live="polite"
         aria-atomic="true"
@@ -92,6 +87,24 @@ async function applyUpdate() {
   font-size: calc(0.8125 * var(--ui-font-unit));
   font-weight: 700;
   line-height: 1.4;
+}
+
+.pwa-update-toast {
+  width: fit-content;
+  max-width: calc(100% - 2rem - env(safe-area-inset-left) - env(safe-area-inset-right));
+  margin-inline: auto;
+  justify-content: center;
+  padding: 0.75rem 1.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #262626;
+  color: #fff;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 20%);
+  text-align: center;
+}
+
+.pwa-update-toast .pwa-update-message {
+  font-weight: 500;
 }
 
 .pwa-update-actions {

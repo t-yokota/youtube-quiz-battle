@@ -48,6 +48,7 @@ describe('PwaUpdatePrompt', () => {
     expect(prompt?.getAttribute('role')).toBe('status')
     expect(prompt?.getAttribute('aria-live')).toBe('polite')
     expect(prompt?.textContent).toContain('新しいバージョンがあります')
+    expect(prompt?.classList.contains('pwa-update-toast')).toBe(false)
   })
 
   it('更新ボタンで新しいService Workerを適用して再読み込みする', async () => {
@@ -75,12 +76,14 @@ describe('PwaUpdatePrompt', () => {
     await nextTick()
     expect(document.querySelector('.pwa-update-message')?.textContent).toContain('更新しています…')
     expect(document.querySelector('.pwa-update-actions')).toBeNull()
+    expect(document.querySelector('.pwa-update-toast')).not.toBeNull()
     expect(swMock.updateServiceWorker).toHaveBeenCalledOnce()
     resolveUpdate()
     await Promise.resolve()
     await nextTick()
     expect(document.querySelector('.pwa-update-message')?.textContent).toContain('更新しています…')
     expect(document.querySelector('.pwa-update-actions')).toBeNull()
+    expect(document.querySelector('.pwa-update-toast')).not.toBeNull()
   })
 
   it('あとでを選ぶと現在のバージョンのまま通知を閉じる', async () => {
@@ -107,5 +110,6 @@ describe('PwaUpdatePrompt', () => {
       )
     })
     expect(document.querySelector<HTMLButtonElement>('.pwa-update-action')?.disabled).toBe(false)
+    expect(document.querySelector('.pwa-update-toast')).toBeNull()
   })
 })
