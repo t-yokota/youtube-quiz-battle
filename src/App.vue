@@ -453,11 +453,12 @@ onBeforeUnmount(() => {
 
 /* Game UI（wireframe の .game-area 相当） */
 .game-ui {
+  --game-ui-padding-block: 0.875rem;
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.875rem;
-  padding: 0.875rem 0.75rem;
+  padding: var(--game-ui-padding-block) 0.75rem;
   min-height: 0;
 }
 
@@ -494,8 +495,9 @@ onBeforeUnmount(() => {
 /* 縦に短い画面のみ余白を詰める（上部セクションは wireframe の固定値を維持） */
 @media (max-height: 640px) {
   .game-ui {
+    --game-ui-padding-block: 0.625rem;
     gap: 0.625rem;
-    padding: 0.625rem 0.75rem;
+    padding: var(--game-ui-padding-block) 0.75rem;
   }
 }
 </style>

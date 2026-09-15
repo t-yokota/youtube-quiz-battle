@@ -180,10 +180,13 @@ const handleButtonCheckToggle = () => {
 
 <style scoped>
 .display-mode-toggle {
-  /* SVG内の輪郭中心(18, 46)に44pxの操作領域を合わせ、絵の位置は維持する。 */
+  /* 44pxの操作領域の張り出しは親の下余白までに制限する。
+     小さいiframeではremの余白が固定pxのoffsetより小さくなり、スクロールを生む。
+     artwork側も同量補正し、アイコンの描画位置は変えない。 */
+  --icon-hit-bottom-offset: min(var(--icon-hit-offset), var(--game-ui-padding-block, 0px));
   position: absolute;
   left: calc(-1 * var(--icon-hit-offset));
-  bottom: calc(-1 * var(--icon-hit-offset));
+  bottom: calc(-1 * var(--icon-hit-bottom-offset));
   z-index: 1;
   width: 44px;
   height: 44px;
@@ -200,7 +203,7 @@ const handleButtonCheckToggle = () => {
   -webkit-tap-highlight-color: transparent;
 }
 .display-mode-artwork {
-  transform: translate(var(--icon-hit-offset), calc(-1 * var(--icon-hit-offset)));
+  transform: translate(var(--icon-hit-offset), calc(-1 * var(--icon-hit-bottom-offset)));
 }
 .display-mode-toggle:focus-visible {
   outline: 2px solid var(--color-accent);
