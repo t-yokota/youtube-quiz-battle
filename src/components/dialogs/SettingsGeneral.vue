@@ -113,7 +113,7 @@ const handleButtonCheckToggle = () => {
         />
       </div>
     </div>
-    <p class="seek-description">早押しボタンと正誤判定の効果音に適用されます。</p>
+    <p class="seek-description">早押しボタンと正誤判定の効果音に適用されます</p>
   </section>
 
   <!-- Seek Settings -->
@@ -133,9 +133,7 @@ const handleButtonCheckToggle = () => {
         </span>
       </button>
     </div>
-    <p class="seek-description">
-      許可すると、シークで飛ばした問題は不参加（スキップ）扱いになります。
-    </p>
+    <p class="seek-description">シークで飛ばした問題はスキップ扱いになります</p>
   </section>
 
   <!-- Button Check Settings -->
@@ -155,9 +153,7 @@ const handleButtonCheckToggle = () => {
         </span>
       </button>
     </div>
-    <p class="seek-description">
-      クイズを始める（動画の再生を開始する）前にボタンチェックの演出を行います。
-    </p>
+    <p class="seek-description">動画再生の前にボタンチェックの演出を行います</p>
   </section>
 
   <section class="settings-section">
@@ -204,7 +200,7 @@ const handleButtonCheckToggle = () => {
       <span class="setting-label">UIテーマ</span>
       <button type="button" class="theme-button" @click="emit('openThemeSwitcher')">えらぶ</button>
     </div>
-    <p class="seek-description">アプリ全体の見た目を切り替えます。</p>
+    <p class="seek-description">アプリ全体の見た目を切り替えます</p>
   </section>
 </template>
 
