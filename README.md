@@ -90,9 +90,20 @@ npm run test:coverage
 
 シーク許可・解答後の正解発表へのジャンプ・解答中の動画非表示等の設定例はsampleデータと[詳細設計](docs/design.md#sample-quiz-data)を参照する。シークとボタンチェックは、保存済みのユーザー設定がデータの既定値より優先される。
 
+### sampleの公開とデバッグ
+
+`public/data/sample/data.json`はGit管理し、main・developの両方で公開する。URLで`?quiz=`を省略した場合もsampleを使用する。
+
+| 公開先 | sample | デバッグ機能 |
+| --- | --- | --- |
+| main（本番） | 公開 | 無効 |
+| develop（HTTPS検証用） | 公開 | データの`settings.debug: true`の場合に有効 |
+
+デバッグはデータ側の指定に加え、ローカル開発（`import.meta.env.DEV`）またはビルド時の`VITE_ENABLE_QUIZ_DEBUG=true`が必要。Actionsはdevelopにだけ設定し、main・PRでは無効にする。ローカル開発（`npm run dev`）はデータのdebug指定を有効にし、環境変数未指定の通常ビルドは無効。sampleの問題・解答データは公開対象であり、このフラグはデータの公開範囲を変更しない。
+
 ## デプロイとドキュメント
 
-公開パスは`/`。GitHub ActionsでLint・型チェック・カバレッジ付きテスト・ビルドを実行し、成功した`dist/`をCloudflare PagesへDirect Uploadする。mainは本番、developは[HTTPS検証用](https://develop.youtube-quiz-battle.pages.dev/)へ公開する（developのURLは初回デプロイ後に有効）。操作手順は[デプロイ手順](docs/deployment.md)を参照する。
+公開パスは`/`。GitHub ActionsでLint・型チェック・カバレッジ付きテスト・ビルドを実行し、成功した`dist/`をCloudflare PagesへDirect Uploadする。mainは本番、developは[HTTPS検証用](https://develop.youtube-quiz-battle.pages.dev/)へ公開する。操作手順は[デプロイ手順](docs/deployment.md)を参照する。
 
 - [タスクと計画の窓口](docs/tasks.md)
 - [要件定義](docs/requirements.md) / [詳細設計](docs/design.md)

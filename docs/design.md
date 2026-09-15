@@ -1820,6 +1820,8 @@ interface QuestionResult {
 
 **debug（デバッグモード設定）**
 
+データの`settings.debug`はデバッグ対象の指定。`quizDataLoader`が「ローカル開発（`import.meta.env.DEV`）またはビルド時の`VITE_ENABLE_QUIZ_DEBUG === 'true'`」とのANDで実効値を決める。Actionsはdevelopだけ許可し、main・PRは常に無効とする。ローカル開発（`npm run dev`）はデータのdebug指定を有効にし、環境変数未指定の通常ビルドは無効。以下のUI・debugStore・GAの判定は読み込み後の実効値を参照する。sampleはmain・develop共通で公開し、データのdebug指定を本番用に書き換える運用は不要。
+
 - **Type**: boolean（省略時`false`）
 - **When true**: 設定画面にデバッグメニュートグルが表示され、ON時にクイズ設定（解答制限時間・解答回数・正解発表ジャンプ・解答中動画非表示）の実行時上書きセクションが利用できる
 - **本番影響**: 上書きはセッション限り（`debugStore`は非永続）。`debug=false`のデータでは上書きUI自体が表示されない
@@ -2513,7 +2515,7 @@ src/
 - **answers**: 正解の配列（複数の表記を許可する場合）
 - **questionText**: 問題文（任意、動画内で読み上げられる場合は省略可。指定するとAnalyticsイベントに送信される）
 - **buttonCheckEnabled**: ゲーム開始前のボタンチェック演出を行うか（任意、既定false）
-- **debug**: デバッグモード。trueにすると設定画面にクイズ設定の実行時上書きセクションが表示できるようになる（任意、既定false。本番公開データでは基本的にfalseのまま）
+- **debug**: デバッグモード。trueかつビルド側で許可された場合のみ、設定画面にクイズ設定の実行時上書きセクションを表示できる（任意、既定false。mainはビルド側で無効化）
 - **othersAnsweringPeriods**: 動画内プレイヤーの解答区間（任意）。`startTime`は問題の`startTime`以上、`endTime`は`revealTime`以下、複数指定時は昇順・非重複である必要がある
 
 ## Future Work

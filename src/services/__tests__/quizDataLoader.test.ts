@@ -550,3 +550,39 @@ describe('外部JSONの構造検証', () => {
     await expect(loadQuizData('sample')).rejects.toThrow('QUIZ_DATA_INVALID')
   })
 })
+
+it.each([
+  ['true', true, true],
+  ['true', false, false],
+  ['false', true, false],
+  [undefined, true, false],
+  ['1', true, false],
+] as const)(
+  '公開ビルドのデバッグ許可=%s・データ指定=%sでは実効debug=%s',
+  async (permission, requested, expected) => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_ENABLE_QUIZ_DEBUG', permission)
+    try {
+      mockFetchOk(
+        makeRawData({ settings: { maxAttempts: 3, answerTimeLimit: 10, debug: requested } }),
+      )
+      const data = await loadQuizData('sample')
+      expect(data.settings.debug).toBe(expected)
+    } finally {
+      vi.unstubAllEnvs()
+      vi.unstubAllGlobals()
+    }
+  },
+)
+
+it.each([true, false])('ローカル開発ではデータのdebug=%sを反映する', async (debug) => {
+  vi.stubEnv('DEV', true)
+  vi.stubEnv('VITE_ENABLE_QUIZ_DEBUG', undefined)
+  try {
+    mockFetchOk(makeRawData({ settings: { maxAttempts: 3, answerTimeLimit: 10, debug } }))
+    expect((await loadQuizData('sample')).settings.debug).toBe(debug)
+  } finally {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  }
+})

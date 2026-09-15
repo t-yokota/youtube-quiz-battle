@@ -2,12 +2,12 @@
 
 Cloudflare PagesのDirect Uploadプロジェクト`youtube-quiz-battle`へ、GitHub Actionsから検証済みの成果物を公開する。Cloudflare側のGit連携は使用しない。公開パスは`/`。
 
-| ブランチ | 公開先 | GA4 |
-| --- | --- | --- |
-| main | https://youtube-quiz-battle.pages.dev/ | 本番測定IDで送信 |
-| develop | https://develop.youtube-quiz-battle.pages.dev/ | 無効 |
+| ブランチ | 公開先 | GA4 | sampleのデバッグ |
+| --- | --- | --- | --- |
+| main | https://youtube-quiz-battle.pages.dev/ | 本番測定IDで送信 | 無効 |
+| develop | https://develop.youtube-quiz-battle.pages.dev/ | 無効 | 有効 |
 
-developの固定URLは初回のブランチデプロイ後に有効になる。独自ドメインは後からPagesのCustom domainsで設定する。
+developの固定HTTPS URLではアクセスとPWAインストールを確認済み。独自ドメインは後からPagesのCustom domainsで設定する。
 
 ## 初期設定
 
@@ -37,6 +37,12 @@ PRでは公開ジョブを実行せず、検証・ビルドにもCloudflareト�
 
 GA4はビルド時の`VITE_GA_MEASUREMENT_ID`で切り替える。mainは本番ID、develop・PRは空文字にする。Cloudflare側に環境変数を設定しても、アップロード済みのJavaScriptには反映されない。
 
+## sampleとデバッグの公開条件
+
+sampleデータはmain・developに共通で公開し、`?quiz=`未指定時の既定データとして使う。データ内の`settings.debug: true`はデバッグ対象の指定であり、単独では有効にしない。
+
+Actionsのビルド環境変数`VITE_ENABLE_QUIZ_DEBUG`はdevelopで`true`、main・PRで`false`とする。クイズ読み込み時にこの値とデータのdebug指定をANDで評価し、無効なら実効設定のdebugをfalseにする。ローカル開発（`npm run dev`）はデータのdebug指定を有効にし、環境変数未指定の通常ビルドは無効。追加のGitHub SecretやCloudflare側の設定は不要。
+
 ## 通常の公開
 
 1. developをpushし、Actionsのcheck・deploy成功を確認する。
@@ -56,7 +62,7 @@ Actionsの成功後、対象URLでアプリの起動を確認する。PWAは更�
 
 ## 移行時の確認
 
-- このワークフローでの初回公開と、本番ブランチ設定の実確認は未完了。
+- main・developのCloudflare公開は導入済み。developではHTTPSアクセスとPWAインストールを確認済み。
 - 旧GitHub Pages用の`deploy.yml`は削除済み。Cloudflareでの公開確認後、GitHubのSettings → Pagesから旧サイトをUnpublishする。
 - 独自ドメインを設定したらREADMEと本書の本番URLを更新する。
 

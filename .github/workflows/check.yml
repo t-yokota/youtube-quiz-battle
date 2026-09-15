@@ -25,6 +25,7 @@ jobs:
       - run: npm run build-only
         env:
           VITE_GA_MEASUREMENT_ID: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && 'G-JZTD11WD9E' || '' }}
+          VITE_ENABLE_QUIZ_DEBUG: ${{ github.ref == 'refs/heads/develop' && github.event_name != 'pull_request' && 'true' || 'false' }}
       - uses: actions/upload-artifact@v4
         if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         with:

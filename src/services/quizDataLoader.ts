@@ -259,7 +259,10 @@ function convertToQuizData(rawData: RawQuizData): QuizData {
     jumpToRevealPeriod: rawData.settings.jumpToRevealPeriod ?? false,
     hideVideoPlayerDuringAnswer: rawData.settings.hideVideoPlayerDuringAnswer ?? false,
     buttonCheckEnabled: rawData.settings.buttonCheckEnabled ?? false,
-    debug: rawData.settings.debug ?? false,
+    // sampleを共通公開しても、本番ではデータ側のdebug指定だけで有効にしない。
+    debug:
+      rawData.settings.debug === true &&
+      (import.meta.env.DEV || import.meta.env.VITE_ENABLE_QUIZ_DEBUG === 'true'),
   }
 
   const questions: QuizQuestion[] = rawData.questions.map((q, idx) => {
