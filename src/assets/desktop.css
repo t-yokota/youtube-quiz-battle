@@ -109,6 +109,9 @@
   .desktop-layout .button-rig {
     --button-unit: min(1rem, calc(100cqh / 12.25), calc(100cqw / 12.25));
   }
+  .desktop-layout .button-type-toggle {
+    --button-type-icon-size: 40px;
+  }
   .desktop-layout .button-view-controls {
     --view-control-step: 53px;
     left: 4px;

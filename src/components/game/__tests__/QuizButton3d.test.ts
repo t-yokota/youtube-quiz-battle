@@ -53,6 +53,7 @@ it('3D切替と一時障害後の2D復帰で保存モデルと早押し経路を
     await new Promise((r) => setTimeout(r, 0))
     await nextTick()
     expect(host.querySelector<HTMLElement>('.button-rig')!.style.display).toBe('none')
+    expect(host.querySelector('.button-type-toggle')).not.toBeNull()
     const hit = host.querySelector<HTMLButtonElement>('.button-hit')!
     hit.click()
     hit.click()

@@ -4,6 +4,7 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import Button3DView from './button3d/Button3DView.vue'
 import DimensionIcon from './DimensionIcon.vue'
+import ButtonTypeToggle from './ButtonTypeToggle.vue'
 import { ButtonState, GameState } from '@/types'
 import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -214,6 +215,19 @@ const handleButtonCheckToggle = () => {
     </div>
 
     <div class="button-view-controls">
+      <ButtonTypeToggle
+        v-if="useThree"
+        :display-size="desktop ? 40 : 32"
+        :model-id="settingsStore.button.modelId"
+        :disabled="interactionBlocked"
+        @toggle="
+          settingsStore.setButtonModel(
+            settingsStore.button.modelId === 'simple-round-v1'
+              ? 'waseda-style-v1'
+              : 'simple-round-v1',
+          )
+        "
+      />
       <button
         type="button"
         class="display-mode-toggle"
@@ -265,6 +279,13 @@ const handleButtonCheckToggle = () => {
 }
 .button-view-controls > * {
   pointer-events: auto;
+}
+.button-type-toggle {
+  position: absolute;
+  left: calc(-1 * var(--icon-hit-offset));
+  bottom: calc(var(--view-control-step) - var(--icon-hit-bottom-offset) + 4px);
+  height: 36px;
+  align-content: center;
 }
 .two-size-readout {
   position: absolute;
