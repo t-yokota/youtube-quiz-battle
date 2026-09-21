@@ -63,6 +63,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
   let model: ButtonModel | undefined
   let selected = options.modelId
   let fitInitialRotation = options.fitInitialRotation ?? false
+  let visualWidthDirty = true
   let modelRotations: Record<ButtonModelId, { x: number; y: number }> = {
     'simple-round-v1': initialRotation('simple-round-v1'),
     'waseda-style-v1': initialRotation('waseda-style-v1'),
@@ -70,12 +71,19 @@ export function createButtonView(container: HTMLElement, options: Options) {
   function applyRotation() {
     const { x, y } = modelRotations[selected]
     rig.rotation.set(x, y, 0)
+    if (!fitInitialRotation) visualWidthDirty = true
     const initial = initialRotation(selected)
     // 一周して初期姿勢へ戻った場合もリセット不要とする。
     const yawDifference = Math.atan2(Math.sin(y - initial.y), Math.cos(y - initial.y))
     options.onRotationChange?.(Math.abs(x - initial.x) > 1e-6 || Math.abs(yawDifference) > 1e-6)
   }
   applyRotation()
+  let layoutRotation = rig.rotation.clone()
+  function captureLayoutRotation() {
+    layoutRotation = rig.rotation.clone()
+    visualWidthDirty = true
+    invalidate()
+  }
   let fitPoints: THREE.Vector3[] = []
   let state = ButtonState.STANDBY
   let started: number | null = null
@@ -150,6 +158,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
       // setSizeは描画バッファを消去するため、必ず同じフレーム内で再描画する。
       // ResizeObserverの連続通知は最新寸法にまとめ、途中の空フレームを作らない。
       if (layoutDirty) {
+        visualWidthDirty = true
         width = Math.max(1, container.clientWidth)
         height = Math.max(1, container.clientHeight)
         const size = renderer.getSize(new THREE.Vector2())
@@ -184,7 +193,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
           : selected === 'simple-round-v1'
             ? initialAreaWidth * 0.3
             : initialAreaWidth * 0.25
-        const visualWidth = fit(camera, fitPoints, fitMatrix, fitWidth, fitHeight, maxVisualWidth)
+        fit(camera, fitPoints, fitMatrix, fitWidth, fitHeight, maxVisualWidth)
         if (region) {
           // 同じカメラをヒット判定にも使うため、クリック位置も描画位置に一致する。
           const view = camera.view!
@@ -197,7 +206,6 @@ export function createButtonView(container: HTMLElement, options: Options) {
             height,
           )
         }
-        options.onVisualWidth?.(visualWidth)
         if (fitInitialRotation && options.onReferenceSize) {
           // 上限値を検討するための計測。回転中の姿勢ではなく、サイズ基準の初期姿勢を表示する。
           const reference = new THREE.Box3().setFromPoints(
@@ -227,6 +235,21 @@ export function createButtonView(container: HTMLElement, options: Options) {
       renderer.render(scene, camera)
       scene.updateMatrixWorld(true)
       camera.updateMatrixWorld(true)
+      if (visualWidthDirty && options.onVisualWidth) {
+        // カメラは初期姿勢基準のまま、余白は拡大開始時に記録した姿勢で測る。
+        // 開閉アニメーション中の寸法変化には追従するが、その後の回転は反映しない。
+        // 復帰位置の頂点で測るため、押し込み演出によってレイアウトは揺れない。
+        const layoutMatrix = fitInitialRotation
+          ? pose.matrixWorld
+              .clone()
+              .multiply(new THREE.Matrix4().makeRotationFromEuler(layoutRotation))
+          : rig.matrixWorld
+        const projected = new THREE.Box3().setFromPoints(
+          fitPoints.map((point) => point.clone().applyMatrix4(layoutMatrix).project(camera)),
+        )
+        options.onVisualWidth(((projected.max.x - projected.min.x) * width) / 2)
+        visualWidthDirty = false
+      }
       options.onTarget(targetRect())
       if (press.done) {
         started = null
@@ -254,6 +277,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
       selected = id
       rotation?.clear()
       applyRotation()
+      captureLayoutRotation()
       rig.add(model.root)
       fitPoints = collectFitPoints(model)
       resize()
@@ -332,6 +356,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
   }
   return {
     setModel,
+    captureLayoutRotation,
     setFitInitialRotation(enabled: boolean) {
       if (fitInitialRotation === enabled) return
       fitInitialRotation = enabled

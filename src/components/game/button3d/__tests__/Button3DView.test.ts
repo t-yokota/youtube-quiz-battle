@@ -10,6 +10,7 @@ const mock = vi.hoisted(() => ({
   view: {
     setState: vi.fn(),
     setFitInitialRotation: vi.fn(),
+    captureLayoutRotation: vi.fn(),
     setInteractionEnabled: vi.fn(),
     acceptsPoint: vi.fn(() => true),
     setModel: vi.fn(),
@@ -40,6 +41,7 @@ async function mount() {
     modelId: 'simple-round-v1' as const,
     playMode: false,
     fitInitialRotation: false,
+    panelExpanded: false,
   })
   const press = vi.fn(),
     failed = vi.fn(),
@@ -58,6 +60,19 @@ async function mount() {
   await nextTick()
   return { props, host, press, failed, ready }
 }
+it('カードを拡大するたびに姿勢を記録し、縮小時は記録しない', async () => {
+  const { props } = await mount()
+  expect(mock.view.captureLayoutRotation).not.toHaveBeenCalled()
+  props.panelExpanded = true
+  await nextTick()
+  expect(mock.view.captureLayoutRotation).toHaveBeenCalledTimes(1)
+  props.panelExpanded = false
+  await nextTick()
+  expect(mock.view.captureLayoutRotation).toHaveBeenCalledTimes(1)
+  props.panelExpanded = true
+  await nextTick()
+  expect(mock.view.captureLayoutRotation).toHaveBeenCalledTimes(2)
+})
 it('文字なしのネイティブbuttonから同期通知し、状態を同期反映する', async () => {
   const { host, props, press, ready } = await mount()
   expect(ready).toHaveBeenCalled()

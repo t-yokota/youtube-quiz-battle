@@ -58,6 +58,7 @@ const buttonView = vi.hoisted(() => ({
   setState: vi.fn(),
   setInteractionEnabled: vi.fn(),
   setFitInitialRotation: vi.fn(),
+  captureLayoutRotation: vi.fn(),
   setModel: vi.fn(),
   playStartPress: vi.fn(),
   dispose: vi.fn(),

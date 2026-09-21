@@ -12,6 +12,7 @@ const props = defineProps<{
   modelId: ButtonModelId
   playMode: boolean
   fitInitialRotation?: boolean
+  panelExpanded?: boolean
 }>()
 const emit = defineEmits<{
   press: []
@@ -73,6 +74,7 @@ onMounted(async () => {
       return
     }
     view.setState(props.buttonState)
+    if (props.panelExpanded) view.captureLayoutRotation()
     view.setInteractionEnabled(!props.blocked)
     ready.value = true
     emit('ready')
@@ -87,6 +89,13 @@ onBeforeUnmount(() => {
 watch(
   () => props.buttonState,
   (state) => view?.setState(state),
+  { flush: 'sync' },
+)
+watch(
+  () => props.panelExpanded,
+  (expanded) => {
+    if (expanded) view?.captureLayoutRotation()
+  },
   { flush: 'sync' },
 )
 watch(

@@ -346,6 +346,7 @@ onBeforeUnmount(() => {
               (isDesktop && gameStore.currentState === GameState.FINISHED)
             "
             :desktop="isDesktop"
+            :panel-expanded="isDesktop && isPanelExpanded"
             :button-state="
               gameStore.currentState === GameState.FINISHED
                 ? ButtonState.DISABLED

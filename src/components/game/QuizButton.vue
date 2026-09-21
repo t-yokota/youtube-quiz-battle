@@ -11,6 +11,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 
 interface Props {
   desktop?: boolean
+  panelExpanded?: boolean
   interactionBlocked?: boolean
   buttonState?: ButtonState
   buttonText?: string
@@ -198,6 +199,7 @@ const handleButtonCheckToggle = () => {
         v-if="useThree"
         ref="threeButton"
         :fit-initial-rotation="desktop"
+        :panel-expanded="panelExpanded"
         :button-state="buttonState"
         :enabled="gameStore.isButtonEnabled"
         :blocked="interactionBlocked"

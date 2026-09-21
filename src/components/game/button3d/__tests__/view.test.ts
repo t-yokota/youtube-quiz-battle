@@ -258,7 +258,7 @@ it('箱型の上限は初期幅の25%に固定し、画面基準の変更時だ�
 it.each(['simple-round-v1', 'waseda-style-v1'] as const)(
   '%sはPCで回転してもカメラを維持し、リサイズ時は初期角度で再計算する',
   (id) => {
-    const { view, host, onTarget } = mount(id, true)
+    const { view, host, onTarget, onVisualWidth } = mount(id, true)
     try {
       const cameraState = () => {
         const camera = fake.cameras.at(-1) as THREE.PerspectiveCamera
@@ -266,6 +266,7 @@ it.each(['simple-round-v1', 'waseda-style-v1'] as const)(
       }
       frame()
       const initial = cameraState()
+      const initialWidth = onVisualWidth.mock.lastCall![0]
       const initialTarget = onTarget.mock.lastCall![0]
       const canvas = host.querySelector('canvas')!
       canvas.setPointerCapture = vi.fn()
@@ -289,6 +290,12 @@ it.each(['simple-round-v1', 'waseda-style-v1'] as const)(
       frame()
       expect(cameraState()).toEqual(initial)
       expect(onTarget.mock.lastCall![0]).not.toEqual(initialTarget)
+      // 回転だけでは余白は変えず、拡大開始の通知ごとに現在の姿勢を採用する。
+      expect(onVisualWidth.mock.lastCall![0]).toBeCloseTo(initialWidth)
+      view.captureLayoutRotation()
+      frame()
+      expect(cameraState()).toEqual(initial)
+      expect(onVisualWidth.mock.lastCall![0]).not.toBeCloseTo(initialWidth)
       Object.defineProperty(host, 'clientHeight', { value: 400, configurable: true })
       notifyResize()
       frame()
@@ -303,6 +310,10 @@ it.each(['simple-round-v1', 'waseda-style-v1'] as const)(
       view.resetView()
       frame()
       expect(cameraState()).toEqual(resized)
+      const widthBeforeNextExpansion = onVisualWidth.mock.lastCall![0]
+      view.captureLayoutRotation()
+      frame()
+      expect(onVisualWidth.mock.lastCall![0]).not.toBeCloseTo(widthBeforeNextExpansion)
     } finally {
       view.dispose()
     }
