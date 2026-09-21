@@ -8,6 +8,7 @@ import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue'
 import DesktopResizeHandles from './components/game/DesktopResizeHandles.vue'
 import ScoreSidebar from './components/game/ScoreSidebar.vue'
 import { useDesktopLayout } from './composables/useDesktopLayout'
+import { useMobileVideoCollapse } from './composables/useMobileVideoCollapse'
 import { useAnswerPanelExpansion } from './composables/useAnswerPanelExpansion'
 import GameInfo from './components/game/GameInfo.vue'
 import GamePanel from './components/game/GamePanel.vue'
@@ -216,6 +217,7 @@ const shouldCollapseForKeyboard = computed(
     gameStore.currentState === GameState.ANSWERING &&
     (gameStore.effectiveSettings?.hideVideoPlayerDuringAnswer ?? false),
 )
+const isVideoCollapsed = useMobileVideoCollapse(mainContent, shouldCollapseForKeyboard)
 
 // キーボード表示に伴う iOS の自動スクロールを打ち消す（解答エリアの押し出し防止）
 watch(shouldCollapseForKeyboard, (collapsed) => {
@@ -300,16 +302,16 @@ onBeforeUnmount(() => {
       }"
       :class="{
         'desktop-layout': isDesktop,
+        'mobile-video-moving': shouldCollapseForKeyboard && !isVideoCollapsed,
       }"
     >
       <!-- Video Player（スマホのFINISHED中は非表示。v-showでiframeを保持。
            解答中の置換表示でも高さとiframeを保持する） -->
       <VideoPlayer
         v-if="quizData"
-        v-show="
-          (isDesktop || gameStore.currentState !== GameState.FINISHED) && !shouldCollapseForKeyboard
-        "
-        :answering="shouldHidePlayer"
+        v-show="isDesktop || gameStore.currentState !== GameState.FINISHED"
+        :collapsed="isVideoCollapsed"
+        :answering="shouldHidePlayer && !shouldCollapseForKeyboard"
         :video-id="quizData.videoId"
         :settings="quizData.settings"
         @ready="handlePlayerReady"
@@ -551,6 +553,18 @@ onBeforeUnmount(() => {
   gap: 0.875rem;
   padding: var(--game-ui-padding-block) 0.75rem;
   min-height: 0;
+}
+
+/* 動画より手前を移動させる。背景も一緒に重ね、背後の動画を隠す。 */
+.main-content.mobile-video-moving > :is(.game-ui, .game-info) {
+  position: relative;
+  z-index: 1;
+}
+.main-content.mobile-video-moving > .game-ui {
+  background: var(--surface-app);
+  /* キーボードでmainが縮んでも、固定高のボタンが背景の外へあふれないようにする。
+     動画は下に残っているため、移動中だけは内容全体の高さを背景にも確保する。 */
+  min-height: min-content;
 }
 
 /* 動画非表示中は解答エリアを基準に固定配置する。

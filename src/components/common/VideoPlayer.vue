@@ -11,6 +11,7 @@ interface Props {
   videoId: string
   settings: QuizSettings
   answering?: boolean
+  collapsed?: boolean
 }
 
 const props = defineProps<Props>()
@@ -77,45 +78,52 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="video-player-container">
-    <div class="video-player-wrapper" :class="{ 'is-answering': answering }">
-      <!-- ローディング中 -->
-      <div v-if="isLoading" class="video-placeholder">
-        <div class="placeholder-content">
-          <p class="placeholder-text">読み込み中...</p>
+  <div
+    class="video-player-container"
+    :class="{ 'is-collapsed': collapsed }"
+    :inert="collapsed || undefined"
+    :aria-hidden="collapsed || undefined"
+  >
+    <div class="video-player-clip">
+      <div class="video-player-wrapper" :class="{ 'is-answering': answering }">
+        <!-- ローディング中 -->
+        <div v-if="isLoading" class="video-placeholder">
+          <div class="placeholder-content">
+            <p class="placeholder-text">読み込み中...</p>
+          </div>
         </div>
-      </div>
 
-      <!-- エラー時 -->
-      <div v-else-if="errorMessage" class="video-placeholder">
-        <div class="placeholder-content">
-          <p class="placeholder-text">エラー</p>
-          <p class="placeholder-subtext">{{ errorMessage }}</p>
+        <!-- エラー時 -->
+        <div v-else-if="errorMessage" class="video-placeholder">
+          <div class="placeholder-content">
+            <p class="placeholder-text">エラー</p>
+            <p class="placeholder-subtext">{{ errorMessage }}</p>
+          </div>
         </div>
-      </div>
 
-      <!-- YouTube Player -->
-      <div id="youtube-player-element"></div>
+        <!-- YouTube Player -->
+        <div id="youtube-player-element"></div>
 
-      <!-- サムネイルマスク（再生開始まで warmup 等の一時停止画面を隠す） -->
-      <img
-        v-if="showThumbnailMask && !isLoading && !errorMessage"
-        class="thumbnail-mask"
-        :src="thumbnailUrl"
-        alt=""
-        aria-hidden="true"
-      />
-      <div v-if="answering" class="answering-placeholder" role="status" aria-label="解答中">
-        <span aria-hidden="true">解答中</span>
-        <span class="answering-dots" aria-hidden="true">
-          <span
-            v-for="dot in 3"
-            :key="dot"
-            class="answering-dot"
-            :style="{ '--dot-index': dot - 1 }"
-            >・</span
-          >
-        </span>
+        <!-- サムネイルマスク（再生開始まで warmup 等の一時停止画面を隠す） -->
+        <img
+          v-if="showThumbnailMask && !isLoading && !errorMessage"
+          class="thumbnail-mask"
+          :src="thumbnailUrl"
+          alt=""
+          aria-hidden="true"
+        />
+        <div v-if="answering" class="answering-placeholder" role="status" aria-label="解答中">
+          <span aria-hidden="true">解答中</span>
+          <span class="answering-dots" aria-hidden="true">
+            <span
+              v-for="dot in 3"
+              :key="dot"
+              class="answering-dot"
+              :style="{ '--dot-index': dot - 1 }"
+              >・</span
+            >
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -167,9 +175,22 @@ onMounted(async () => {
 
 /* Video Player Container（フルブリード・下辺 line で区切る） */
 .video-player-container {
+  /* iframe・マスクのz-indexを動画内に閉じ、移動中のUIより前に出さない。 */
+  isolation: isolate;
   width: 100%;
   flex-shrink: 0;
+  display: grid;
+  grid-template-rows: 1fr;
   border-bottom: 1px solid var(--color-line);
+}
+.video-player-container.is-collapsed {
+  grid-template-rows: 0fr;
+  border-bottom-width: 0;
+}
+.video-player-clip {
+  /* iframeの寸法は維持し、外側だけを畳んで下のUIを連続的に移動させる。 */
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Video Player Wrapper - 16:9アスペクト比維持 */

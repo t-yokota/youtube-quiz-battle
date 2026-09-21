@@ -461,6 +461,41 @@ it('設定からテーマ選択へ移っても停止を維持し、閉じたら�
   expect(player.playVideo).toHaveBeenCalledTimes(1)
 })
 
+it('タッチ端末の動画非表示はプレイヤーを残して領域を畳み、解答終了で戻す', async () => {
+  app.unmount()
+  vi.mocked(window.matchMedia).mockImplementation(
+    (query) =>
+      ({
+        matches: query === '(pointer: coarse)',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }) as unknown as MediaQueryList,
+  )
+  const pinia = createPinia()
+  app = createApp(App).use(pinia)
+  app.mount(host)
+  store = useGameStore(pinia)
+  await flush()
+  useDebugStore().setHideVideoPlayerDuringAnswerOverride(true)
+  host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+  await flush()
+  const player = host.querySelector('#youtube-player-element')
+  store.transitionToState(GameState.ANSWERING)
+  await flush()
+  const area = host.querySelector<HTMLElement>('.video-player-container')!
+  expect(area.style.display).not.toBe('none')
+  expect(host.querySelector('.video-player-wrapper')?.classList.contains('is-answering')).toBe(
+    false,
+  )
+  expect(host.querySelector('.answering-placeholder')).toBeNull()
+  expect(area.classList.contains('is-collapsed')).toBe(true)
+  expect(area.hasAttribute('inert')).toBe(true)
+  expect(host.querySelector('#youtube-player-element')).toBe(player)
+  store.transitionToState(GameState.QUESTIONING)
+  await flush()
+  expect(area.classList.contains('is-collapsed')).toBe(false)
+  expect(area.hasAttribute('inert')).toBe(false)
+})
 it('タッチ端末でも押下直後はフォーカスせず500ms後の解答開始に合わせて移す', async () => {
   app.unmount()
   vi.mocked(window.matchMedia).mockImplementation(

@@ -144,6 +144,111 @@ try {
       )
       assert.ok(scrollable, 'Settings must remain scrollable')
     }
+    if (!embedded) {
+      await frame.getByRole('button', { name: '設定を閉じる' }).click()
+      await page.waitForTimeout(400)
+      for (const model of ['2d', 'simple-round-v1', 'waseda-style-v1']) {
+        await frame.evaluate(async (model) => {
+          const { useSettingsStore } = await import('/src/stores/settingsStore.ts')
+          const settings = useSettingsStore()
+          settings.setButtonMode(model === '2d' ? '2d' : '3d')
+          if (model !== '2d') settings.setButtonModel(model)
+        }, model)
+        if (model !== '2d') await frame.locator('.button-hit').waitFor({ state: 'visible' })
+        await page.waitForTimeout(400)
+        const collapse = await frame.evaluate(async () => {
+          const { useGameStore } = await import('/src/stores/gameStore.ts')
+          const { useDebugStore } = await import('/src/stores/debugStore.ts')
+          const store = useGameStore()
+          useDebugStore().setHideVideoPlayerDuringAnswerOverride(true)
+          const video = document.querySelector('.video-player-container')
+          const player = document.querySelector('#youtube-player-element')
+          // iframe内部の強い重なり順も、移動するUIより前へ漏らさない。
+          player.style.zIndex = '1000'
+          const game = document.querySelector('.game-ui')
+          const main = document.querySelector('.main-content')
+          const button = document.querySelector('.quiz-button-container')
+          const before = video.getBoundingClientRect().height
+          const buttonHeight = button.getBoundingClientRect().height
+          store.transitionToState('ANSWERING')
+          const samples = []
+          await new Promise((resolve) => {
+            const start = performance.now()
+            function sample(now) {
+              // キーボードが移動途中に表示され、利用可能な高さが縮む状況を再現する。
+              if (now - start > 70) main.style.maxHeight = '260px'
+              const rect = game.getBoundingClientRect()
+              const hit = document.elementFromPoint(rect.left + 2, rect.top + 2)
+              samples.push({
+                height: video.getBoundingClientRect().height,
+                top: rect.top,
+                videoVisible:
+                  getComputedStyle(video).visibility === 'visible' &&
+                  getComputedStyle(player).visibility === 'visible',
+                uiInFront: hit === game || game.contains(hit),
+                hitClass: hit?.className,
+                backgroundCoversButton: rect.bottom >= button.getBoundingClientRect().bottom - 1,
+                message: !!document.querySelector('.answering-placeholder'),
+              })
+              if (now - start < 400) requestAnimationFrame(sample)
+              else resolve()
+            }
+            requestAnimationFrame(sample)
+          })
+          const retainedHeight = button.getBoundingClientRect().height
+          player.style.removeProperty('z-index')
+          main.style.removeProperty('max-height')
+          store.transitionToState('QUESTIONING')
+          await new Promise((resolve) => setTimeout(resolve, 400))
+          return {
+            before,
+            samples,
+            buttonHeight,
+            retainedHeight,
+            restored: video.getBoundingClientRect().height,
+            samePlayer: player === document.querySelector('#youtube-player-element'),
+          }
+        })
+        assert.ok(
+          collapse.samples.some(
+            ({ height, top }) =>
+              Math.abs(height - collapse.before) < 1 &&
+              top < collapse.samples[0].top - 1 &&
+              top > collapse.samples.at(-1).top + 1,
+          ),
+          'UI moves before video height collapses',
+        )
+        assert.ok(
+          collapse.samples.every(
+            ({ height }) => height < 1 || Math.abs(height - collapse.before) < 1,
+          ),
+          'Video height is removed only after UI movement',
+        )
+        assert.ok(collapse.samples.at(-1).height < 1, 'Video must fully collapse')
+        assert.ok(
+          collapse.samples
+            .filter(({ height }) => height > 1)
+            .every(({ backgroundCoversButton }) => backgroundCoversButton),
+          'During movement the UI background must cover its contents even when the keyboard reduces available height',
+        )
+        assert.ok(
+          collapse.samples.every(({ videoVisible, message }) => videoVisible && !message),
+          'Keep the video visible without a desktop answering message during movement',
+        )
+        assert.ok(
+          collapse.samples.every(({ uiInFront }) => uiInFront),
+          `Moving UI must cover the video: ${JSON.stringify(collapse.samples.filter((sample) => !sample.uiInFront))}`,
+        )
+        assert.ok(collapse.samples[0].top > collapse.samples.at(-1).top, 'UI moves upward')
+        assert.ok(
+          Math.abs(collapse.buttonHeight - collapse.retainedHeight) < 1,
+          'Button size is preserved',
+        )
+        assert.ok(Math.abs(collapse.before - collapse.restored) < 1, 'Video height is restored')
+        assert.ok(collapse.samePlayer, 'Player is retained during the transition')
+        console.log('Mobile video collapse animation passed', model)
+      }
+    }
     await page.close()
   }
 } finally {
