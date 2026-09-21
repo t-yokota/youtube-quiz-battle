@@ -293,9 +293,9 @@ try {
           .locator('.main-content')
           .evaluate((el) => el.getBoundingClientRect().height)
         const idealWidth = (((availableHeight * 13) / 25) * 16) / 9
-        const expectedVideoWidth = Math.max(640, Math.min(idealWidth, width - 480))
+        const expectedVideoWidth = Math.max(640, Math.min(idealWidth, width * 0.6, width - 480))
         assert.ok(Math.abs(compact.video.width - expectedVideoWidth) < 0.1)
-        if (idealWidth >= 640 && idealWidth <= width - 480) {
+        if (idealWidth >= 640 && idealWidth <= Math.min(width * 0.6, width - 480)) {
           const lower = await page.locator('.game-ui').boundingBox()
           assert.ok(
             Math.abs(compact.video.height / lower.height - 13 / 12) < 0.01,
@@ -463,7 +463,19 @@ try {
     const { useGameStore } = await import('/src/stores/gameStore.ts')
     useGameStore().answerResult = null
   })
-  await page.setViewportSize({ width: 1199, height: 900 })
+  for (const width of [1199, 1100, 960]) {
+    await page.setViewportSize({ width, height: 900 })
+    await settle()
+    assert.equal(await page.locator('.score-sidebar').count(), 1)
+    assert.equal(await page.locator('.desktop-resize-handle.left').isVisible(), false)
+    assert.equal(await page.locator('.desktop-resize-handle.right').isVisible(), true)
+    const video = await page.locator('.video-player-container').boundingBox()
+    const sidebar = await page.locator('.score-sidebar').boundingBox()
+    assert.equal(video.x, 0, 'Two-column video starts at the left edge')
+    assert.ok(sidebar.width >= 240 && Math.abs(sidebar.x + sidebar.width - width) < 1)
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width)
+  }
+  await page.setViewportSize({ width: 959, height: 900 })
   await settle()
   assert.equal(await page.locator('.score-sidebar').count(), 0)
   assert.equal(await page.locator('.answer-input').count(), 1)
@@ -472,13 +484,13 @@ try {
   assert.equal(await page.locator('.score-sidebar').count(), 1)
   await setState('QUESTIONING')
   // Settings drawer geometry, scrolling, and keyboard dismissal.
-  for (const width of [1440, 1200, 1199]) {
+  for (const width of [1440, 1200, 1199, 960, 959]) {
     await page.setViewportSize({ width, height: 600 })
     await page.getByRole('button', { name: '設定を開く' }).click()
     await settle()
     const dialog = page.getByRole('dialog', { name: '設定', exact: true })
     const box = await dialog.locator('.modal-container').boundingBox()
-    if (width >= 1200) {
+    if (width >= 960) {
       assert.ok(
         Math.abs(box.x + box.width - width) < 1,
         'Desktop settings attach to the right edge',
@@ -631,7 +643,7 @@ try {
   assert.ok(Math.abs(parseFloat(replayStyle[0]) - rem * 0.5) < 0.01)
   assert.ok(Math.abs(parseFloat(replayStyle[1]) - rem * 0.875) < 0.01)
   assert.equal(replayStyle[2], '16px')
-  await page.setViewportSize({ width: 1199, height: 900 })
+  await page.setViewportSize({ width: 959, height: 900 })
   await settle()
   assert.ok(await page.locator('.result-ui').isVisible(), 'Mobile keeps its result screen')
   assert.equal(await page.locator('.replay-card').count(), 0)

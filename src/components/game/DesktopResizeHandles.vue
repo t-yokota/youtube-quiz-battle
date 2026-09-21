@@ -7,6 +7,7 @@ const maximum = ref(960)
 const dragging = ref(false)
 const gripTop = ref(0)
 const minimum = 640
+let resizeFactor = 2
 let observer: ResizeObserver | undefined
 let drag: { pointerId: number; startX: number; startWidth: number; side: number } | undefined
 function measure() {
@@ -15,7 +16,9 @@ function measure() {
   width.value = bounds.width
   const lower = host.value.parentElement?.querySelector('.game-ui')?.getBoundingClientRect()
   gripTop.value = lower ? lower.top - bounds.top + lower.height / 2 : bounds.height / 2
-  maximum.value = Math.max(minimum, (host.value.parentElement?.clientWidth ?? 1440) - 480)
+  const availableWidth = host.value.parentElement?.clientWidth ?? 1440
+  resizeFactor = availableWidth < 1200 ? 1 : 2
+  maximum.value = Math.max(minimum, availableWidth - 240 * resizeFactor)
 }
 function resize(value: number) {
   const next = Math.round(Math.min(maximum.value, Math.max(minimum, value)))
@@ -31,8 +34,8 @@ function start(event: PointerEvent, side: number) {
 }
 function move(event: PointerEvent) {
   if (!drag || drag.pointerId !== event.pointerId) return
-  // 左右を同量ずつ動かすため、片側境界の移動量の2倍を動画幅へ反映する。
-  resize(drag.startWidth + (event.clientX - drag.startX) * drag.side * 2)
+  // 3列は左右を同量動かす。左サイドを畳んだ2列では右境界だけを動かす。
+  resize(drag.startWidth + (event.clientX - drag.startX) * drag.side * resizeFactor)
 }
 function stop() {
   drag = undefined
@@ -41,8 +44,8 @@ function stop() {
 function keydown(event: KeyboardEvent, side: number) {
   measure()
   const delta = event.shiftKey ? 40 : 10
-  if (event.key === 'ArrowRight') resize(width.value + delta * side * 2)
-  else if (event.key === 'ArrowLeft') resize(width.value - delta * side * 2)
+  if (event.key === 'ArrowRight') resize(width.value + delta * side * resizeFactor)
+  else if (event.key === 'ArrowLeft') resize(width.value - delta * side * resizeFactor)
   else if (event.key === 'Home') resize(minimum)
   else if (event.key === 'End') resize(maximum.value)
   else return

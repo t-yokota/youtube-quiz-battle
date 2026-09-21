@@ -53,9 +53,14 @@ onMounted(() => {
         `${entry.contentRect.height}px`,
       )
       // 手動の動画幅には連動させず、この画面での初期幅をモデル上限の基準にする。
+      const sidebarSpace = entry.contentRect.width < 1200 ? 240 : 480
       const initialWidth = Math.max(
         640,
-        Math.min((((entry.contentRect.height * 13) / 25) * 16) / 9, entry.contentRect.width - 480),
+        Math.min(
+          (((entry.contentRect.height * 13) / 25) * 16) / 9,
+          entry.contentRect.width * 0.6,
+          entry.contentRect.width - sidebarSpace,
+        ),
       )
       mainContent.value?.style.setProperty('--desktop-initial-width', `${initialWidth}px`)
     }

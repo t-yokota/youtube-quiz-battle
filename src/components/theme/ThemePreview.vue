@@ -38,7 +38,10 @@ const buttonImage = useButtonPreviewImage(
 <template>
   <div
     class="preview"
-    :class="{ 'preview-desktop': desktop }"
+    :class="{
+      'preview-desktop': desktop,
+      'preview-desktop-narrow': desktop && previewWidth < 1200,
+    }"
     :style="{
       width: `${previewWidth}px`,
       height: `${previewHeight}px`,
@@ -588,14 +591,19 @@ const buttonImage = useButtonPreviewImage(
 <style scoped>
 /* カードの縮尺ではなく、元のviewportでPCの代表配置を描画する。 */
 .preview-desktop {
+  --preview-sidebar-space: 480px;
   --preview-video-width: clamp(
     640px,
-    calc((var(--preview-height) - 3.5rem) * 13 / 25 * 16 / 9),
-    calc(100% - 480px)
+    min(60%, calc((var(--preview-height) - 3.5rem) * 13 / 25 * 16 / 9)),
+    calc(100% - var(--preview-sidebar-space))
   );
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--preview-video-width) minmax(0, 1fr);
   grid-template-rows: 3.5rem auto minmax(16rem, 1fr);
+}
+.preview-desktop-narrow {
+  --preview-sidebar-space: 240px;
+  grid-template-columns: 0 var(--preview-video-width) minmax(240px, 1fr);
 }
 .preview-desktop .p-header {
   grid-column: 1 / -1;
