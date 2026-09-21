@@ -157,6 +157,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
     var(--settings-font-max)
   );
   --settings-control-height: max(40px, calc(2.75 * var(--settings-layout-unit)));
+  --settings-control-radius: calc(0.75 * var(--settings-layout-unit));
   position: fixed;
   top: 0;
   left: 0;
@@ -310,7 +311,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   background: var(--btn-primary-bg);
   color: var(--btn-primary-text);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--settings-control-radius);
   box-shadow: var(--btn-primary-shadow);
   font-size: calc(0.875 * var(--settings-font-unit));
   font-weight: 800;
@@ -521,7 +522,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   color: var(--color-text-main);
   background: var(--input-bg);
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
+  border-radius: var(--settings-control-radius);
   cursor: pointer;
   transition: border-color 0.2s;
 }
@@ -567,7 +568,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   color: var(--btn-primary-text);
   border: none;
   box-shadow: var(--btn-primary-shadow);
-  border-radius: var(--radius-md);
+  border-radius: var(--settings-control-radius);
   font-size: var(--settings-font-unit);
   font-weight: 800;
   cursor: pointer;

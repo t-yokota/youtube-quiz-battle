@@ -232,7 +232,7 @@ select {
   min-height: var(--settings-control-height);
   padding: calc(0.375 * var(--settings-layout-unit)) calc(0.625 * var(--settings-layout-unit));
   border: 1px solid var(--color-accent);
-  border-radius: var(--radius-md);
+  border-radius: var(--settings-control-radius);
   background: var(--input-bg);
   color: var(--color-text-main);
   font-family: inherit;
@@ -242,7 +242,7 @@ select {
   cursor: pointer;
 }
 select:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 option {

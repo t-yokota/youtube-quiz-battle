@@ -13,13 +13,7 @@
   /* テーマ固有フォントを使う場合: テーマ CSS に @font-face を書き、ここを差し替える。
      @font-face は参照時に初めてダウンロードされる（遅延ロード）ため、
      全テーマ分が先読みされることはない */
-  --font-body:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  --font-body: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* --- テキスト・罫線 --- */
   --color-text-main: #3d4557;
@@ -49,13 +43,10 @@
 
   /* --- パネル・モーダル（境界線の代わりにソフトシャドウ） --- */
   --panel-border: 1px solid transparent;
-  --panel-shadow:
-    0.5rem 0.5rem 1rem #c3c9d6,
-    -0.5rem -0.5rem 1rem #ffffff;
-  /* リスト行用: 行間 gap（0.375rem）に収まる小さめの影（オフセット+ぼかし ≒ 6px） */
-  --row-shadow:
-    0.125rem 0.125rem 0.375rem #c3c9d6,
-    -0.125rem -0.125rem 0.375rem #ffffff;
+  --panel-shadow: 0.25rem 0.25rem 0.5rem #c3c9d6, -0.25rem -0.25rem 0.5rem #ffffff;
+  /* 行の光と影は控えめにし、スクロール領域の四辺にも描画余白を取る。 */
+  --row-shadow: 0.125rem 0.125rem 0.25rem #c3c9d6, -0.125rem -0.125rem 0.25rem #ffffff;
+  --result-shadow-gutter: 0.5rem;
   /* モーダルは外周シャドウを出さない（オーバーレイ上で白影が滲み境界が消えるため）。
      1px のリングで境界をはっきりさせる */
   --modal-shadow: 0 0 0 1px rgba(163, 177, 198, 0.55);
@@ -63,28 +54,21 @@
   /* --- 入力欄（沈み込み） --- */
   --input-bg: #e3e7f0;
   --input-border-color: transparent;
-  --input-shadow:
-    inset 0.25rem 0.25rem 0.5rem #c3c9d6,
-    inset -0.25rem -0.25rem 0.5rem #ffffff;
+  --input-shadow: inset 0.25rem 0.25rem 0.5rem #c3c9d6, inset -0.25rem -0.25rem 0.5rem #ffffff;
   --input-focus-border-color: transparent;
   --input-focus-shadow:
-    inset 0.25rem 0.25rem 0.5rem #c3c9d6,
-    inset -0.25rem -0.25rem 0.5rem #ffffff,
+    inset 0.25rem 0.25rem 0.5rem #c3c9d6, inset -0.25rem -0.25rem 0.5rem #ffffff,
     0 0 0 2px color-mix(in srgb, var(--color-focus) 35%, transparent);
 
   /* --- 汎用ボタン（押し出し） --- */
   --btn-primary-bg: #6c63ff;
   --btn-primary-bg-hover: #7d75ff;
   --btn-primary-text: #ffffff;
-  --btn-primary-shadow:
-    0.25rem 0.25rem 0.625rem #c3c9d6,
-    -0.25rem -0.25rem 0.625rem #ffffff;
+  --btn-primary-shadow: 0.125rem 0.125rem 0.375rem #c3c9d6, -0.125rem -0.125rem 0.375rem #ffffff;
   --btn-replay-bg: #e8604c;
   --btn-replay-bg-hover: #ef705e;
   --btn-replay-text: #ffffff;
-  --btn-replay-shadow:
-    0.375rem 0.375rem 0.875rem #c3c9d6,
-    -0.375rem -0.375rem 0.875rem #ffffff;
+  --btn-replay-shadow: 0.125rem 0.125rem 0.375rem #c3c9d6, -0.125rem -0.125rem 0.375rem #ffffff;
   --btn-muted-bg: #dde2ec;
   --btn-muted-text: #3d4557;
 
@@ -93,23 +77,17 @@
   --quiz-btn-text: #ffffff;
   --quiz-btn-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
   --quiz-btn-shadow:
-    0.625rem 0.625rem 1.25rem #c3c9d6,
-    -0.625rem -0.625rem 1.25rem #ffffff,
+    0.375rem 0.375rem 0.75rem #c3c9d6, -0.375rem -0.375rem 0.75rem #ffffff,
     inset 0 -0.375rem 0.625rem rgba(0, 0, 0, 0.14),
     inset 0 0.375rem 0.625rem rgba(255, 255, 255, 0.28);
   --quiz-btn-shadow-pressed:
-    0.25rem 0.25rem 0.625rem #c3c9d6,
-    -0.25rem -0.25rem 0.625rem #ffffff,
+    0.125rem 0.125rem 0.375rem #c3c9d6, -0.125rem -0.125rem 0.375rem #ffffff,
     inset 0.375rem 0.375rem 0.75rem rgba(0, 0, 0, 0.22),
     inset -0.25rem -0.25rem 0.625rem rgba(255, 255, 255, 0.2);
   --quiz-btn-shadow-released:
-    0.5rem 0.5rem 1rem #c3c9d6,
-    -0.5rem -0.5rem 1rem #ffffff,
-    0 0 1.75rem 0.375rem rgba(232, 96, 76, 0.45),
-    inset 0 -0.25rem 0.5rem rgba(0, 0, 0, 0.12);
-  --quiz-btn-shadow-disabled:
-    inset 0.5rem 0.5rem 1rem #c34d3d,
-    inset -0.5rem -0.5rem 1rem #ff7b66;
+    0.25rem 0.25rem 0.5rem #c3c9d6, -0.25rem -0.25rem 0.5rem #ffffff,
+    0 0 1.75rem 0.375rem rgba(232, 96, 76, 0.45), inset 0 -0.25rem 0.5rem rgba(0, 0, 0, 0.12);
+  --quiz-btn-shadow-disabled: inset 0.5rem 0.5rem 1rem #c34d3d, inset -0.5rem -0.5rem 1rem #ff7b66;
   --quiz-btn-disabled-filter: none;
   /* 無効時はフラットな赤い面に赤系の inset 影を重ね、沈み込んだ状態を表現する */
   --quiz-btn-face-disabled: #e8604c;
@@ -118,10 +96,13 @@
   --pedestal-bg: #e3e7f0;
   --pedestal-border: 1px solid transparent;
   --pedestal-shadow:
-    inset 0.375rem 0.375rem 0.75rem #c3c9d6,
-    inset -0.375rem -0.375rem 0.75rem #ffffff;
+    inset 0.375rem 0.375rem 0.75rem #c3c9d6, inset -0.375rem -0.375rem 0.75rem #ffffff;
   --pulse-color: rgba(232, 96, 76, 0.55);
-  --spotlight-glow: radial-gradient(60% 55% at 50% 58%, rgba(108, 99, 255, 0.08) 0%, transparent 70%);
+  --spotlight-glow: radial-gradient(
+    60% 55% at 50% 58%,
+    rgba(108, 99, 255, 0.08) 0%,
+    transparent 70%
+  );
 
   /* --- 戦績チップ --- */
   --chip-bg: #dde2ec;
@@ -131,18 +112,14 @@
   /* --- トグル・スライダー --- */
   --toggle-track: #e3e7f0;
   --toggle-track-border: transparent;
-  --toggle-track-shadow:
-    inset 2px 2px 5px #c3c9d6,
-    inset -2px -2px 5px #ffffff;
+  --toggle-track-shadow: inset 2px 2px 5px #c3c9d6, inset -2px -2px 5px #ffffff;
   --toggle-on-track: rgba(108, 99, 255, 0.22);
   --toggle-on-border: transparent;
   --toggle-knob: #b4bccd;
   --toggle-on-knob: #6c63ff;
   --slider-track: #d3d9e5;
   --slider-thumb: #6c63ff;
-  --slider-thumb-shadow:
-    3px 3px 6px #c3c9d6,
-    -3px -3px 6px #ffffff;
+  --slider-thumb-shadow: 3px 3px 6px #c3c9d6, -3px -3px 6px #ffffff;
 
   /* --- タイマー・リザルト表示 --- */
   --timer-track: #cdd3e0;

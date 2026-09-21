@@ -57,10 +57,10 @@ function yoursText(result: QuestionResult): string {
   flex-direction: column;
   gap: 0.375rem;
   /* 上下 padding: overflow コンテナが行シャドウ（--row-shadow）を端で切らないための余白 */
-  padding-top: 0.375rem;
-  padding-bottom: 0.375rem;
+  padding-top: var(--result-shadow-gutter, 0.375rem);
+  padding-bottom: var(--result-shadow-gutter, 0.375rem);
   padding-left: 0.625rem;
-  padding-right: 0.375rem; /* バー(0.25rem) + 0.375rem = 左の 0.625rem と釣り合い、行が中央を保つ */
+  padding-right: var(--result-shadow-gutter, 0.375rem);
   scrollbar-gutter: stable;
 }
 
