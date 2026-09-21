@@ -156,7 +156,7 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
 })
 
-// ANSWERING中はiframeを保持したまま動画を非表示にする。
+// ANSWERING中はiframeを保持したまま解答中表示に置き換える。
 const shouldHidePlayer = computed(
   () =>
     (gameStore.effectiveSettings?.hideVideoPlayerDuringAnswer ?? false) &&
@@ -293,7 +293,7 @@ onBeforeUnmount(() => {
         v-show="
           (isDesktop || gameStore.currentState !== GameState.FINISHED) && !shouldCollapseForKeyboard
         "
-        :class="{ 'player-hidden': shouldHidePlayer }"
+        :answering="shouldHidePlayer"
         :video-id="quizData.videoId"
         :settings="quizData.settings"
         @ready="handlePlayerReady"
@@ -514,10 +514,6 @@ onBeforeUnmount(() => {
   50% {
     opacity: 0.45;
   }
-}
-
-.player-hidden {
-  visibility: hidden;
 }
 
 .main-content {

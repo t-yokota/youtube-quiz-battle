@@ -10,6 +10,7 @@ import { useGameStore } from '@/stores/gameStore'
 interface Props {
   videoId: string
   settings: QuizSettings
+  answering?: boolean
 }
 
 const props = defineProps<Props>()
@@ -77,7 +78,7 @@ onMounted(async () => {
 
 <template>
   <div class="video-player-container">
-    <div class="video-player-wrapper">
+    <div class="video-player-wrapper" :class="{ 'is-answering': answering }">
       <!-- ローディング中 -->
       <div v-if="isLoading" class="video-placeholder">
         <div class="placeholder-content">
@@ -104,11 +105,66 @@ onMounted(async () => {
         alt=""
         aria-hidden="true"
       />
+      <div v-if="answering" class="answering-placeholder" role="status" aria-label="解答中">
+        <span aria-hidden="true">解答中</span>
+        <span class="answering-dots" aria-hidden="true">
+          <span
+            v-for="dot in 3"
+            :key="dot"
+            class="answering-dot"
+            :style="{ '--dot-index': dot - 1 }"
+            >・</span
+          >
+        </span>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.is-answering > :not(.answering-placeholder) {
+  visibility: hidden;
+}
+.answering-placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  background: color-mix(in srgb, var(--surface-app) 94%, var(--color-text-main));
+  color: var(--color-text-main);
+  font-size: clamp(24px, 1.875rem, 36px);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.answering-dots {
+  display: inline-flex;
+  font-size: clamp(16px, 1.25rem, 24px);
+  letter-spacing: 0.08em;
+}
+.answering-dot {
+  display: inline-block;
+  animation: answering-bounce 1.2s ease-in-out infinite;
+  animation-delay: calc(var(--dot-index) * 0.15s);
+}
+@keyframes answering-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-0.3em);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .answering-dot {
+    animation: none;
+  }
+}
+
 /* Video Player Container（フルブリード・下辺 line で区切る） */
 .video-player-container {
   width: 100%;

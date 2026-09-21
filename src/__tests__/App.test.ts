@@ -54,6 +54,15 @@ vi.mock('@/services/analyticsService', () => ({
   })),
 }))
 let rejectAudioInit: (error: Error) => void
+const buttonView = vi.hoisted(() => ({
+  setState: vi.fn(),
+  setInteractionEnabled: vi.fn(),
+  setFitInitialRotation: vi.fn(),
+  setModel: vi.fn(),
+  playStartPress: vi.fn(),
+  dispose: vi.fn(),
+}))
+vi.mock('@/components/game/button3d/view', () => ({ createButtonView: () => buttonView }))
 let errorListener: ((error: Error) => void) | undefined
 let isMounted = false
 let app: ReturnType<typeof createApp>
@@ -101,6 +110,50 @@ function space() {
     new KeyboardEvent('keydown', { code: 'Space', bubbles: true, cancelable: true }),
   )
 }
+it('設定を閉じると設定ボタンではなく早押し操作へフォーカスを戻す', async () => {
+  host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+  await flush()
+  const settings = host.querySelector<HTMLButtonElement>('[aria-label="設定を開く"]')!
+  settings.focus()
+  settings.click()
+  await flush()
+  document.querySelector<HTMLButtonElement>('[aria-label="設定を閉じる"]')!.click()
+  await flush()
+  expect(document.activeElement).toBe(host.querySelector('.quiz-button'))
+})
+it('動画非表示の解答中はプレイヤーを保持して解答中表示に置き換える', async () => {
+  const player = host.querySelector('#youtube-player-element')
+  useDebugStore().setHideVideoPlayerDuringAnswerOverride(true)
+  store.transitionToState(GameState.ANSWERING)
+  await flush()
+  expect(host.querySelector('.answering-placeholder')?.textContent).toContain('解答中')
+  expect(host.querySelectorAll('.answering-dot')).toHaveLength(3)
+  expect(host.querySelector('#youtube-player-element')).toBe(player)
+  store.transitionToState(GameState.QUESTIONING)
+  await flush()
+  expect(host.querySelector('.answering-placeholder')).toBeNull()
+  expect(host.querySelector('#youtube-player-element')).toBe(player)
+})
+it('3DのチェックOFFではSpaceでも押下演出を開始してからゲームを開始する', async () => {
+  useSettingsStore().setButtonMode('3d')
+  useSettingsStore().setButtonCheckEnabled(false)
+  await flush()
+  await vi.dynamicImportSettled()
+  host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+  await flush()
+  buttonView.playStartPress.mockClear()
+  buttonView.playStartPress.mockImplementationOnce(() => {
+    expect(store.currentState).toBe(GameState.READY)
+    expect(store.buttonState).toBe(ButtonState.STANDBY)
+  })
+  space()
+  await flush()
+  expect(buttonView.playStartPress).toHaveBeenCalledOnce()
+  expect(store.currentState).toBe(GameState.TALKING)
+  expect(store.buttonState).toBe(ButtonState.DISABLED)
+  space()
+  expect(buttonView.playStartPress).toHaveBeenCalledOnce()
+})
 it('ゲート表示中のSpaceでゲームを開始せず、ゲート後は開始できる', async () => {
   space()
   await flush()

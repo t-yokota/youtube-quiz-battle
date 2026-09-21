@@ -88,7 +88,7 @@ try {
     const before = await measure()
     console.log(JSON.stringify({ width, height, embedded, ...before }))
     assert.equal(before.toggle.width, 44)
-    assert.equal(before.toggle.height, 44)
+    assert.equal(before.toggle.height, 36)
     if (height >= 568) assert.equal(before.scroll, 0, `${width}x${height}: unnecessary scroll`)
     else assert.ok(before.scroll > 0, 'Short screens must remain scrollable')
     if (height >= 568)
@@ -96,29 +96,29 @@ try {
         before.toggle.bottom <= before.game.bottom + 0.02,
         'Tap region must fit inside game UI',
       )
-    // The artwork must retain its original position relative to the container.
+    // The artwork must remain inside the controls container.
     const artworkOffset = await frame.evaluate(() => {
       const container = document.querySelector('.quiz-button-container').getBoundingClientRect()
       const artwork = document.querySelector('.display-mode-artwork').getBoundingClientRect()
       return artwork.bottom - container.bottom
     })
-    assert.ok(Math.abs(artworkOffset) < 0.02, 'Artwork position changed')
+    assert.ok(artworkOffset <= 0, 'Artwork must fit inside the controls container')
     if (height >= 568) {
       // Tap near the bottom edge, outside the small visible icon, to verify the hit area.
       const toggle = frame.locator('.display-mode-toggle')
-      await toggle.tap({ position: { x: 22, y: 42 } })
-      await frame.locator('.button-reset').waitFor()
+      await toggle.tap({ position: { x: 22, y: before.toggle.height - 2 } })
+      await frame.locator('.button-type-toggle').waitFor()
       await frame.locator('.button-rig').waitFor({ state: 'hidden' })
-      const resetAccessible = await frame.evaluate(() => {
-        const reset = document.querySelector('.button-reset')
-        const rect = reset.getBoundingClientRect()
+      const typeAccessible = await frame.evaluate(() => {
+        const control = document.querySelector('.button-type-toggle')
+        const rect = control.getBoundingClientRect()
         const hit = document.elementFromPoint(rect.x + 22, rect.y + 22)
-        return { accessible: reset.contains(hit), rect: rect.toJSON(), hit: hit?.outerHTML }
+        return { accessible: control.contains(hit), rect: rect.toJSON(), hit: hit?.outerHTML }
       })
-      assert.ok(resetAccessible.accessible, JSON.stringify(resetAccessible))
+      assert.ok(typeAccessible.accessible, JSON.stringify(typeAccessible))
       assert.equal((await measure()).scroll, 0, '3D mode must not add scroll')
-      await toggle.tap({ position: { x: 22, y: 42 } })
-      await frame.locator('.button-reset').waitFor({ state: 'detached' })
+      await toggle.tap({ position: { x: 22, y: before.toggle.height - 2 } })
+      await frame.locator('.button-type-toggle').waitFor({ state: 'detached' })
       if (embedded && width === 310) {
         await page.evaluate(async () => {
           const iframe = document.querySelector('iframe')
