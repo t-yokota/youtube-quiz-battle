@@ -147,6 +147,50 @@ function basePoint(host: HTMLElement, onBase = true) {
   throw new Error('Visible target not found')
 }
 
+it.each(['simple-round-v1', 'waseda-style-v1'] as const)(
+  '%sは背景・キャップやランプから回転を開始せず、台座からのみ開始する',
+  (id) => {
+    const { view, host, onRotationChange } = mount(id)
+    const canvas = host.querySelector('canvas')!
+    canvas.setPointerCapture = vi.fn()
+    canvas.hasPointerCapture = vi.fn(() => false)
+    const drag = ([x, y]: readonly [number, number]) => {
+      for (const [type, dx] of [
+        ['pointerdown', 0],
+        ['pointermove', 20],
+        ['pointerup', 20],
+      ] as const) {
+        const event = new Event(type)
+        Object.assign(event, {
+          isPrimary: true,
+          button: 0,
+          pointerId: 1,
+          clientX: x + dx,
+          clientY: y,
+        })
+        canvas.dispatchEvent(event)
+      }
+    }
+    try {
+      frame()
+      drag([0, 0])
+      drag(basePoint(host, false))
+      expect(canvas.setPointerCapture).not.toHaveBeenCalled()
+      expect(onRotationChange).toHaveBeenLastCalledWith(false)
+      const base = basePoint(host)
+      view.setInteractionEnabled(false)
+      drag(base)
+      expect(canvas.setPointerCapture).not.toHaveBeenCalled()
+      view.setInteractionEnabled(true)
+      drag(base)
+      expect(canvas.setPointerCapture).toHaveBeenCalledOnce()
+      expect(onRotationChange).toHaveBeenLastCalledWith(true)
+    } finally {
+      view.dispose()
+    }
+  },
+)
+
 it('丸型の上限は初期幅の30%で、手動幅変更では変わらない', () => {
   const { view, host, onVisualWidth } = mount('simple-round-v1', true)
   document.body.appendChild(host)

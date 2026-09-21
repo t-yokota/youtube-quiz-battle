@@ -205,6 +205,7 @@ export function createWasedaStyle(appearance: Appearance): ButtonModel {
     return {
       root,
       hitTargets: [cap],
+      rotationTargets: [body],
       setVisual({ depth, travel, glowing, glowLevel, disabled }) {
         moving.position.y =
           0.32 - Math.max(0, Math.min(depth, 1)) * Math.min(Math.max(travel, 0), 0.16)

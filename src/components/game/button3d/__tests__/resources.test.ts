@@ -15,7 +15,7 @@ it('共有資産を重複解放せず、disposeも冪等', () => {
   const model = buildModel((track) => {
     track(resource)
     track(resource)
-    return { root: new Group(), hitTargets: [], setVisual() {} }
+    return { root: new Group(), hitTargets: [], rotationTargets: [], setVisual() {} }
   })
   model.dispose()
   model.dispose()

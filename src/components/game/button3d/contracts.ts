@@ -9,6 +9,7 @@ export interface VisualState {
 export interface ButtonModel {
   root: Group
   hitTargets: Object3D[]
+  rotationTargets: Object3D[]
   setVisual(state: VisualState): void
   dispose(): void
 }

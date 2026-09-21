@@ -1,5 +1,9 @@
-/** ネイティブbuttonの外側だけを回転操作に使う。途中でボタンを横切っても押下しない。 */
-export function bindRotation(canvas: HTMLCanvasElement, rotate: (dx: number, dy: number) => void) {
+/** 台座から始めたドラッグだけを捕捉し、途中で台座を外れても回転を継続する。 */
+export function bindRotation(
+  canvas: HTMLCanvasElement,
+  rotate: (dx: number, dy: number) => void,
+  canStart: (clientX: number, clientY: number) => boolean,
+) {
   let drag: { id: number; x: number; y: number } | null = null
   const events = new AbortController()
   const clear = () => {
@@ -9,7 +13,7 @@ export function bindRotation(canvas: HTMLCanvasElement, rotate: (dx: number, dy:
   canvas.addEventListener(
     'pointerdown',
     (event) => {
-      if (!event.isPrimary || event.button !== 0) return
+      if (!event.isPrimary || event.button !== 0 || !canStart(event.clientX, event.clientY)) return
       drag = { id: event.pointerId, x: event.clientX, y: event.clientY }
       canvas.setPointerCapture(event.pointerId)
     },

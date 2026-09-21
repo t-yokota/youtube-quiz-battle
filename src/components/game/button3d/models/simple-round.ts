@@ -7,6 +7,7 @@ import { buildModel } from '../resources'
 export function createSimpleRound(appearance: Appearance): ButtonModel {
   return buildModel((track) => {
     const root = new THREE.Group()
+    const rotationTargets: THREE.Object3D[] = []
     // r128 の確認済みプレビューを再現するため台座は既存の線形値を維持。
     const dark = track(
       new THREE.MeshStandardMaterial({
@@ -43,6 +44,7 @@ export function createSimpleRound(appearance: Appearance): ButtonModel {
       )
       mesh.position.y = y
       root.add(mesh)
+      rotationTargets.push(mesh)
     }
     cylinder(1.38, 1.33, 0.12, -0.2, rubber)
     cylinder(1.38, 1.43, 0.28, 0, dark)
@@ -77,6 +79,7 @@ export function createSimpleRound(appearance: Appearance): ButtonModel {
     return {
       root,
       hitTargets,
+      rotationTargets,
       setVisual({ depth, travel, glowing, glowLevel, disabled }) {
         moving.position.y = 0.34 - depth * Math.min(travel, 0.17)
         red.emissiveIntensity =

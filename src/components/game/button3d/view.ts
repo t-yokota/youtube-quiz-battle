@@ -281,6 +281,19 @@ export function createButtonView(container: HTMLElement, options: Options) {
         if (fitInitialRotation) invalidate()
         else resize()
       },
+      (clientX, clientY) => {
+        if (disposed || !model || !interactionEnabled) return false
+        const bounds = canvas.getBoundingClientRect()
+        const x = clientX - bounds.left,
+          y = clientY - bounds.top
+        if (x < 0 || y < 0 || x > width || y > height) return false
+        scene.updateMatrixWorld(true)
+        const ray = new THREE.Raycaster()
+        ray.setFromCamera(new THREE.Vector2((x / width) * 2 - 1, 1 - (y / height) * 2), camera)
+        // 最前面だけを判定する。ランプやキャップの奥にある台座では開始できない。
+        const first = ray.intersectObject(model.root, true)[0]
+        return !!first && model.rotationTargets.includes(first.object)
+      },
     )
     canvas.addEventListener(
       'webglcontextlost',
