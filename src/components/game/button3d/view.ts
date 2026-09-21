@@ -21,6 +21,7 @@ interface Options {
   onError(error: unknown): void
   onTarget(rect: TargetRect): void
   onVisualWidth?(width: number): void
+  onRotationChange?(rotated: boolean): void
   onReferenceSize?(size: {
     width: number
     height: number
@@ -69,6 +70,10 @@ export function createButtonView(container: HTMLElement, options: Options) {
   function applyRotation() {
     const { x, y } = modelRotations[selected]
     rig.rotation.set(x, y, 0)
+    const initial = initialRotation(selected)
+    // 一周して初期姿勢へ戻った場合もリセット不要とする。
+    const yawDifference = Math.atan2(Math.sin(y - initial.y), Math.cos(y - initial.y))
+    options.onRotationChange?.(Math.abs(x - initial.x) > 1e-6 || Math.abs(yawDifference) > 1e-6)
   }
   applyRotation()
   let fitPoints: THREE.Vector3[] = []

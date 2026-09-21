@@ -113,6 +113,8 @@
     --button-type-icon-size: 40px;
   }
   .desktop-layout .button-view-controls {
+    --reset-icon-size: 32px;
+    --reset-icon-stroke-width: 1.375px; /* 2.2 × タイプ40px / viewBox64 */
     --view-control-step: 53px;
     left: 4px;
     bottom: 4px;

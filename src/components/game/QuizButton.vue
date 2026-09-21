@@ -25,15 +25,34 @@ const props = withDefaults(defineProps<Props>(), {
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
 const threeReady = ref(false)
+const threeRotated = ref(false)
+const resetSpinning = ref(false)
+let resetSpinTimer: ReturnType<typeof setTimeout> | undefined
+function finishResetSpin() {
+  clearTimeout(resetSpinTimer)
+  resetSpinTimer = undefined
+  resetSpinning.value = false
+}
+function resetRotation() {
+  if (props.interactionBlocked || !threeReady.value || resetSpinning.value) return
+  finishResetSpin()
+  resetSpinning.value = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  // 姿勢は即時に戻し、アイコンは1回転が終わるまで表示を保つ。
+  if (resetSpinning.value) resetSpinTimer = setTimeout(finishResetSpin, 800)
+  threeButton.value?.resetView()
+}
+onBeforeUnmount(finishResetSpin)
 const threeButton = ref<InstanceType<typeof Button3DView>>()
 const threeFailed = ref(false)
 const useThree = computed(() => settingsStore.button.renderMode === '3d' && !threeFailed.value)
 watch(
   () => [settingsStore.button.renderMode, settingsStore.button.modelId],
   () => {
+    finishResetSpin()
     threeFailed.value = false
     if (settingsStore.button.renderMode === '2d') {
       threeReady.value = false
+      threeRotated.value = false
     }
   },
 )
@@ -188,6 +207,7 @@ const handleButtonCheckToggle = () => {
         @ready="threeReady = true"
         @failed="fallbackToTwo"
         @visual-width="threeWidth = $event"
+        @rotation-change="threeRotated = $event"
       />
       <div ref="rig" v-show="!useThree || !threeReady" class="button-rig">
         <div class="pulse-ring" :class="{ active: isPulsing }"></div>
@@ -215,6 +235,25 @@ const handleButtonCheckToggle = () => {
     </div>
 
     <div class="button-view-controls">
+      <button
+        v-if="useThree && threeReady && (threeRotated || resetSpinning)"
+        type="button"
+        class="button-reset"
+        :class="{ 'is-spinning': resetSpinning }"
+        aria-label="ボタンの向きを戻す"
+        title="ボタンの向きを戻す"
+        :disabled="interactionBlocked || resetSpinning"
+        @click.stop="resetRotation"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" @animationend="finishResetSpin">
+          <path
+            d="M4 10a8 8 0 1 1 1 8M4 4v6h6"
+            fill="none"
+            stroke="currentColor"
+            vector-effect="non-scaling-stroke"
+          />
+        </svg>
+      </button>
       <ButtonTypeToggle
         v-if="useThree"
         :display-size="desktop ? 40 : 32"
@@ -286,6 +325,60 @@ const handleButtonCheckToggle = () => {
   bottom: calc(var(--view-control-step) - var(--icon-hit-bottom-offset) + 4px);
   height: 36px;
   align-content: center;
+}
+.button-reset {
+  /* 円弧と矢印を合わせた輪郭の中心(11.678388, 12.571451)とviewBox中央との差。 */
+  --reset-center-x: calc(var(--reset-icon-size, 24px) * -0.013400489);
+  --reset-center-y: calc(var(--reset-icon-size, 24px) * 0.023810478);
+  position: absolute;
+  left: calc(-1 * var(--icon-hit-offset) + var(--reset-center-x));
+  /* 領域を図柄の中心へ移し、SVGを逆方向へ補正して見た目の位置を維持する。 */
+  bottom: calc(
+    2 * var(--view-control-step) - var(--icon-hit-bottom-offset) + 1px - var(--reset-center-y)
+  );
+  width: 44px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-dim);
+  cursor: pointer;
+}
+.button-reset svg {
+  position: relative;
+  left: calc(-1 * var(--reset-center-x));
+  top: calc(-1 * var(--reset-center-y));
+  width: var(--reset-icon-size, 24px);
+  height: var(--reset-icon-size, 24px);
+  /* M4 10 a8 8 0 1 1 1 8 の円弧中心。矢印を含む外接矩形は回転軸に使わない。 */
+  transform-box: view-box;
+  transform-origin: 47.319902% 54.762096%;
+  /* タイプ切替の線幅: 2.2 × 表示サイズ32px / viewBox64。 */
+  stroke-width: var(--reset-icon-stroke-width, 1.1px);
+}
+.button-reset.is-spinning svg {
+  animation: reset-spin 650ms ease-in-out;
+}
+@keyframes reset-spin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .button-reset.is-spinning svg {
+    animation: none;
+  }
+}
+.button-reset:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.button-reset:disabled:not(.is-spinning) {
+  opacity: 0.5;
+  cursor: default;
 }
 .two-size-readout {
   position: absolute;

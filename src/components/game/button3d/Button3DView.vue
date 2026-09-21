@@ -18,6 +18,7 @@ const emit = defineEmits<{
   ready: []
   failed: []
   visualWidth: [width: number]
+  rotationChange: [rotated: boolean]
 }>()
 const host = ref<HTMLElement>()
 const fitRegion = ref<HTMLElement>()
@@ -57,6 +58,7 @@ onMounted(async () => {
       fitContainer: fitRegion.value,
       onError: fail,
       onVisualWidth: (width) => emit('visualWidth', width),
+      onRotationChange: (rotated) => emit('rotationChange', rotated),
       onReferenceSize: showSizeReadout
         ? (size) => {
             referenceSize.value = size
@@ -137,7 +139,10 @@ function activate() {
     emit('press')
   }
 }
-defineExpose({ activate })
+function resetView() {
+  if (ready.value && !props.blocked) view?.resetView()
+}
+defineExpose({ activate, resetView })
 </script>
 <template>
   <div class="button-3d-controls" :inert="blocked || !ready || undefined">

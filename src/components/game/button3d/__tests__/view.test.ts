@@ -112,6 +112,7 @@ function mount(modelId: ButtonModelId = 'waseda-style-v1', fitInitialRotation = 
   const onTarget = vi.fn()
   const onReferenceSize = vi.fn()
   const onVisualWidth = vi.fn()
+  const onRotationChange = vi.fn()
   const view = createButtonView(host, {
     modelId,
     onError,
@@ -119,8 +120,9 @@ function mount(modelId: ButtonModelId = 'waseda-style-v1', fitInitialRotation = 
     fitInitialRotation,
     onReferenceSize,
     onVisualWidth,
+    onRotationChange,
   })
-  return { view, host, onError, onTarget, onReferenceSize, onVisualWidth }
+  return { view, host, onError, onTarget, onReferenceSize, onVisualWidth, onRotationChange }
 }
 // 実際の投影で台座が見えている画素からドラッグを開始する。
 function basePoint(host: HTMLElement, onBase = true) {
@@ -338,7 +340,7 @@ it.each(['context', 'render'])('%s障害で一度だけ通知して描画と資�
 })
 
 it('モデルごとの初期姿勢・回転量を保持し、リセットは選択中のモデルだけに適用する', () => {
-  const { view, host } = mount()
+  const { view, host, onRotationChange } = mount()
   frame()
   const scene = fake.scenes.at(-1) as THREE.Scene
   const rig = scene.children[0]!.children[0] as THREE.Group
@@ -365,21 +367,28 @@ it('モデルごとの初期姿勢・回転量を保持し、リセットは選�
   }
   try {
     expect(rig.rotation.x).toBe(0)
+    expect(onRotationChange).toHaveBeenLastCalledWith(false)
     drag(20, 20)
+    expect(onRotationChange).toHaveBeenLastCalledWith(true)
     const box = rig.rotation.clone()
     view.setModel('simple-round-v1')
+    expect(onRotationChange).toHaveBeenLastCalledWith(false)
     expect(rig.rotation.x).toBe(0.6)
     expect(rig.rotation.y).toBe(0)
     drag(-20, -20)
     const round = rig.rotation.clone()
     view.setModel('waseda-style-v1')
+    expect(onRotationChange).toHaveBeenLastCalledWith(true)
     expect(rig.rotation.equals(box)).toBe(true)
     view.resetView()
+    expect(onRotationChange).toHaveBeenLastCalledWith(false)
     expect(rig.rotation.x).toBe(0)
     expect(rig.rotation.y).toBe(0)
     view.setModel('simple-round-v1')
     expect(rig.rotation.equals(round)).toBe(true)
+    expect(onRotationChange).toHaveBeenLastCalledWith(true)
     view.resetView()
+    expect(onRotationChange).toHaveBeenLastCalledWith(false)
     expect(rig.rotation.x).toBe(0.6)
     expect(rig.rotation.y).toBe(0)
   } finally {

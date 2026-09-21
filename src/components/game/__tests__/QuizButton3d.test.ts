@@ -15,10 +15,17 @@ const mock = vi.hoisted(() => ({
   error: undefined as undefined | ((error: Error) => void),
   dispose: vi.fn(),
   setModel: vi.fn(),
+  rotationChange: undefined as undefined | ((rotated: boolean) => void),
+  resetView: vi.fn(),
 }))
 vi.mock('../button3d/view', () => ({
-  createButtonView: (_: unknown, options: { onError(error: Error): void }) => {
+  createButtonView: (
+    _: unknown,
+    options: { onError(error: Error): void; onRotationChange(rotated: boolean): void },
+  ) => {
     mock.error = options.onError
+    mock.rotationChange = options.onRotationChange
+    options.onRotationChange(false)
     return {
       dispose: mock.dispose,
       setModel: mock.setModel,
@@ -27,7 +34,10 @@ vi.mock('../button3d/view', () => ({
       acceptsPoint() {
         return true
       },
-      resetView() {},
+      resetView() {
+        mock.resetView()
+        options.onRotationChange(false)
+      },
       playStartPress() {},
     }
   },
@@ -53,7 +63,27 @@ it('3D切替と一時障害後の2D復帰で保存モデルと早押し経路を
     await new Promise((r) => setTimeout(r, 0))
     await nextTick()
     expect(host.querySelector<HTMLElement>('.button-rig')!.style.display).toBe('none')
-    expect(host.querySelector('.button-type-toggle')).not.toBeNull()
+    const controls = host.querySelector('.button-view-controls')!
+    expect(Array.from(controls.children, (el) => el.className)).toEqual([
+      'button-type-toggle',
+      'display-mode-toggle',
+    ])
+    expect(host.querySelector('.button-reset')).toBeNull()
+    mock.rotationChange?.(true)
+    await nextTick()
+    expect(controls.firstElementChild?.className).toBe('button-reset')
+    host.querySelector<HTMLButtonElement>('.button-reset')!.click()
+    await nextTick()
+    expect(mock.resetView).toHaveBeenCalledOnce()
+    const resetting = host.querySelector<HTMLButtonElement>('.button-reset')!
+    expect(resetting.classList.contains('is-spinning')).toBe(true)
+    expect(resetting.disabled).toBe(true)
+    resetting.click()
+    expect(mock.resetView).toHaveBeenCalledOnce()
+    resetting.querySelector('svg')!.dispatchEvent(new Event('animationend'))
+    await nextTick()
+    expect(host.querySelector('.button-reset')).toBeNull()
+    expect(press).not.toHaveBeenCalled()
     const hit = host.querySelector<HTMLButtonElement>('.button-hit')!
     hit.click()
     hit.click()
@@ -64,6 +94,7 @@ it('3D切替と一時障害後の2D復帰で保存モデルと早押し経路を
     mock.error?.(new Error('context loss'))
     await nextTick()
     expect(host.querySelector('.button-3d')).toBeNull()
+    expect(host.querySelector('.button-reset')).toBeNull()
     expect(host.querySelector<HTMLElement>('.button-rig')!.style.display).toBe('')
     expect(settings.button).toMatchObject({ renderMode: '3d', modelId: 'waseda-style-v1' })
     settings.setButtonMode('2d')
