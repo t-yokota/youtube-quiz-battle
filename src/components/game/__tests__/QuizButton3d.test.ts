@@ -4,6 +4,13 @@ import QuizButton from '../QuizButton.vue'
 import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { ButtonState, GameState } from '@/types'
+beforeEach(() => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({ matches: false })),
+  )
+})
+afterEach(() => vi.unstubAllGlobals())
 const mock = vi.hoisted(() => ({
   error: undefined as undefined | ((error: Error) => void),
   dispose: vi.fn(),

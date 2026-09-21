@@ -1,0 +1,321 @@
+/* 1つの進行率で移動とサイズを補間し、モデル実幅の更新で遷移を再始動しない。 */
+@property --answer-panel-progress {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --compact-label-width {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 112px;
+}
+@property --compact-content-padding {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 8px;
+}
+
+/* PC専用。判定はuseDesktopLayoutと揃え、スマホや狭いiframeは従来の配置にする。 */
+@media (min-width: 1200px) and (pointer: fine) {
+  .main-content.desktop-layout {
+    /* ヘッダー下を動画13:UI12に分け、動画の16:9から初期横幅を求める。 */
+    --desktop-auto-width: calc(
+      var(--desktop-content-height, var(--ui-viewport-height)) * 13 / 25 * 16 / 9
+    );
+    display: grid;
+    --desktop-video-width: clamp(
+      640px,
+      var(--desktop-preferred-width, var(--desktop-auto-width)),
+      calc(100% - 480px)
+    );
+    grid-template-columns: minmax(0, 1fr) var(--desktop-video-width) minmax(0, 1fr);
+    grid-template-rows: auto minmax(16rem, 1fr);
+    width: 100%;
+    margin-inline: auto;
+  }
+  .desktop-layout::before {
+    content: '';
+    grid-column: 1;
+    grid-row: 1 / 3;
+    border-right: 1px solid var(--color-line);
+  }
+  .desktop-layout > .video-player-container {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+  }
+  .desktop-layout > .desktop-resize-handles {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+  .desktop-layout > .score-sidebar {
+    grid-column: 3;
+    grid-row: 1 / 3;
+  }
+  .desktop-layout > .game-ui {
+    grid-column: 2;
+    grid-row: 2;
+    position: relative;
+    padding: 0.625rem 0.75rem;
+    gap: 0;
+    /* PCの文字は画面高で拡大せず、ブラウザの標準文字サイズ（通常16px）を基準にする。
+       子要素もemで指定し、標準フォント設定やブラウザズームに追従させる。 */
+    font-size: medium;
+    --game-ui-padding-block: 0.625rem;
+    --desktop-meta-height: max(1.625rem, calc(1.5em + 0.375rem + 2px));
+    /* 縮小カードの実寸（meta + 上下padding + 枠）と間隔を予約する。 */
+    --desktop-card-space: calc(var(--desktop-meta-height) + 1rem + 2px);
+    --answer-panel-progress: 0;
+    transition: --answer-panel-progress 560ms var(--ease-brand);
+  }
+  .desktop-layout > .game-ui.panel-expanded {
+    --answer-panel-progress: 1;
+  }
+  .desktop-layout .quiz-button-container {
+    min-height: 14.75rem;
+    padding-top: var(--desktop-card-space);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-rows: minmax(0, 1fr) 44px;
+  }
+  .desktop-layout .button-stage {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: calc(100% - 50% * var(--answer-panel-progress));
+    /* 左・中央・右の余白を (下段幅 - ボタン実幅 - カード幅) / 3 に揃える。
+       stageの包含幅は下段の左右paddingを除くため、その差も補正する。 */
+    left: calc(
+      ((var(--desktop-button-width, 12.25rem) - 50%) / 6 - 0.25rem) * var(--answer-panel-progress)
+    );
+  }
+  .desktop-layout .quiz-button-container:has(.button-3d:not(.is-round)) {
+    /* 箱型はカード用の予約領域を使い、下段の上paddingと合わせて1.25rem空ける。 */
+    padding-top: var(--game-ui-padding-block);
+  }
+  .desktop-layout .quiz-button-container:has(.button-3d) {
+    z-index: 1;
+    pointer-events: none;
+  }
+  .desktop-layout .quiz-button-container :is(.button-view-controls, .check-toggle) {
+    pointer-events: auto;
+  }
+  .desktop-layout .button-3d.is-round {
+    /* 横幅60%の追従を維持しつつ、広い下段でも過大にならない上限を設ける。 */
+    inset: 0;
+    margin: auto;
+    width: min(60%, 360px);
+    height: min(100%, 360px);
+  }
+  .desktop-layout .button-rig {
+    --button-unit: min(1rem, calc(100cqh / 12.25), calc(100cqw / 12.25));
+  }
+  .desktop-layout .button-view-controls {
+    --view-control-step: 53px;
+    left: 4px;
+    bottom: 4px;
+  }
+  .desktop-layout .display-mode-artwork {
+    --dimension-stroke-width: 1.5714286; /* 2.2 × タイプ40px / 表示56px */
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    /* SVG内の図形中心(18,46)を、44px表示時と同じ位置に保つ。 */
+    transform: translate(
+      calc(var(--icon-hit-offset) + 2.625px),
+      calc(-1 * var(--icon-hit-offset) - 2.625px)
+    );
+  }
+  .desktop-layout .check-toggle {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
+    align-self: end;
+  }
+  .desktop-layout .button-key-hint {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75em;
+    color: var(--color-text-dim);
+    white-space: nowrap;
+  }
+  .button-key-hint kbd {
+    border: 1px solid var(--color-line);
+    border-radius: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    background: var(--surface-panel);
+    font: inherit;
+    font-weight: 600;
+  }
+  .desktop-layout .answer-area {
+    position: absolute;
+    z-index: 2;
+    right: calc(
+      0.75rem * (1 - var(--answer-panel-progress)) +
+        (50% + 0.75rem - var(--desktop-button-width, 12.25rem)) / 3 * var(--answer-panel-progress)
+    );
+    top: calc(
+      0.625rem * (1 - var(--answer-panel-progress)) + (50% + var(--desktop-card-space) / 2 - 22px) *
+        var(--answer-panel-progress)
+    );
+    --compact-content-padding: 0.5rem;
+    width: calc(
+      min(
+          calc(var(--compact-label-width, 7rem) + 1.75rem + var(--compact-content-padding) + 2px),
+          calc(100% - 1.5rem)
+        ) *
+        (1 - var(--answer-panel-progress)) + (50% - 0.75rem) * var(--answer-panel-progress)
+    );
+    border-radius: calc(
+      var(--radius-sm) + (var(--radius-md) - var(--radius-sm)) * var(--answer-panel-progress)
+    );
+    min-height: calc(6.875rem * var(--answer-panel-progress));
+    height: auto;
+    padding: calc(0.5rem + 0.25rem * var(--answer-panel-progress)) 0.875rem;
+    transform: translateY(calc(-50% * var(--answer-panel-progress)));
+    transition:
+      --compact-label-width 520ms var(--ease-brand),
+      --compact-content-padding 520ms var(--ease-brand),
+      border-color 240ms;
+  }
+  .desktop-layout .answer-area.is-guide {
+    --compact-content-padding: 0rem;
+    height: auto;
+  }
+  .desktop-layout .guide-text {
+    height: auto;
+    min-height: var(--desktop-meta-height);
+    font-size: 1em;
+  }
+  .desktop-layout .guide-message {
+    /* カード幅のアニメーション途中でも折り返さず、内容の実幅を計測する。 */
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .desktop-layout .answer-content {
+    gap: 0;
+    justify-content: space-between;
+  }
+  .desktop-layout .answer-meta {
+    min-height: var(--desktop-meta-height);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    text-align: center;
+    font-size: 1em;
+  }
+  .desktop-layout .attempts-label {
+    display: block;
+  }
+  .desktop-layout .attempts-counter {
+    font-size: 1em;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .desktop-layout .answer-summary {
+    display: flex;
+    flex: 1;
+    min-width: min(100%, var(--summary-content-width));
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.375rem;
+  }
+  .desktop-layout .answer-meta:has(.answer-timer) {
+    /* 元の3要素の均等配置を維持しつつ、回数と判定は同じまとまりにする。 */
+    column-gap: max(
+      0.375rem,
+      calc((100% - var(--summary-content-width) - var(--summary-timer-width)) / 2)
+    );
+  }
+  .desktop-layout .answer-result {
+    font-size: 1em;
+    /* 拡大・縮小で同じ行高と共通のバッジ余白を使用する。 */
+    line-height: 1.5;
+  }
+  .desktop-layout .answer-timer {
+    font-size: 1em;
+  }
+  .desktop-layout .quiz-button {
+    /* ボタン直径9.375 × button-unitの10%。 */
+    font-size: calc(0.9375 * var(--button-unit));
+  }
+  .desktop-layout .check-label {
+    font-size: 1em;
+  }
+  .desktop-layout .check-toggle {
+    font-size: inherit;
+  }
+  .desktop-layout .check-toggle-label {
+    font-size: 0.75em;
+  }
+  .desktop-layout .check-toggle-state {
+    font-size: 0.625em;
+  }
+  .desktop-layout .answer-input-container {
+    max-height: calc(max(4rem, 3em) * var(--answer-panel-progress));
+    margin-top: calc(0.5rem * var(--answer-panel-progress));
+    opacity: var(--answer-panel-progress);
+    visibility: hidden;
+    overflow: hidden;
+    transition: none;
+  }
+  .desktop-layout .answer-result-slot:not(:empty) {
+    display: block;
+    flex-shrink: 0;
+    margin-inline: 0;
+  }
+  .desktop-layout .answer-timer {
+    display: none;
+  }
+  .desktop-layout .panel-expanded .answer-meta {
+    /* 大きい標準フォントでも回数・判定・タイマーを重ねず、必要なら折り返す。 */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    min-height: var(--desktop-meta-height);
+    text-align: start;
+  }
+  .desktop-layout .panel-expanded .answer-result-slot:not(:empty) {
+    display: block;
+  }
+  .desktop-layout .panel-expanded .answer-timer {
+    display: flex;
+  }
+  .desktop-layout .panel-expanded .answer-input-container {
+    visibility: visible;
+    /* 入力行の外へ広がるfocus枠・影を切らない。
+       開閉中のカード外への描画はanswer-area側でクリップする。 */
+    overflow: visible;
+  }
+  .desktop-layout .answer-input {
+    font-size: 1em;
+    height: max(36px, 2.5rem, 2.5em);
+  }
+  .desktop-layout .submit-button {
+    font-size: 1em;
+    height: max(36px, 2.5rem, 2.5em);
+  }
+  .desktop-layout .replay-card {
+    font: inherit;
+    background: var(--btn-replay-bg);
+    color: var(--btn-replay-text);
+    box-shadow: var(--btn-replay-shadow);
+    cursor: pointer;
+  }
+  .desktop-layout .replay-card .guide-text {
+    color: inherit;
+  }
+  .desktop-layout .replay-card:hover:not(:disabled) {
+    background: var(--btn-replay-bg-hover);
+  }
+  .desktop-layout .replay-card:active:not(:disabled) {
+    filter: brightness(0.9);
+  }
+}

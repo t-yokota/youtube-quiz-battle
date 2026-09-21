@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-const props = defineProps<{ solid: boolean }>()
+const props = withDefaults(defineProps<{ solid: boolean; displaySize?: number }>(), {
+  displaySize: 44,
+})
 const progress = ref(props.solid ? 1 : 0)
 let frame = 0
 
@@ -34,8 +36,11 @@ const shape = computed(() => {
   const t = progress.value
   const yaw = (t * Math.PI) / 4
   const pitch = t * Math.atan(1 / Math.sqrt(2))
-  // 最初の縮小前の中心を固定し、2Dだけ一辺32へ縮小する。
-  const size = 32 + (36 * 0.67 - 32) * t
+  // 最初の縮小前の中心を固定し、2Dの一辺も表示上で1px縮める。
+  const flatSize = 32 - 64 / props.displaySize
+  // 3D時の投影横幅を表示上で1px縮める（等角投影の横幅は一辺×√2）。
+  const solidSize = 36 * 0.67 - 64 / props.displaySize / Math.SQRT2
+  const size = flatSize + (solidSize - flatSize) * t
   const u: Point = [size * Math.cos(yaw), size * Math.sin(yaw) * Math.sin(pitch)]
   const v: Point = [0, size * Math.cos(pitch)]
   const w: Point = [size * t * Math.sin(yaw), -size * t * Math.cos(yaw) * Math.sin(pitch)]
@@ -97,7 +102,8 @@ const shape = computed(() => {
   height: 100%;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.2;
+  /* タイプ切替(32px / viewBox64・線幅2.2)と画面上の線幅を揃える。 */
+  stroke-width: var(--dimension-stroke-width, 1.6);
   stroke-linejoin: round;
   stroke-linecap: round;
 }

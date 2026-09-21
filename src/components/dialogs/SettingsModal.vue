@@ -335,7 +335,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   color: var(--color-text-dim);
 }
 
-/* トグルスイッチ（ゲーム画面のボタンチェックトグルと同型・青系） */
+/* トグルスイッチ */
 :deep(.ui-switch) {
   display: flex;
   align-items: center;
@@ -580,5 +580,45 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
 .modal-fade-enter-from,
 .modal-fade-leave-to {
   opacity: 0;
+}
+
+/* プレイ画面と同じ条件で、PCの設定を右端のドロワーにする。
+   Teleport先はbodyなので、祖先の.desktop-layoutには依存しない。 */
+@media (min-width: 1200px) and (pointer: fine) {
+  .modal-overlay {
+    align-items: stretch;
+    justify-content: flex-end;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .modal-container {
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+
+  .modal-header {
+    flex-shrink: 0;
+  }
+
+  .modal-content {
+    flex: 1;
+    min-height: 0;
+    overscroll-behavior-y: contain;
+  }
+
+  .modal-fade-enter-active .modal-container,
+  .modal-fade-leave-active .modal-container {
+    transition: transform 0.3s var(--ease-brand);
+  }
+
+  .modal-fade-enter-from .modal-container,
+  .modal-fade-leave-to .modal-container {
+    transform: translateX(100%);
+  }
 }
 </style>

@@ -3,7 +3,7 @@
 // 解答入力エリア（QUESTIONING/ANSWERING/WAITING/REVEALING状態）
 // タイマーは conic-gradient リング（12時起点・時計回り減少・残り3秒以下で赤 + 脈動）
 
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { TIMER_URGENT_THRESHOLD_SEC } from '@/constants/timing'
 import {
@@ -13,12 +13,58 @@ import {
   type TimerLabelWidthState,
 } from './answerTimerLayout'
 
+const props = defineProps<{ desktop?: boolean; compact?: boolean; focusBlocked?: boolean }>()
 const gameStore = useGameStore()
+let focusTimer: ReturnType<typeof setTimeout> | undefined
+let focusGeneration = 0
+function cancelFocus() {
+  focusGeneration++
+  clearTimeout(focusTimer)
+  focusTimer = undefined
+}
+function focusInput() {
+  if (gameStore.isInputDisabled || props.focusBlocked) return
+  if (props.desktop) inputRef.value?.focus({ preventScroll: true })
+  else inputRef.value?.focus()
+}
+onBeforeUnmount(cancelFocus)
 
 // イベント定義（解答送信は GameManager 経由必須のため emit を維持）
 const emit = defineEmits<{
   submit: [answer: string]
+  compactWidth: [width: number]
 }>()
+
+// 縮小カードの横幅を実際の文字幅に合わせる。数値幅を渡して展開アニメーションを維持する。
+const attemptsLabel = ref<HTMLElement>()
+const resultSlot = ref<HTMLElement>()
+const answerMeta = ref<HTMLElement>()
+const summaryWidth = ref(0)
+const timerWidth = ref(0)
+let labelObserver: ResizeObserver | undefined
+function measureCompactLabel() {
+  if (props.desktop && attemptsLabel.value) {
+    const resultWidth = resultSlot.value?.getBoundingClientRect().width ?? 0
+    summaryWidth.value = attemptsLabel.value.getBoundingClientRect().width + resultWidth
+    timerWidth.value =
+      answerMeta.value?.querySelector('.answer-timer')?.getBoundingClientRect().width ?? 0
+    // 縮小後の幅を拡大中から用意し、縮小開始後の計測で目標幅を更新しない。
+    const gap = resultWidth ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 0
+    emit('compactWidth', summaryWidth.value + gap)
+  }
+}
+onMounted(() => {
+  measureCompactLabel()
+  if (typeof ResizeObserver === 'undefined') return
+  labelObserver = new ResizeObserver(measureCompactLabel)
+  if (attemptsLabel.value) labelObserver.observe(attemptsLabel.value)
+  if (resultSlot.value) labelObserver.observe(resultSlot.value)
+  if (answerMeta.value) labelObserver.observe(answerMeta.value)
+})
+watch([() => props.desktop, () => gameStore.isInputDisabled], measureCompactLabel, {
+  flush: 'post',
+})
+onBeforeUnmount(() => labelObserver?.disconnect())
 
 // 入力欄の参照（オートフォーカス用）
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -73,13 +119,23 @@ const handleInput = (event: Event) => {
 watch(
   () => gameStore.isInputDisabled,
   (disabled) => {
+    cancelFocus()
     if (disabled) {
       // disabled属性の反映前に明示的にblurし、送信・時間切れでも
       // キーボード終了時のviewport先行復元（focusout）を確実に開始する。
       if (document.activeElement === inputRef.value) inputRef.value?.blur()
     } else {
+      const generation = focusGeneration
       nextTick(() => {
-        inputRef.value?.focus()
+        if (generation !== focusGeneration) return
+        // PCはカード移動中のスクロールや入力フォーカスの先行を避ける。
+        // スマホ（特にiOS）と動きを減らす設定では従来どおり即時フォーカスする。
+        if (props.desktop && !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
+          focusTimer = setTimeout(() => {
+            focusTimer = undefined
+            focusInput()
+          }, 560)
+        } else focusInput()
       })
     }
   },
@@ -92,7 +148,7 @@ watch(
   (result) => {
     if (result === 'incorrect' && !gameStore.isInputDisabled) {
       nextTick(() => {
-        inputRef.value?.focus()
+        if (!focusTimer) focusInput()
       })
     }
   },
@@ -102,17 +158,34 @@ watch(
 <template>
   <div class="answer-content">
     <!-- Answer Meta Information -->
-    <div class="answer-meta">
-      <span class="attempts-counter"
-        >残り {{ gameStore.remainingAttempts }}回<span class="dim">
-          / {{ gameStore.effectiveSettings?.maxAttempts ?? gameStore.remainingAttempts }}</span
-        ></span
-      >
-      <!-- 結果の高さもレイアウトに含め、入力欄との間隔を確保する。 -->
-      <div class="answer-result-slot" aria-live="polite">
-        <span v-if="gameStore.answerResult" :class="['answer-result', gameStore.answerResult]">
-          {{ gameStore.answerResult === 'correct' ? '正解！' : '不正解' }}
-        </span>
+    <div
+      ref="answerMeta"
+      class="answer-meta"
+      :style="
+        desktop
+          ? {
+              '--summary-content-width': `${summaryWidth}px`,
+              '--summary-timer-width': `${timerWidth}px`,
+            }
+          : undefined
+      "
+    >
+      <div class="answer-summary">
+        <span class="attempts-counter"
+          ><span ref="attemptsLabel" class="attempts-label"
+            >{{ desktop ? '解答残り' : '残り' }} {{ gameStore.remainingAttempts }}回<span
+              class="dim"
+            >
+              / {{ gameStore.effectiveSettings?.maxAttempts ?? gameStore.remainingAttempts }}</span
+            ></span
+          ></span
+        >
+        <!-- 結果の高さもレイアウトに含め、入力欄との間隔を確保する。 -->
+        <div ref="resultSlot" class="answer-result-slot" aria-live="polite">
+          <span v-if="gameStore.answerResult" :class="['answer-result', gameStore.answerResult]">
+            {{ gameStore.answerResult === 'correct' ? '正解！' : '不正解' }}
+          </span>
+        </div>
       </div>
       <span
         v-if="!gameStore.isInputDisabled"
@@ -166,6 +239,11 @@ watch(
 }
 
 /* Answer Meta Information */
+.answer-summary {
+  /* スマホでは従来の3列グリッド配置を維持する。 */
+  display: contents;
+}
+
 .answer-meta {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -220,20 +298,19 @@ watch(
   height: 1.375rem;
   flex-shrink: 0;
   border-radius: 50%;
-  background: conic-gradient(
-    var(--timer-track) calc((1 - var(--timer-progress)) * 360deg),
-    var(--color-accent) 0deg
-  );
-  display: grid;
-  place-items: center;
-}
-
-.timer-ring::after {
-  content: '';
-  width: 0.875rem;
-  height: 0.875rem;
-  border-radius: 50%;
-  background: var(--timer-hole);
+  /* 内円を別要素で配置せず、同じ描画領域・中心で重ねる。
+     remが小数pxになっても別々のレイアウト丸めで中心がずれない。 */
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      var(--timer-hole) calc(0.4375rem - 0.25px),
+      transparent calc(0.4375rem + 0.25px)
+    ),
+    conic-gradient(
+      at 50% 50%,
+      var(--timer-track) calc((1 - var(--timer-progress)) * 360deg),
+      var(--timer-fill, var(--color-accent)) 0deg
+    );
 }
 
 .answer-timer.urgent {
@@ -242,10 +319,7 @@ watch(
 }
 
 .answer-timer.urgent .timer-ring {
-  background: conic-gradient(
-    var(--timer-track) calc((1 - var(--timer-progress)) * 360deg),
-    var(--color-urgent) 0deg
-  );
+  --timer-fill: var(--color-urgent);
 }
 
 @keyframes throb {

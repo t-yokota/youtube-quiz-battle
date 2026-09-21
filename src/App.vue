@@ -5,6 +5,10 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import VideoPlayer from './components/common/VideoPlayer.vue'
 import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue'
+import DesktopResizeHandles from './components/game/DesktopResizeHandles.vue'
+import ScoreSidebar from './components/game/ScoreSidebar.vue'
+import { useDesktopLayout } from './composables/useDesktopLayout'
+import { useAnswerPanelExpansion } from './composables/useAnswerPanelExpansion'
 import GameInfo from './components/game/GameInfo.vue'
 import GamePanel from './components/game/GamePanel.vue'
 import QuizButton from './components/game/QuizButton.vue'
@@ -22,7 +26,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useQuizSession } from './composables/useQuizSession'
 import { useQuizAnalytics } from './composables/useQuizAnalytics'
 import { useOrientationGuard } from './composables/useOrientationGuard'
-import { GameState } from './types'
+import { ButtonState, GameState } from './types'
 import { shouldHandleSpaceKey } from './utils/keyboardHandler'
 
 type StartGateConceptStyle = 'accent-only' | 'white-fill'
@@ -35,6 +39,31 @@ let disposed = false
 let scrollFrame: number | null = null
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
+const isDesktop = useDesktopLayout()
+const desktopVideoWidth = ref<number>()
+const mainContent = ref<HTMLElement>()
+let mainSizeObserver: ResizeObserver | undefined
+onMounted(() => {
+  if (!mainContent.value || typeof ResizeObserver === 'undefined') return
+  // ヘッダーとsafe-areaを除いた実際の高さを初期動画幅の基準にする。
+  mainSizeObserver = new ResizeObserver(([entry]) => {
+    if (entry) {
+      mainContent.value?.style.setProperty(
+        '--desktop-content-height',
+        `${entry.contentRect.height}px`,
+      )
+      // 手動の動画幅には連動させず、この画面での初期幅をモデル上限の基準にする。
+      const initialWidth = Math.max(
+        640,
+        Math.min((((entry.contentRect.height * 13) / 25) * 16) / 9, entry.contentRect.width - 480),
+      )
+      mainContent.value?.style.setProperty('--desktop-initial-width', `${initialWidth}px`)
+    }
+  })
+  mainSizeObserver.observe(mainContent.value)
+})
+const desktopButtonWidth = ref<number>()
+const isPanelExpanded = useAnswerPanelExpansion()
 const session = useQuizSession()
 const { quizData, initError, handlePlayerReady, handlePlayerError } = session
 const { initialize: initializeAnalytics } = useQuizAnalytics(
@@ -126,7 +155,7 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
 })
 
-// hideVideoPlayerDuringAnswer=true の場合、ANSWERING 中は動画を visibility で隠す（Task 20-4）
+// ANSWERING中はiframeを保持したまま動画を非表示にする。
 const shouldHidePlayer = computed(
   () =>
     (gameStore.effectiveSettings?.hideVideoPlayerDuringAnswer ?? false) &&
@@ -217,6 +246,7 @@ const handleErrorAction = () => {
 // --- クリーンアップ ---
 onBeforeUnmount(() => {
   disposed = true
+  mainSizeObserver?.disconnect()
   if (scrollFrame !== null) cancelAnimationFrame(scrollFrame)
   window.removeEventListener('keydown', handleKeyDown)
 
@@ -226,19 +256,30 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="app-container">
-    <!-- Header（FINISHED 中はリザルトステージに専有させるため非表示） -->
+    <!-- PCは終了後も右サイドの結果一覧とプレイレイアウトを維持する。 -->
     <AppHeader
-      v-show="gameStore.currentState !== GameState.FINISHED"
+      v-show="isDesktop || gameStore.currentState !== GameState.FINISHED"
       @open-settings="handleOpenSettings"
     />
 
     <!-- Main Content Area -->
-    <main class="main-content">
-      <!-- Video Player（FINISHED 中は非表示。v-show で iframe を破棄せずプレイヤー状態を保持。
-           hideVideoPlayerDuringAnswer=true の ANSWERING 中は visibility で隠す — 高さ保持・iframe 非破棄） -->
+    <main
+      ref="mainContent"
+      class="main-content"
+      :style="{
+        '--desktop-preferred-width': desktopVideoWidth ? `${desktopVideoWidth}px` : undefined,
+      }"
+      :class="{
+        'desktop-layout': isDesktop,
+      }"
+    >
+      <!-- Video Player（スマホのFINISHED中は非表示。v-showでiframeを保持。
+           解答中の置換表示でも高さとiframeを保持する） -->
       <VideoPlayer
         v-if="quizData"
-        v-show="gameStore.currentState !== GameState.FINISHED && !shouldCollapseForKeyboard"
+        v-show="
+          (isDesktop || gameStore.currentState !== GameState.FINISHED) && !shouldCollapseForKeyboard
+        "
         :class="{ 'player-hidden': shouldHidePlayer }"
         :video-id="quizData.videoId"
         :settings="quizData.settings"
@@ -246,29 +287,53 @@ onBeforeUnmount(() => {
         @error="handlePlayerError"
       />
 
-      <!-- Game UI (FINISHED以外) -->
-      <template v-if="gameStore.currentState !== GameState.FINISHED">
+      <DesktopResizeHandles v-if="isDesktop" @resize="desktopVideoWidth = $event" />
+      <!-- PCはFINISHEDもここに表示し、解答カードを再プレイボタンに置き換える。 -->
+      <template v-if="isDesktop || gameStore.currentState !== GameState.FINISHED">
         <!-- スコアボード（video 直下にフルブリードで密着） -->
-        <GameInfo />
+        <GameInfo v-if="!isDesktop" />
+        <ScoreSidebar v-else />
 
         <div
           ref="gameUi"
+          tabindex="-1"
           class="game-ui"
-          :class="{ 'answering-player-hidden': shouldHidePlayer }"
-          :style="{ '--answer-button-height': answerButtonHeight }"
+          :class="{
+            'answering-player-hidden': shouldHidePlayer && !isDesktop,
+            'panel-expanded': isDesktop && isPanelExpanded,
+          }"
+          :style="{
+            '--answer-button-height': answerButtonHeight,
+            '--desktop-button-width': desktopButtonWidth ? `${desktopButtonWidth}px` : undefined,
+          }"
         >
-          <GamePanel @submit="handleAnswerSubmit" />
+          <GamePanel
+            :desktop="isDesktop"
+            :compact="isDesktop && !isPanelExpanded"
+            :focus-blocked="isGameInputBlocked()"
+            @submit="handleAnswerSubmit"
+            @replay="handleReplay"
+          />
           <!-- 動画非表示時も解答エリア直下にボタンを配置する。 -->
           <QuizButton
-            v-if="gameStore.isButtonVisible"
-            :button-state="gameStore.buttonState"
+            v-if="
+              gameStore.isButtonVisible ||
+              (isDesktop && gameStore.currentState === GameState.FINISHED)
+            "
+            :desktop="isDesktop"
+            :button-state="
+              gameStore.currentState === GameState.FINISHED
+                ? ButtonState.DISABLED
+                : gameStore.buttonState
+            "
             :interaction-blocked="isGameInputBlocked()"
             @press="handleButtonPress"
+            @visual-width="desktopButtonWidth = $event"
           />
         </div>
       </template>
 
-      <!-- Result UI (FINISHED状態) -->
+      <!-- スマホのResult UI (FINISHED状態) -->
       <div v-else class="result-ui">
         <div class="result-content">
           <FinalScore
@@ -437,7 +502,6 @@ onBeforeUnmount(() => {
   }
 }
 
-/* ANSWERING 中の動画非表示（高さ・iframe を保持したまま見えなくする） */
 .player-hidden {
   visibility: hidden;
 }
@@ -501,3 +565,5 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+
+<style src="./assets/desktop.css"></style>

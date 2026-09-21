@@ -49,6 +49,9 @@ export const BUTTON_PUSHED_DURATION_MS = 100
 /** 早押し受理から解答開始まで。押下・復帰と点灯を見せてからフォーカスする。 */
 export const ANSWER_START_DELAY_MS = 500
 
+/** PC解答カードは判定後、この時間だけ拡大表示を維持してから縮小する。 */
+export const ANSWER_PANEL_RESULT_HOLD_MS = 1000
+
 /**
  * ボタンチェック時の待機時間: RELEASED → STANDBY／TALKING遷移までの時間（ミリ秒）
  */

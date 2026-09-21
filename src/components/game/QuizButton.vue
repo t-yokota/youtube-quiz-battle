@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // QuizButton コンポーネント
 // 早押しボタン（物理ボタン: 真上視点の円形キャップ + 同心円台座 + LED リング）
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import Button3DView from './button3d/Button3DView.vue'
 import DimensionIcon from './DimensionIcon.vue'
 import { ButtonState, GameState } from '@/types'
@@ -9,6 +9,7 @@ import { useGameStore } from '@/stores/gameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 interface Props {
+  desktop?: boolean
   interactionBlocked?: boolean
   buttonState?: ButtonState
   buttonText?: string
@@ -23,13 +24,16 @@ const props = withDefaults(defineProps<Props>(), {
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
 const threeReady = ref(false)
+const threeButton = ref<InstanceType<typeof Button3DView>>()
 const threeFailed = ref(false)
 const useThree = computed(() => settingsStore.button.renderMode === '3d' && !threeFailed.value)
 watch(
   () => [settingsStore.button.renderMode, settingsStore.button.modelId],
   () => {
     threeFailed.value = false
-    if (settingsStore.button.renderMode === '2d') threeReady.value = false
+    if (settingsStore.button.renderMode === '2d') {
+      threeReady.value = false
+    }
   },
 )
 function fallbackToTwo() {
@@ -40,7 +44,46 @@ function fallbackToTwo() {
 // イベント定義
 const emit = defineEmits<{
   press: []
+  visualWidth: [width: number]
 }>()
+
+const stage = ref<HTMLElement>()
+const rig = ref<HTMLElement>()
+const threeWidth = ref(0)
+// 2Dの文字比率を調整するための一時計測表示。
+const showTwoSizeReadout = false
+const twoSize = ref<{ diameter: number; baseDiameter: number; fontSize: number }>()
+let sizeObserver: ResizeObserver | undefined
+function measureVisualWidth() {
+  if (!props.desktop || !rig.value) return
+  // 2Dは台座、3Dはカメラで投影したモデルの輪郭を余白計算の基準にする。
+  const width =
+    useThree.value && threeReady.value
+      ? threeWidth.value
+      : parseFloat(getComputedStyle(rig.value, '::after').width)
+  if (width > 0) emit('visualWidth', width)
+  if (showTwoSizeReadout && !useThree.value) {
+    const button = rig.value.querySelector<HTMLElement>('.quiz-button')
+    if (button) {
+      const style = getComputedStyle(button)
+      // 押下・無効時のtransformを除いた通常サイズで、文字比率の基準を確認する。
+      twoSize.value = {
+        diameter: parseFloat(style.width),
+        baseDiameter: width,
+        fontSize: parseFloat(style.fontSize),
+      }
+    }
+  }
+}
+onMounted(() => {
+  if (typeof ResizeObserver === 'undefined') return
+  sizeObserver = new ResizeObserver(measureVisualWidth)
+  if (stage.value) sizeObserver.observe(stage.value)
+})
+watch([() => props.desktop, useThree, threeReady, threeWidth], measureVisualWidth, {
+  flush: 'post',
+})
+onBeforeUnmount(() => sizeObserver?.disconnect())
 
 // ボタンチェック演出 OFF の READY: 単なる再生ボタンとして白い三角形を表示（Task 19-4）
 const isPlayMode = computed(
@@ -95,6 +138,13 @@ const handlePress = () => {
   }
 }
 
+// グローバルSpaceもクリックと同じ演出・入力制限を経由する。
+function activate() {
+  if (useThree.value) threeButton.value?.activate()
+  else handlePress()
+}
+defineExpose({ activate })
+
 const displayModeLabel = computed(() =>
   useThree.value ? '現在3D表示。2Dに切り替え' : '現在2D表示。3Dに切り替え',
 )
@@ -113,9 +163,21 @@ const handleButtonCheckToggle = () => {
 
 <template>
   <section class="quiz-button-container" :class="{ lit: isLit }">
-    <div class="button-stage">
+    <output
+      v-if="showTwoSizeReadout && desktop && !useThree && twoSize?.diameter"
+      class="two-size-readout"
+    >
+      2D・通常時の基準サイズ<br />
+      ボタン直径 {{ twoSize.diameter.toFixed(1) }} px ／ 台座直径
+      {{ twoSize.baseDiameter.toFixed(1) }} px<br />
+      PUSH等の文字 {{ twoSize.fontSize.toFixed(1) }} px<br />
+      文字／ボタン直径 {{ ((twoSize.fontSize / twoSize.diameter) * 100).toFixed(1) }}%
+    </output>
+    <div ref="stage" class="button-stage">
       <Button3DView
         v-if="useThree"
+        ref="threeButton"
+        :fit-initial-rotation="desktop"
         :button-state="buttonState"
         :enabled="gameStore.isButtonEnabled"
         :blocked="interactionBlocked"
@@ -124,8 +186,9 @@ const handleButtonCheckToggle = () => {
         @press="handlePress"
         @ready="threeReady = true"
         @failed="fallbackToTwo"
+        @visual-width="threeWidth = $event"
       />
-      <div v-show="!useThree || !threeReady" class="button-rig">
+      <div ref="rig" v-show="!useThree || !threeReady" class="button-rig">
         <div class="pulse-ring" :class="{ active: isPulsing }"></div>
         <button
           :class="['quiz-button', buttonStateClass]"
@@ -150,16 +213,26 @@ const handleButtonCheckToggle = () => {
       </div>
     </div>
 
-    <button
-      type="button"
-      class="display-mode-toggle"
-      :aria-label="displayModeLabel"
-      :title="displayModeLabel"
-      :disabled="interactionBlocked"
-      @click.stop="toggleDisplayMode"
+    <div class="button-view-controls">
+      <button
+        type="button"
+        class="display-mode-toggle"
+        :aria-label="displayModeLabel"
+        :title="displayModeLabel"
+        :disabled="interactionBlocked"
+        @click.stop="toggleDisplayMode"
+      >
+        <DimensionIcon
+          class="display-mode-artwork"
+          :solid="useThree"
+          :display-size="desktop ? 56 : 44"
+        />
+      </button>
+    </div>
+    <span v-if="desktop" class="button-key-hint"
+      ><kbd>{{ gameStore.isInputDisabled ? 'Space' : 'Enter' }}</kbd>
+      {{ gameStore.isInputDisabled ? 'でボタンを押す' : 'で送信' }}</span
     >
-      <DimensionIcon class="display-mode-artwork" :solid="useThree" />
-    </button>
     <!-- ボタンチェック演出のトグル（画面右下） -->
     <button
       type="button"
@@ -179,23 +252,48 @@ const handleButtonCheckToggle = () => {
 </template>
 
 <style scoped>
-.display-mode-toggle {
-  /* 44pxの操作領域の張り出しは親の下余白までに制限する。
-     小さいiframeではremの余白が固定pxのoffsetより小さくなり、スクロールを生む。
-     artwork側も同量補正し、アイコンの描画位置は変えない。 */
+.button-view-controls {
+  --view-control-step: 41px;
   --icon-hit-bottom-offset: min(var(--icon-hit-offset), var(--game-ui-padding-block, 0px));
   position: absolute;
+  z-index: 2;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.button-view-controls > * {
+  pointer-events: auto;
+}
+.two-size-readout {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 75%);
+  color: white;
+  font:
+    12px/1.5 system-ui,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.display-mode-toggle {
+  position: absolute;
   left: calc(-1 * var(--icon-hit-offset));
-  bottom: calc(-1 * var(--icon-hit-bottom-offset));
+  bottom: calc(-1 * var(--icon-hit-offset) + 4px);
   z-index: 1;
   width: 44px;
-  height: 44px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: 0;
   background: transparent;
   color: var(--color-text-dim);
   font: inherit;
@@ -203,10 +301,14 @@ const handleButtonCheckToggle = () => {
   -webkit-tap-highlight-color: transparent;
 }
 .display-mode-artwork {
-  transform: translate(var(--icon-hit-offset), calc(-1 * var(--icon-hit-bottom-offset)));
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  transform: translate(var(--icon-hit-offset), calc(-1 * var(--icon-hit-offset)));
 }
 .display-mode-toggle:focus-visible {
-  outline: 2px solid var(--color-accent);
+  border-radius: 0;
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 .display-mode-toggle:disabled {
@@ -235,6 +337,14 @@ const handleButtonCheckToggle = () => {
   font-weight: 700;
   letter-spacing: 0.14em;
   color: var(--color-text-dim);
+}
+
+.check-toggle:focus-visible {
+  outline: none;
+}
+.check-toggle:focus-visible .check-toggle-track {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .check-toggle-track {

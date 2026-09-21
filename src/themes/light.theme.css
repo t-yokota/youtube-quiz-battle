@@ -26,6 +26,7 @@ html,
   --color-accent-hover: #b83e2c;
   --color-on-accent: #ffffff;
   --color-info: #356fca;
+  --color-focus: #356fca;
   --color-answer-correct: #178758;
   --color-answer-wrong: #cc4c39;
   --color-error: #c83a2a;

@@ -9,6 +9,7 @@ const mock = vi.hoisted(() => ({
   fail: false,
   view: {
     setState: vi.fn(),
+    setFitInitialRotation: vi.fn(),
     setInteractionEnabled: vi.fn(),
     acceptsPoint: vi.fn(() => true),
     setModel: vi.fn(),
@@ -38,6 +39,7 @@ async function mount() {
     blocked: false,
     modelId: 'simple-round-v1' as const,
     playMode: false,
+    fitInitialRotation: false,
   })
   const press = vi.fn(),
     failed = vi.fn(),
@@ -113,8 +115,7 @@ it('キャップのドラッグ・cancelは押下せず、次のクリックと�
   expect(button.getAttribute('aria-label')).toBe('動画を再生')
   button.click()
   expect(press).toHaveBeenCalledTimes(2)
-  host.querySelector<HTMLButtonElement>('.button-reset')!.click()
-  expect(mock.view.resetView).toHaveBeenCalledOnce()
+  expect(host.querySelector('.button-reset')).toBeNull()
 })
 
 it('遅延ロード完了前のunmountではviewを生成しない', async () => {
@@ -154,6 +155,16 @@ it('タッチ終了時のpointerleaveがclickより先でも1回受理する', a
   props.playMode = true
   await nextTick()
   expect(button.children).toHaveLength(0)
+})
+
+it('PC表示への切替と解除をカメラ制御へ伝える', async () => {
+  const { props } = await mount()
+  props.fitInitialRotation = true
+  await nextTick()
+  expect(mock.view.setFitInitialRotation).toHaveBeenLastCalledWith(true)
+  props.fitInitialRotation = false
+  await nextTick()
+  expect(mock.view.setFitInitialRotation).toHaveBeenLastCalledWith(false)
 })
 
 it('再生モードだけ通常色の押下演出を同期通知の前に開始する', async () => {

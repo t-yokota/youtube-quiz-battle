@@ -27,6 +27,10 @@ function escape() {
   )
 }
 beforeEach(async () => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+  )
   settings.value = theme.value = orientation.value = error.value = false
   localStorage.clear()
   const pinia = createPinia()
@@ -72,6 +76,7 @@ afterEach(() => {
   app.unmount()
   host.remove()
   document.querySelectorAll('[role="dialog"], .zoom-layer').forEach((element) => element.remove())
+  vi.unstubAllGlobals()
 })
 it('設定→テーマ→閉じるで元の設定ボタンへ戻り、横画面警告が最前面を保つ', async () => {
   const opener = button('#opener')

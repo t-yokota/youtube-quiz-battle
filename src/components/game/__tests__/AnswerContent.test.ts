@@ -39,3 +39,32 @@ it('IMEの確定Enterを送信せず、その後のEnterで一度だけ送る', 
   input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
   expect(submit).toHaveBeenCalledExactlyOnceWith('東京')
 })
+
+it('PCは移動完了後にフォーカスし、途中で解答が終了した場合はフォーカスしない', async () => {
+  vi.useFakeTimers()
+  const pinia = createPinia()
+  const store = useGameStore(pinia)
+  store.setQuizData(quizFixture())
+  store.transitionToState(GameState.QUESTIONING)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const app = createApp(AnswerContent, { desktop: true })
+  app.use(pinia).mount(host)
+  cleanup = () => {
+    app.unmount()
+    host.remove()
+    vi.useRealTimers()
+  }
+  const input = host.querySelector('input')!
+  store.transitionToState(GameState.ANSWERING)
+  await nextTick()
+  expect(document.activeElement).not.toBe(input)
+  await vi.advanceTimersByTimeAsync(560)
+  expect(document.activeElement).toBe(input)
+  store.transitionToState(GameState.WAITING)
+  store.transitionToState(GameState.ANSWERING)
+  await nextTick()
+  store.transitionToState(GameState.REVEALING)
+  await vi.advanceTimersByTimeAsync(560)
+  expect(document.activeElement).not.toBe(input)
+})

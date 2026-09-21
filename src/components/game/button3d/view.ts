@@ -6,7 +6,7 @@ import { appearance } from './appearance'
 import { createModel } from './models'
 import { defaultMotion, sampleGlow, samplePress } from './motion'
 import { bindRotation } from './rotation'
-import { collectFitPoints, fitCamera } from './cameraFit'
+import { collectFitPoints, fitCamera, fitRotationSafeCamera } from './cameraFit'
 
 const MIN_ROTATION_X = -0.45
 const MAX_ROTATION_X = 0.6
@@ -16,8 +16,17 @@ function initialRotation(id: ButtonModelId) {
 
 interface Options {
   modelId: ButtonModelId
+  fitInitialRotation?: boolean
+  fitContainer?: HTMLElement
   onError(error: unknown): void
   onTarget(rect: TargetRect): void
+  onVisualWidth?(width: number): void
+  onReferenceSize?(size: {
+    width: number
+    height: number
+    areaWidth: number
+    initialAreaWidth: number
+  }): void
 }
 export type ButtonView = ReturnType<typeof createButtonView>
 
@@ -52,6 +61,7 @@ export function createButtonView(container: HTMLElement, options: Options) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)')
   let model: ButtonModel | undefined
   let selected = options.modelId
+  let fitInitialRotation = options.fitInitialRotation ?? false
   let modelRotations: Record<ButtonModelId, { x: number; y: number }> = {
     'simple-round-v1': initialRotation('simple-round-v1'),
     'waseda-style-v1': initialRotation('waseda-style-v1'),
@@ -140,7 +150,61 @@ export function createButtonView(container: HTMLElement, options: Options) {
         const size = renderer.getSize(new THREE.Vector2())
         if (size.x !== width || size.y !== height) renderer.setSize(width, height, false)
         rig.updateWorldMatrix(true, true)
-        fitCamera(camera, fitPoints, rig.matrixWorld, width, height)
+        // PCは回転角度ではなく、各モデルの初期姿勢で領域に収まるサイズを決める。
+        // 領域の拡縮時もこの基準を使い、ドラッグによるカメラのズーム変更を避ける。
+        const initial = initialRotation(selected)
+        const fitMatrix = fitInitialRotation
+          ? pose.matrixWorld
+              .clone()
+              .multiply(
+                new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(initial.x, initial.y, 0)),
+              )
+          : rig.matrixWorld
+        const fit = fitInitialRotation ? fitRotationSafeCamera : fitCamera
+        const region = fitInitialRotation ? options.fitContainer : undefined
+        const bounds = container.getBoundingClientRect()
+        const fitBounds = region?.getBoundingClientRect()
+        const centerX = fitBounds ? fitBounds.left + fitBounds.width / 2 - bounds.left : width / 2
+        const centerY = fitBounds ? fitBounds.top + fitBounds.height / 2 - bounds.top : height / 2
+        // 従来の中心位置を保ち、その中心からgame-uiの各端まで使える範囲を広げる。
+        // 解答欄展開時は中心が左へ動くため、利用可能幅も連動して小さくなる。
+        const fitWidth = Math.max(1, 2 * Math.min(centerX, width - centerX))
+        const fitHeight = Math.max(1, 2 * Math.min(centerY, height - centerY))
+        // 上限は画面ごとの初期幅から決める。境界を狭めるたび上限まで縮めない。
+        const initialAreaWidth =
+          parseFloat(getComputedStyle(container).getPropertyValue('--desktop-initial-width')) ||
+          width
+        const maxVisualWidth = !fitInitialRotation
+          ? Infinity
+          : selected === 'simple-round-v1'
+            ? initialAreaWidth * 0.3
+            : initialAreaWidth * 0.25
+        const visualWidth = fit(camera, fitPoints, fitMatrix, fitWidth, fitHeight, maxVisualWidth)
+        if (region) {
+          // 同じカメラをヒット判定にも使うため、クリック位置も描画位置に一致する。
+          const view = camera.view!
+          camera.setViewOffset(
+            fitWidth,
+            fitHeight,
+            view.offsetX - (centerX - fitWidth / 2),
+            view.offsetY - (centerY - fitHeight / 2),
+            width,
+            height,
+          )
+        }
+        options.onVisualWidth?.(visualWidth)
+        if (fitInitialRotation && options.onReferenceSize) {
+          // 上限値を検討するための計測。回転中の姿勢ではなく、サイズ基準の初期姿勢を表示する。
+          const reference = new THREE.Box3().setFromPoints(
+            fitPoints.map((point) => point.clone().applyMatrix4(fitMatrix).project(camera)),
+          )
+          options.onReferenceSize({
+            width: ((reference.max.x - reference.min.x) * width) / 2,
+            height: ((reference.max.y - reference.min.y) * height) / 2,
+            areaWidth: width,
+            initialAreaWidth,
+          })
+        }
         layoutDirty = false
       }
       const now = performance.now()
@@ -197,18 +261,22 @@ export function createButtonView(container: HTMLElement, options: Options) {
     rig.add(model.root)
     fitPoints = collectFitPoints(model)
     container.appendChild(canvas)
-    rotation = bindRotation(canvas, (dx, dy) => {
-      if (!interactionEnabled) return
-      modelRotations = {
-        ...modelRotations,
-        [selected]: {
-          x: Math.max(MIN_ROTATION_X, Math.min(MAX_ROTATION_X, rig.rotation.x + dy * 0.006)),
-          y: rig.rotation.y + dx * 0.009,
-        },
-      }
-      applyRotation()
-      resize()
-    })
+    rotation = bindRotation(
+      canvas,
+      (dx, dy) => {
+        if (!interactionEnabled) return
+        modelRotations = {
+          ...modelRotations,
+          [selected]: {
+            x: Math.max(MIN_ROTATION_X, Math.min(MAX_ROTATION_X, rig.rotation.x + dy * 0.006)),
+            y: rig.rotation.y + dx * 0.009,
+          },
+        }
+        applyRotation()
+        if (fitInitialRotation) invalidate()
+        else resize()
+      },
+    )
     canvas.addEventListener(
       'webglcontextlost',
       (event) => {
@@ -231,6 +299,14 @@ export function createButtonView(container: HTMLElement, options: Options) {
     reduced.addEventListener('change', invalidate)
     observer = new ResizeObserver(resize)
     observer.observe(container)
+    if (options.fitContainer) {
+      observer.observe(options.fitContainer)
+      // 丸型の上限到達後も、解答エリア開閉に伴うstageの移動へ追従する。
+      const stage = options.fitContainer.closest('.button-stage')
+      if (stage) observer.observe(stage)
+      const main = options.fitContainer.closest('.main-content')
+      if (main) observer.observe(main)
+    }
     resize()
   } catch (error) {
     dispose()
@@ -238,6 +314,11 @@ export function createButtonView(container: HTMLElement, options: Options) {
   }
   return {
     setModel,
+    setFitInitialRotation(enabled: boolean) {
+      if (fitInitialRotation === enabled) return
+      fitInitialRotation = enabled
+      resize()
+    },
     captureSnapshot() {
       if (disposed) throw new Error('Button view is disposed')
       cancelAnimationFrame(frame)
