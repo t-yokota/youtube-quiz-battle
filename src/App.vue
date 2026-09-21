@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { isIOS } from '@/utils/isIOS'
 // YouTube Quiz Battle - メインアプリケーション
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import VideoPlayer from './components/common/VideoPlayer.vue'
 import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue'
@@ -133,10 +133,11 @@ function handleButtonPress() {
 }
 
 // スペースキー早押し（グローバルキーボードハンドラ）
+const quizButton = ref<InstanceType<typeof QuizButton>>()
 function handleKeyDown(e: KeyboardEvent) {
   if (isGameInputBlocked() || !shouldHandleSpaceKey(e)) return
   e.preventDefault() // スペースキーによるページスクロールを抑止
-  handleButtonPress()
+  quizButton.value?.activate()
 }
 
 // 開始ゲート（音声許諾 + メディア priming）。READY 到達後に表示し、タップで解除する
@@ -230,8 +231,20 @@ const handleOpenSettings = () => {
   isSettingsOpen.value = true
 }
 
-const handleCloseSettings = () => {
+const handleCloseSettings = async () => {
   isSettingsOpen.value = false
+  // モーダルの背景遮断解除・通常のフォーカス復帰を待ってから、
+  // 次のゲーム操作へ移す。設定ボタンに戻すとSpaceで設定を再度開いてしまう。
+  await nextTick()
+  if (isGameInputBlocked()) return
+  const area = gameUi.value
+  const target =
+    gameStore.currentState === GameState.ANSWERING
+      ? area?.querySelector<HTMLElement>('.answer-input:not(:disabled)')
+      : (area?.querySelector<HTMLElement>('.button-hit:not(:disabled)') ??
+        area?.querySelector<HTMLElement>('.quiz-button:not(:disabled)'))
+  if (target && !target.closest('[inert]')) target.focus({ preventScroll: true })
+  else area?.focus({ preventScroll: true })
 }
 
 const handleUpdateVolume = (level: number) => {
@@ -316,6 +329,7 @@ onBeforeUnmount(() => {
           />
           <!-- 動画非表示時も解答エリア直下にボタンを配置する。 -->
           <QuizButton
+            ref="quizButton"
             v-if="
               gameStore.isButtonVisible ||
               (isDesktop && gameStore.currentState === GameState.FINISHED)

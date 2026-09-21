@@ -335,6 +335,15 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
   color: var(--color-text-dim);
 }
 
+/* 操作領域は維持し、フォーカス枠だけをトラックの輪郭に合わせる。 */
+:deep(.ui-switch:focus-visible) {
+  outline: none;
+}
+:deep(.ui-switch:focus-visible .ui-switch-track) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 /* トグルスイッチ */
 :deep(.ui-switch) {
   display: flex;

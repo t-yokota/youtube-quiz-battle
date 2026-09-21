@@ -49,8 +49,8 @@
   --input-bg: #ffffff;
   --input-border-color: #8f9095;
   --input-shadow: none;
-  --input-focus-border-color: var(--color-info);
-  --input-focus-shadow: 0 0 0 0.1875rem rgba(53, 111, 202, 0.18);
+  --input-focus-border-color: var(--color-focus);
+  --input-focus-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--color-focus) 18%, transparent);
 
   /* --- 汎用ボタン --- */
   --btn-primary-bg: var(--color-accent);

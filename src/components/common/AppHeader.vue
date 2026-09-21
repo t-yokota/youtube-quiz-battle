@@ -84,6 +84,13 @@ const handleSettingsClick = () => {
   background-color: var(--surface-raised);
 }
 
+.settings-button:focus-visible {
+  /* 下側padding(0.5rem)より負のmargin(0.625rem)が大きく、
+     操作領域はヘッダーから0.125rem張り出す。
+     枠の外端を0.25rem内側に収め、フォント倍率が変わっても余裕を保つ。 */
+  outline-offset: calc(-0.25rem - 2px);
+}
+
 .settings-icon {
   width: 1.5rem;
   height: 1.5rem;
