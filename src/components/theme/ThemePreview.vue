@@ -10,8 +10,11 @@ import { defaultButton, type ButtonSettings } from '@/constants/button'
 import DimensionIcon from '@/components/game/DimensionIcon.vue'
 import { useButtonPreviewImage } from './useButtonPreviewImage'
 import SettingsIcon from '@/components/common/SettingsIcon.vue'
+import ScoreCounts from '@/components/game/ScoreCounts.vue'
+import ButtonTypeToggle from '@/components/game/ButtonTypeToggle.vue'
 
 interface Props {
+  desktop?: boolean
   previewWidth?: number
   previewHeight?: number
   buttonSettings?: ButtonSettings
@@ -25,13 +28,22 @@ const props = withDefaults(defineProps<Props>(), {
   buttonCheckEnabled: true,
 })
 const threeHost = ref<HTMLElement>()
-const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
+const buttonImage = useButtonPreviewImage(
+  threeHost,
+  () => props.buttonSettings,
+  () => !!props.desktop,
+)
 </script>
 
 <template>
   <div
     class="preview"
-    :style="{ width: `${previewWidth}px`, height: `${previewHeight}px` }"
+    :class="{ 'preview-desktop': desktop }"
+    :style="{
+      width: `${previewWidth}px`,
+      height: `${previewHeight}px`,
+      '--preview-height': `${previewHeight}px`,
+    }"
     aria-hidden="true"
   >
     <!-- ヘッダー -->
@@ -46,36 +58,67 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
     </div>
 
     <!-- スコアボード -->
-    <div class="p-scoreboard">
-      <span class="p-progress"><span class="p-q">Q</span>03<span class="p-total"> / 05</span></span>
-      <span class="p-chips">
-        <svg viewBox="0 0 16 16" class="p-chip ok">
-          <circle cx="8" cy="8" r="7.25" class="ring" />
-          <circle cx="8" cy="8" r="3.4" fill="none" class="mk" />
-        </svg>
-        <svg viewBox="0 0 16 16" class="p-chip ng">
-          <circle cx="8" cy="8" r="7.25" class="ring" />
-          <path
-            d="M5.3 5.3 L10.7 10.7 M10.7 5.3 L5.3 10.7"
-            fill="none"
-            stroke-linecap="round"
-            class="mk"
-          />
-        </svg>
-        <svg viewBox="0 0 16 16" class="p-chip cur">
-          <circle cx="8" cy="8" r="7.25" class="ring" />
-        </svg>
-        <svg viewBox="0 0 16 16" class="p-chip"><circle cx="8" cy="8" r="7.25" class="ring" /></svg>
-        <svg viewBox="0 0 16 16" class="p-chip"><circle cx="8" cy="8" r="7.25" class="ring" /></svg>
-      </span>
+    <div class="p-sidebar">
+      <div class="p-scoreboard">
+        <h2 v-if="desktop">QUESTION</h2>
+        <span class="p-progress"
+          ><span class="p-q">Q</span>03<span class="p-total"> / 05</span></span
+        >
+        <template v-if="desktop">
+          <h2>SCORE</h2>
+          <ScoreCounts :correct="1" :incorrect="1" />
+        </template>
+        <span v-else class="p-chips">
+          <svg viewBox="0 0 16 16" class="p-chip ok">
+            <circle cx="8" cy="8" r="7.25" class="ring" />
+            <circle cx="8" cy="8" r="3.4" fill="none" class="mk" />
+          </svg>
+          <svg viewBox="0 0 16 16" class="p-chip ng">
+            <circle cx="8" cy="8" r="7.25" class="ring" />
+            <path
+              d="M5.3 5.3 L10.7 10.7 M10.7 5.3 L5.3 10.7"
+              fill="none"
+              stroke-linecap="round"
+              class="mk"
+            />
+          </svg>
+          <svg viewBox="0 0 16 16" class="p-chip cur">
+            <circle cx="8" cy="8" r="7.25" class="ring" />
+          </svg>
+          <svg viewBox="0 0 16 16" class="p-chip">
+            <circle cx="8" cy="8" r="7.25" class="ring" />
+          </svg>
+          <svg viewBox="0 0 16 16" class="p-chip">
+            <circle cx="8" cy="8" r="7.25" class="ring" />
+          </svg>
+        </span>
+      </div>
+      <div v-if="desktop" class="p-results">
+        <h2>RESULTS</h2>
+        <div class="p-result-row">
+          <span class="p-result-correct">○</span
+          ><span>正解例 1<br /><small>あなた: 正解例 1</small></span
+          ><small>Q1</small>
+        </div>
+        <div class="p-result-row">
+          <span class="p-result-wrong">×</span
+          ><span>正解例 2<br /><small>あなた: 誤答例</small></span
+          ><small>Q2</small>
+        </div>
+        <div class="p-result-row">
+          <span class="p-q">○</span><span>出題中</span><small>Q3</small>
+        </div>
+      </div>
     </div>
 
     <!-- ゲームUI -->
     <div class="p-game">
       <!-- 解答パネル（入力はまだ無効） -->
       <div class="p-panel">
-        <div class="p-meta">残り 3回<span class="p-dim"> / 3</span></div>
-        <div class="p-input-row">
+        <div class="p-meta">
+          {{ desktop ? '解答残り' : '残り' }} 3回<span class="p-dim"> / 3</span>
+        </div>
+        <div v-if="!desktop" class="p-input-row">
           <span class="p-input">解答を入力</span>
           <span class="p-submit">送信</span>
         </div>
@@ -95,22 +138,25 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
             <span class="p-pedestal"></span>
             <span class="p-quiz-button">PUSH</span>
           </template>
-          <span v-if="buttonImage" class="p-reset">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M4 10a8 8 0 1 1 1 8M4 4v6h6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              />
-            </svg>
-          </span>
         </div>
 
-        <span class="p-dimension">
-          <DimensionIcon :key="buttonImage ? '3d' : '2d'" :solid="!!buttonImage" />
+        <span class="p-view-controls">
+          <ButtonTypeToggle
+            v-if="buttonImage"
+            :model-id="buttonSettings.modelId"
+            :display-size="desktop ? 40 : 32"
+            decorative
+          />
+          <span class="p-dimension">
+            <DimensionIcon
+              :key="buttonImage ? '3d' : '2d'"
+              :solid="!!buttonImage"
+              :display-size="desktop ? 56 : 44"
+            />
+          </span>
         </span>
         <!-- BUTTON CHECK トグル -->
+        <span v-if="desktop" class="p-key-hint"><kbd>Space</kbd> でボタンを押す</span>
         <div class="p-toggle-row">
           <span class="p-toggle-label">BUTTON CHECK</span>
           <span class="p-toggle" :class="{ off: !buttonCheckEnabled }"
@@ -124,6 +170,9 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
 </template>
 
 <style scoped>
+.p-sidebar {
+  display: contents;
+}
 /* 親から受けたviewport寸法で実画面と同様にレイアウトし、カード側で均等縮小する */
 .preview {
   display: flex;
@@ -476,28 +525,48 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
   width: 100%;
   height: 100%;
 }
-.p-dimension,
-.p-reset {
+.p-view-controls {
+  --view-control-step: 41px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 0;
+}
+.p-view-controls .button-type-toggle {
   position: absolute;
   left: calc(-1 * var(--icon-hit-offset));
+  bottom: calc(var(--view-control-step) - var(--icon-hit-offset));
+}
+.preview-desktop .p-view-controls .button-type-toggle {
+  --button-type-icon-size: 40px;
+}
+.preview-desktop .p-view-controls {
+  --view-control-step: 53px;
+  left: 4px;
+  bottom: 4px;
+}
+.p-dimension {
+  position: absolute;
+  left: calc(-1 * var(--icon-hit-offset));
+  bottom: calc(-1 * var(--icon-hit-offset));
   width: 44px;
   height: 44px;
   display: grid;
   place-items: center;
   color: var(--color-text-dim);
 }
-.p-dimension {
-  bottom: calc(-1 * var(--icon-hit-offset));
-}
 .p-dimension :deep(svg) {
   transform: translate(var(--icon-hit-offset), calc(-1 * var(--icon-hit-offset)));
 }
-.p-reset {
-  bottom: 5px;
-}
-.p-reset svg {
-  width: 20px;
-  height: 20px;
+.preview-desktop .p-dimension :deep(svg) {
+  --dimension-stroke-width: 1.5714286;
+  width: 56px;
+  height: 56px;
+  transform: translate(
+    calc(var(--icon-hit-offset) + 2.625px),
+    calc(-1 * var(--icon-hit-offset) - 2.625px)
+  );
 }
 .p-toggle.off {
   background: var(--toggle-track);
@@ -513,5 +582,132 @@ const buttonImage = useButtonPreviewImage(threeHost, () => props.buttonSettings)
   right: auto;
   left: calc(0.125 * var(--preview-toggle-unit));
   background: var(--toggle-knob);
+}
+</style>
+
+<style scoped>
+/* カードの縮尺ではなく、元のviewportでPCの代表配置を描画する。 */
+.preview-desktop {
+  --preview-video-width: clamp(
+    640px,
+    calc((var(--preview-height) - 3.5rem) * 13 / 25 * 16 / 9),
+    calc(100% - 480px)
+  );
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--preview-video-width) minmax(0, 1fr);
+  grid-template-rows: 3.5rem auto minmax(16rem, 1fr);
+}
+.preview-desktop .p-header {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+.preview-desktop .p-video {
+  grid-column: 2;
+  grid-row: 2;
+}
+.preview-desktop .p-game {
+  grid-column: 2;
+  grid-row: 3;
+  border-inline: 1px solid var(--color-line);
+  padding: 0.625rem 0.875rem;
+}
+.preview-desktop .p-sidebar {
+  grid-column: 3;
+  grid-row: 2 / 4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 0.875rem;
+  min-width: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--color-line);
+}
+.preview-desktop h2 {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  color: var(--color-text-dim);
+}
+.preview-desktop .p-scoreboard {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border: var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--panel-shadow);
+}
+.preview-desktop .p-progress {
+  font-size: 40px;
+}
+.preview-desktop .p-chips {
+  --preview-chip-unit: 24px;
+  gap: 0.5rem;
+}
+.p-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.p-results h2 {
+  margin: 0.5rem 0 0.375rem;
+}
+.p-result-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-panel);
+  border: var(--panel-border);
+  border-radius: var(--radius-md);
+  font-size: 16px;
+}
+.p-result-row small {
+  font-size: 12px;
+  color: var(--color-text-dim);
+}
+.p-result-row > small {
+  margin-left: auto;
+}
+.p-result-correct {
+  color: var(--color-answer-correct);
+}
+.p-result-wrong {
+  color: var(--color-answer-wrong);
+}
+.preview-desktop .p-panel {
+  align-self: flex-end;
+  min-height: 0;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+.preview-desktop .p-meta {
+  font-size: 16px;
+}
+.preview-desktop .p-quiz-button {
+  font-size: calc(0.9375 * var(--button-unit));
+}
+.preview-desktop .p-three,
+.preview-desktop .p-three.is-round {
+  inset: 0;
+}
+.p-key-hint {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--color-text-dim);
+}
+.p-key-hint kbd {
+  font: inherit;
+  padding: 2px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-panel);
+}
+.preview-desktop .p-toggle-label {
+  font-size: 12px;
 }
 </style>

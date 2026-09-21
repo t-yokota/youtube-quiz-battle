@@ -65,6 +65,10 @@ describe('ThemeSwitcher', () => {
 
   beforeEach(async () => {
     vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    )
+    vi.stubGlobal(
       'ResizeObserver',
       class {
         observe() {}

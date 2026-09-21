@@ -5,6 +5,7 @@ import { logger } from '@/utils/logger'
 export function useButtonPreviewImage(
   host: Ref<HTMLElement | undefined>,
   settings: () => ButtonSettings,
+  desktop: () => boolean = () => false,
 ) {
   const image = ref<string | null>(null)
   let observer: ResizeObserver | undefined
@@ -22,7 +23,7 @@ export function useButtonPreviewImage(
     try {
       const { getButtonPreviewImage } = await import('./buttonPreviewImage')
       if (!mounted || current !== generation) return
-      image.value = getButtonPreviewImage(modelId, width, height)
+      image.value = getButtonPreviewImage(modelId, width, height, desktop())
     } catch (error) {
       if (mounted && current === generation) logger.warn('[ThemePreview] Using 2D fallback:', error)
     }
@@ -35,7 +36,7 @@ export function useButtonPreviewImage(
     }
     void update()
   })
-  watch(() => [settings().renderMode, settings().modelId], update, { flush: 'post' })
+  watch(() => [settings().renderMode, settings().modelId, desktop()], update, { flush: 'post' })
   onBeforeUnmount(() => {
     mounted = false
     generation++

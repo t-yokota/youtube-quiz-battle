@@ -56,7 +56,7 @@ it('2Dでは生成せず、モデル変更とリサイズに追従して2Dに戻
   expect(host.textContent).toContain('data:image/png')
   settings.modelId = 'waseda-style-v1'
   await settle()
-  expect(fake.image).toHaveBeenLastCalledWith('waseda-style-v1', 200, 250)
+  expect(fake.image).toHaveBeenLastCalledWith('waseda-style-v1', 200, 250, false)
   resize()
   await settle()
   expect(fake.image).toHaveBeenCalledTimes(3)

@@ -11,6 +11,7 @@ import { calculateCardGeometry } from './themeSwitcherLayout'
 import ThemePreview from './ThemePreview.vue'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useGameStore } from '@/stores/gameStore'
+import { useDesktopLayout } from '@/composables/useDesktopLayout'
 
 const props = defineProps<{ isOpen: boolean }>()
 
@@ -21,6 +22,7 @@ const emit = defineEmits<{
 const { themes, currentThemeId, setTheme } = useTheme()
 const settingsStore = useSettingsStore()
 const gameStore = useGameStore()
+const isDesktop = useDesktopLayout()
 
 const overlayRef = ref<HTMLElement | null>(null)
 const railRef = ref<HTMLElement | null>(null)
@@ -64,6 +66,7 @@ function dismiss() {
 function updateCardGeometry() {
   const overlayRect = overlayRef.value?.getBoundingClientRect()
   const geometry = calculateCardGeometry({
+    desktop: isDesktop.value,
     viewportWidth:
       overlayRect && overlayRect.width > 0
         ? overlayRect.width
@@ -83,6 +86,7 @@ function updateCardGeometry() {
 function handleViewportResize() {
   updateCardGeometry()
 }
+watch(isDesktop, updateCardGeometry)
 
 function addViewportListeners() {
   if (hasViewportListeners) return
@@ -228,6 +232,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
                 }"
               >
                 <ThemePreview
+                  :desktop="isDesktop"
                   :preview-width="previewWidth"
                   :preview-height="previewHeight"
                   :button-settings="settingsStore.button"
@@ -249,6 +254,7 @@ function pick(theme: ThemeInfo, event: MouseEvent) {
     <div v-if="zoomThemeId" class="zoom-layer" :data-theme="zoomThemeId" :style="zoomStyle">
       <div class="zoom-fit" :style="{ width: previewWidth + 'px', height: previewHeight + 'px' }">
         <ThemePreview
+          :desktop="isDesktop"
           :preview-width="previewWidth"
           :preview-height="previewHeight"
           :button-settings="settingsStore.button"

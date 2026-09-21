@@ -45,6 +45,22 @@ function settingsIconSignature(markup: string, iconClass: string) {
 }
 
 describe('ThemePreview', () => {
+  it('PCでは縮小解答カード・右サイド結果・キーヒントを表示する', async () => {
+    const markup = await renderToString(
+      createSSRApp(ThemePreview, {
+        desktop: true,
+        previewWidth: 1440,
+        previewHeight: 900,
+      }),
+    )
+    const container = document.createElement('div')
+    container.innerHTML = markup
+    expect(container.querySelector('.preview-desktop')).not.toBeNull()
+    expect(container.querySelector('.p-results')?.textContent).toContain('RESULTS')
+    expect(container.querySelector('.p-meta')?.textContent).toContain('解答残り')
+    expect(container.querySelector('.p-input-row')).toBeNull()
+    expect(container.querySelector('.p-key-hint')?.textContent).toContain('Space')
+  })
   it('実画面と同じ設定アイコンを表示する', async () => {
     const [appHeader, themePreview] = await Promise.all([
       renderToString(createSSRApp(AppHeader)),

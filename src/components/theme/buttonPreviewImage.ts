@@ -5,8 +5,13 @@ import { createButtonView } from '@/components/game/button3d/view'
 const images = new Map<string, string>()
 const MAX_IMAGES = 12
 
-export function getButtonPreviewImage(modelId: ButtonModelId, width: number, height: number) {
-  const key = `${modelId}:${width}:${height}:${Math.min(window.devicePixelRatio || 1, 2)}`
+export function getButtonPreviewImage(
+  modelId: ButtonModelId,
+  width: number,
+  height: number,
+  desktop = false,
+) {
+  const key = `${modelId}:${width}:${height}:${desktop}:${Math.min(window.devicePixelRatio || 1, 2)}`
   const cached = images.get(key)
   if (cached) return cached
   const host = document.createElement('div')
@@ -17,6 +22,7 @@ export function getButtonPreviewImage(modelId: ButtonModelId, width: number, hei
   try {
     view = createButtonView(host, {
       modelId,
+      fitInitialRotation: desktop,
       onError(error) {
         throw error
       },

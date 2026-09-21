@@ -5,6 +5,7 @@ const CARD_MAX_WIDTH = 180
 export interface CardGeometryInput {
   viewportWidth: number
   viewportHeight: number
+  desktop?: boolean
 }
 
 export interface CardGeometry {
@@ -18,12 +19,13 @@ export interface CardGeometry {
 export function calculateCardGeometry({
   viewportWidth,
   viewportHeight,
+  desktop = false,
 }: CardGeometryInput): CardGeometry {
   const safeViewportWidth = Math.max(1, viewportWidth)
   const safeViewportHeight = Math.max(1, viewportHeight)
   const minimumWidth = Math.min(CARD_MIN_WIDTH, safeViewportWidth * 0.8)
   const width = Math.min(
-    CARD_MAX_WIDTH,
+    desktop ? 560 : CARD_MAX_WIDTH,
     Math.max(minimumWidth, safeViewportWidth * CARD_VIEWPORT_SCALE),
   )
   const viewportScale = width / safeViewportWidth

@@ -1,6 +1,14 @@
 import { calculateCardGeometry } from '@/components/theme/themeSwitcherLayout'
 
 describe('calculateCardGeometry', () => {
+  it('PCでは横長画面を見比べられる幅で2列に収める', () => {
+    for (const viewportWidth of [1200, 1440, 1920]) {
+      const geometry = calculateCardGeometry({ viewportWidth, viewportHeight: 900, desktop: true })
+      expect(geometry.width).toBeGreaterThan(400)
+      expect(geometry.width * 2 + 64).toBeLessThan(viewportWidth)
+      expect(geometry.width / geometry.height).toBeCloseTo(viewportWidth / 900)
+    }
+  })
   it('viewportを38%へ縮小し、同じ縦横比を維持する', () => {
     const geometry = calculateCardGeometry({ viewportWidth: 390, viewportHeight: 844 })
 
