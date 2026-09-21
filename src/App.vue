@@ -140,6 +140,16 @@ function handleKeyDown(e: KeyboardEvent) {
   quizButton.value?.activate()
 }
 
+async function releasePlayControlFocus(event: MouseEvent) {
+  const control = event.target instanceof Element ? event.target.closest('button') : null
+  if (!control) return
+  // 子のclick.stopより前に操作元を記録し、処理完了後にだけ解除する。
+  // Spaceがアイコン等の再操作になるのを防ぎつつ、押下処理が解答欄へ
+  // 移したフォーカス（特にiOSの同期focus）は奪わない。設定ダイアログは対象外。
+  await nextTick()
+  if (document.activeElement === control) control.blur()
+}
+
 // 開始ゲート（音声許諾 + メディア priming）。READY 到達後に表示し、タップで解除する
 const isGateDismissed = ref(false)
 
@@ -279,6 +289,7 @@ onBeforeUnmount(() => {
     <main
       ref="mainContent"
       class="main-content"
+      @click.capture="releasePlayControlFocus"
       :style="{
         '--desktop-preferred-width': desktopVideoWidth ? `${desktopVideoWidth}px` : undefined,
       }"

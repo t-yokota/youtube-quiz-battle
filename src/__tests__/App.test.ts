@@ -110,6 +110,35 @@ function space() {
     new KeyboardEvent('keydown', { code: 'Space', bubbles: true, cancelable: true }),
   )
 }
+it.each(['.check-toggle', '.display-mode-toggle', '.button-type-toggle'])(
+  '%sの操作後はフォーカスを外し、Spaceを早押しに使える',
+  async (selector) => {
+    host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+    if (selector === '.button-type-toggle') useSettingsStore().setButtonMode('3d')
+    await flush()
+    await vi.dynamicImportSettled()
+    const control = host.querySelector<HTMLButtonElement>(selector)!
+    control.focus()
+    control.click()
+    await flush()
+    expect(document.activeElement).not.toBe(control)
+    document.activeElement!.dispatchEvent(
+      new KeyboardEvent('keydown', { code: 'Space', bubbles: true, cancelable: true }),
+    )
+    await flush()
+    expect(store.currentState).toBe(GameState.TALKING)
+  },
+)
+it('解答入力欄のクリックでは入力フォーカスを維持する', async () => {
+  host.querySelector<HTMLButtonElement>('.start-gate')!.click()
+  store.transitionToState(GameState.ANSWERING)
+  await flush()
+  const input = host.querySelector<HTMLInputElement>('.answer-input')!
+  input.focus()
+  input.click()
+  await flush()
+  expect(document.activeElement).toBe(input)
+})
 it('設定を閉じると設定ボタンではなく早押し操作へフォーカスを戻す', async () => {
   host.querySelector<HTMLButtonElement>('.start-gate')!.click()
   await flush()
@@ -358,6 +387,8 @@ it('リプレイでセッションIDと送信済み件数を更新しtimeoutの�
   useSettingsStore().setDisableSeekbarOverride(false)
   await flush()
   expect(service.logSettingChanged).not.toHaveBeenCalled()
+  // captureと子のclickリスナーが同じ偽時計時刻にならないよう、描画後の操作にする。
+  await vi.advanceTimersByTimeAsync(1)
   host.querySelector<HTMLButtonElement>('.replay-button')!.click()
   await flush()
   expect(store.currentState).toBe(GameState.READY)
@@ -474,12 +505,16 @@ it('iOSではタップ内でフォーカスし、追加の演出待ちなしで�
     await flush()
     const input = host.querySelector<HTMLInputElement>('.answer-input')!
     const focus = vi.spyOn(input, 'focus')
-    space()
+    const button = host.querySelector<HTMLButtonElement>('.quiz-button')!
+    await vi.advanceTimersByTimeAsync(1)
+    button.focus()
+    button.click()
     expect(focus).toHaveBeenCalledWith({ preventScroll: true })
     expect(input.disabled).toBe(false)
     vi.advanceTimersByTime(101)
     await flush()
     expect(store.currentState).toBe(GameState.ANSWERING)
+    expect(document.activeElement).toBe(input)
   } finally {
     agent.mockRestore()
   }
