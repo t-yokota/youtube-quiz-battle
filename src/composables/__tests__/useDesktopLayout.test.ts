@@ -13,7 +13,7 @@ it('フレーム幅とポインター条件の変更に追従し、破棄時に�
   vi.stubGlobal('matchMedia', matchMedia)
   const scope = effectScope()
   const desktop = scope.run(useDesktopLayout)!
-  expect(matchMedia).toHaveBeenCalledWith('(min-width: 960px) and (pointer: fine)')
+  expect(matchMedia).toHaveBeenCalledWith('(min-width: 880px) and (pointer: fine)')
   expect(desktop.value).toBe(false)
   query.matches = true
   listeners.forEach((listener) => listener())

@@ -545,13 +545,17 @@ const handleButtonCheckToggle = () => {
 .quiz-button-container {
   --icon-hit-offset: 9.625px;
   flex: 1;
-  /* iPhone Safari（下部バー表示時）で 1 画面に収まる高さ。トグル行を含む */
-  min-height: 9rem;
+  /* トグルと押下領域を残し、短い画面ではモデルを縮める余地を確保する。 */
+  min-height: max(88px, 7rem);
   display: flex;
   flex-direction: column;
   position: relative;
 }
 
+.quiz-button-container:has(.button-3d) {
+  /* モデルは縮めても、左下の3つの操作領域は重ねない。 */
+  min-height: max(118px, 7rem);
+}
 /* ボタン本体の領域（残り空間の中央にボタンを置く） */
 .button-stage {
   container-type: size;

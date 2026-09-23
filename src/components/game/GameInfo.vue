@@ -131,6 +131,7 @@ function moveChips(delta: number) {
 <style scoped>
 /* スコアボード（テーマトークン化: パネル面） */
 .game-info {
+  container-type: inline-size;
   flex-shrink: 0;
   display: flex;
   justify-content: space-between;
@@ -165,13 +166,13 @@ function moveChips(delta: number) {
 
 /* チップ列 */
 .score-chips {
-  --score-chip-unit: var(--ui-width-unit);
+  --score-chip-unit: clamp(13px, calc(100cqw / 315 * 16), 26px);
   display: flex;
   align-items: center;
   gap: calc(0.3125 * var(--score-chip-unit));
 }
 
-/* ResultChipはResult画面でも共有するため、ゲーム中のチップだけ横幅基準にする */
+/* 左右余白を除いたスコアボードの実幅に追従する。結果一覧のサイズは維持する。 */
 .score-chips :deep(.chip) {
   width: var(--score-chip-unit);
   height: var(--score-chip-unit);

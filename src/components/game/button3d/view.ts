@@ -184,7 +184,8 @@ export function createButtonView(container: HTMLElement, options: Options) {
         // 解答欄展開時は中心が左へ動くため、利用可能幅も連動して小さくなる。
         const fitWidth = Math.max(1, 2 * Math.min(centerX, width - centerX))
         const fitHeight = Math.max(1, 2 * Math.min(centerY, height - centerY))
-        // 上限は画面ごとの初期幅から決める。境界を狭めるたび上限まで縮めない。
+        // 上限は画面の高さから求めた基準幅で決める。自動配置でも境界操作でも、
+        // 横幅を狭めるたびに上限まで縮めない。収まらない場合はfitが縮小する。
         const initialAreaWidth =
           parseFloat(getComputedStyle(container).getPropertyValue('--desktop-initial-width')) ||
           width

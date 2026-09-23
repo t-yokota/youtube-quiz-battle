@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { isIOS } from '@/utils/isIOS'
+import { desktopSizing, needsPortraitLayout } from '@/utils/desktopSizing'
 // YouTube Quiz Battle - メインアプリケーション
 import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
@@ -40,33 +41,42 @@ let disposed = false
 let scrollFrame: number | null = null
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
-const isDesktop = useDesktopLayout()
+const desktopEligible = useDesktopLayout()
+const finePointerQuery = window.matchMedia('(pointer: fine)')
+const hasFinePointer = ref(finePointerQuery.matches)
+const updateFinePointer = () => {
+  hasFinePointer.value = finePointerQuery.matches
+}
+finePointerQuery.addEventListener('change', updateFinePointer)
+const needsPortrait = ref(false)
+const isPortraitFallback = computed(() => hasFinePointer.value && needsPortrait.value)
+const isDesktop = computed(() => desktopEligible.value && !isPortraitFallback.value)
 const desktopVideoWidth = ref<number>()
 const mainContent = ref<HTMLElement>()
 let mainSizeObserver: ResizeObserver | undefined
 onMounted(() => {
   if (!mainContent.value || typeof ResizeObserver === 'undefined') return
   // ヘッダーとsafe-areaを除いた実際の高さを初期動画幅の基準にする。
-  mainSizeObserver = new ResizeObserver(([entry]) => {
-    if (entry) {
-      mainContent.value?.style.setProperty(
-        '--desktop-content-height',
-        `${entry.contentRect.height}px`,
-      )
-      // 手動の動画幅には連動させず、この画面での初期幅をモデル上限の基準にする。
-      const sidebarSpace = entry.contentRect.width < 1200 ? 240 : 480
-      const initialWidth = Math.max(
-        640,
-        Math.min(
-          (((entry.contentRect.height * 13) / 25) * 16) / 9,
-          entry.contentRect.width * 0.6,
-          entry.contentRect.width - sidebarSpace,
-        ),
-      )
-      mainContent.value?.style.setProperty('--desktop-initial-width', `${initialWidth}px`)
+  mainSizeObserver = new ResizeObserver(() => {
+    const main = mainContent.value
+    if (main?.parentElement) {
+      // 代替表示中も外側の幅を使う。中央幅を使うと解除→再適用を繰り返す。
+      const width = main.parentElement.clientWidth
+      const height = main.getBoundingClientRect().height
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+      main.style.setProperty('--desktop-content-height', `${height}px`)
+      const sizing = desktopSizing(width, height, rem)
+      needsPortrait.value = needsPortraitLayout(width, height, rem)
+      mainContent.value?.style.setProperty('--portrait-width', `${height / 2}px`)
+      // 自動・手動ともモデル上限は高さだけから求める。横幅による縮小は、
+      // 実際に領域へ収める必要がある場合だけ3D側のカメラ計算で行う。
+      mainContent.value?.style.setProperty('--desktop-initial-width', `${sizing.modelReference}px`)
+      mainContent.value?.style.setProperty('--desktop-min-video-width', `${sizing.minimum}px`)
+      mainContent.value?.style.setProperty('--desktop-max-video-width', `${sizing.maximum}px`)
     }
   })
   mainSizeObserver.observe(mainContent.value)
+  if (mainContent.value.parentElement) mainSizeObserver.observe(mainContent.value.parentElement)
 })
 const desktopButtonWidth = ref<number>()
 const isPanelExpanded = useAnswerPanelExpansion()
@@ -207,13 +217,13 @@ watch(
 // タッチデバイス判定（初回評価のみ。useOrientationGuard と同じ基準）
 const isTouchDevice = window.matchMedia('(pointer: coarse)').matches
 
-// タッチデバイスの ANSWERING 中は動画領域を畳み、
+// タッチデバイス・PCの縦長代替表示の ANSWERING 中は動画領域を畳み、
 // 解答エリアを画面上部に出してソフトキーボードと共存させる（Task 22-1）。
 // hideVideoPlayerDuringAnswer の実効値に従う（OFF ならキーボードが解答エリアに
 // 重なり得るが、短答想定のため致命的ではない — 2026-07-05 裁定）
 const shouldCollapseForKeyboard = computed(
   () =>
-    isTouchDevice &&
+    (isTouchDevice || isPortraitFallback.value) &&
     gameStore.currentState === GameState.ANSWERING &&
     (gameStore.effectiveSettings?.hideVideoPlayerDuringAnswer ?? false),
 )
@@ -277,6 +287,7 @@ const handleErrorAction = () => {
 onBeforeUnmount(() => {
   disposed = true
   mainSizeObserver?.disconnect()
+  finePointerQuery.removeEventListener('change', updateFinePointer)
   if (scrollFrame !== null) cancelAnimationFrame(scrollFrame)
   window.removeEventListener('keydown', handleKeyDown)
 
@@ -286,9 +297,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="app-container">
-    <!-- PCは終了後も右サイドの結果一覧とプレイレイアウトを維持する。 -->
+    <!-- PC対象では縦長代替表示の終了時もヘッダーを残し、高さの切替判定を安定させる。 -->
     <AppHeader
-      v-show="isDesktop || gameStore.currentState !== GameState.FINISHED"
+      v-show="hasFinePointer || gameStore.currentState !== GameState.FINISHED"
       @open-settings="handleOpenSettings"
     />
 
@@ -302,6 +313,7 @@ onBeforeUnmount(() => {
       }"
       :class="{
         'desktop-layout': isDesktop,
+        'portrait-fallback': isPortraitFallback,
         'mobile-video-moving': shouldCollapseForKeyboard && !isVideoCollapsed,
       }"
     >
@@ -542,6 +554,15 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
+}
+
+/* 高さ不足時は幅:高さ=1:2の縦積みUIを中央へ置く。余白は操作対象にしない。
+   widthだけを変えるため、高さを使う切替判定は自身の表示結果に左右されない。 */
+.main-content.portrait-fallback {
+  width: min(100%, var(--portrait-width));
+  margin-inline: auto;
+  flex-shrink: 1;
+  border-inline: 1px solid var(--color-line);
 }
 
 /* Game UI（wireframe の .game-area 相当） */

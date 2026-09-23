@@ -6,7 +6,7 @@ const width = ref(840)
 const maximum = ref(960)
 const dragging = ref(false)
 const gripTop = ref(0)
-const minimum = 640
+const minimum = ref(640)
 let resizeFactor = 2
 let observer: ResizeObserver | undefined
 let drag: { pointerId: number; startX: number; startWidth: number; side: number } | undefined
@@ -18,10 +18,14 @@ function measure() {
   gripTop.value = lower ? lower.top - bounds.top + lower.height / 2 : bounds.height / 2
   const availableWidth = host.value.parentElement?.clientWidth ?? 1440
   resizeFactor = availableWidth < 1200 ? 1 : 2
-  maximum.value = Math.max(minimum, availableWidth - 240 * resizeFactor)
+  const style = getComputedStyle(host.value.parentElement!)
+  minimum.value = parseFloat(style.getPropertyValue('--desktop-min-video-width')) || 640
+  maximum.value =
+    parseFloat(style.getPropertyValue('--desktop-max-video-width')) ||
+    Math.max(minimum.value, availableWidth - 240 * resizeFactor)
 }
 function resize(value: number) {
-  const next = Math.round(Math.min(maximum.value, Math.max(minimum, value)))
+  const next = Math.min(maximum.value, Math.max(minimum.value, Math.round(value)))
   emit('resize', next)
 }
 function start(event: PointerEvent, side: number) {
@@ -46,7 +50,7 @@ function keydown(event: KeyboardEvent, side: number) {
   const delta = event.shiftKey ? 40 : 10
   if (event.key === 'ArrowRight') resize(width.value + delta * side * resizeFactor)
   else if (event.key === 'ArrowLeft') resize(width.value - delta * side * resizeFactor)
-  else if (event.key === 'Home') resize(minimum)
+  else if (event.key === 'Home') resize(minimum.value)
   else if (event.key === 'End') resize(maximum.value)
   else return
   event.preventDefault()

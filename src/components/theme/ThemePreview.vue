@@ -258,6 +258,7 @@ const buttonImage = useButtonPreviewImage(
 
 /* スコアボード */
 .p-scoreboard {
+  container-type: inline-size;
   flex-shrink: 0;
   display: flex;
   justify-content: space-between;
@@ -288,7 +289,7 @@ const buttonImage = useButtonPreviewImage(
 }
 
 .p-chips {
-  --preview-chip-unit: var(--ui-width-unit);
+  --preview-chip-unit: clamp(13px, calc(100cqw / 315 * 16), 26px);
   display: flex;
   align-items: center;
   gap: calc(0.3125 * var(--preview-chip-unit));
@@ -415,7 +416,7 @@ const buttonImage = useButtonPreviewImage(
 .p-button-container {
   --icon-hit-offset: 9.625px;
   flex: 1;
-  min-height: 9rem;
+  min-height: max(88px, 7rem);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -592,10 +593,11 @@ const buttonImage = useButtonPreviewImage(
 /* カードの縮尺ではなく、元のviewportでPCの代表配置を描画する。 */
 .preview-desktop {
   --preview-sidebar-space: 480px;
+  --preview-height-limit: max(480px, calc((var(--preview-height) - 19.5rem - 1px) * 16 / 9));
   --preview-video-width: clamp(
-    640px,
+    min(640px, var(--preview-height-limit)),
     min(60%, calc((var(--preview-height) - 3.5rem) * 13 / 25 * 16 / 9)),
-    calc(100% - var(--preview-sidebar-space))
+    min(calc(100% - var(--preview-sidebar-space)), var(--preview-height-limit))
   );
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--preview-video-width) minmax(0, 1fr);

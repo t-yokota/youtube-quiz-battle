@@ -109,7 +109,7 @@ describe('ThemePreview', () => {
 
     expect(buttonContainer?.querySelector(':scope > .p-button-area')).not.toBeNull()
     expect(buttonContainer?.querySelector(':scope > .p-toggle-row')).not.toBeNull()
-    expect(themePreviewSource).toMatch(/\.p-button-container\s*{[^}]*min-height:\s*9rem;/s)
+    expect(themePreviewSource).toMatch(/\.p-button-container\s*{[^}]*min-height:\s*max\(88px, 7rem\);/s)
     expect(themePreviewSource).toContain('container-type: size')
     expect(themePreviewSource).toContain('width: calc(12.25 * var(--button-unit))')
     expect(themePreviewSource).toContain('width: calc(9.375 * var(--button-unit))')

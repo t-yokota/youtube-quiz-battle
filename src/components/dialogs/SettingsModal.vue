@@ -594,7 +594,7 @@ useModalLayer(overlayRef, () => props.isOpen, { label: '設定', priority: 1000,
 
 /* プレイ画面と同じ条件で、PCの設定を右端のドロワーにする。
    Teleport先はbodyなので、祖先の.desktop-layoutには依存しない。 */
-@media (min-width: 960px) and (pointer: fine) {
+@media (min-width: 880px) and (pointer: fine) {
   .modal-overlay {
     align-items: stretch;
     justify-content: flex-end;

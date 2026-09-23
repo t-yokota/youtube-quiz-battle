@@ -193,11 +193,11 @@ describe('実画面のレスポンシブスケール', () => {
     const toggleState = selectorBlock(themePreview, '.p-toggle-state')
     const toggleKnob = selectorBlock(themePreview, '.p-toggle-knob')
 
-    expect(chips).toContain('--preview-chip-unit: var(--ui-width-unit)')
+    expect(chips).toContain('--preview-chip-unit: clamp(13px, calc(100cqw / 315 * 16), 26px)')
     expect(chips).toContain('gap: calc(0.3125 * var(--preview-chip-unit))')
     expect(chip).toContain('width: var(--preview-chip-unit)')
     expect(chip).toContain('height: var(--preview-chip-unit)')
-    expect(buttonContainer).toContain('min-height: 9rem')
+    expect(buttonContainer).toContain('min-height: max(88px, 7rem)')
     expect(pedestal).toContain('width: calc(12.25 * var(--button-unit))')
     expect(pedestal).toContain('height: calc(12.25 * var(--button-unit))')
     expect(quizButton).toContain('width: calc(9.375 * var(--button-unit))')
@@ -289,13 +289,14 @@ describe('実画面のレスポンシブスケール', () => {
     expect(selectorBlock(quizButton, '.quiz-button')).toContain('height: calc(9.375 * var(--button-unit))')
   })
 
-  it('ゲーム中のscore-chipsは横幅基準のサイズを維持する', () => {
+  it('ゲーム中のscore-chipsはスコアボードの実幅に追従する', () => {
     const scoreChipsRule = selectorBlock(gameInfo, '.score-chips')
     const chipRule = selectorBlock(gameInfo, '.score-chips :deep(.chip)')
     const navRule = selectorBlock(gameInfo, '.chips-nav')
     const navIconRule = selectorBlock(gameInfo, '.chips-nav svg')
 
-    expect(scoreChipsRule).toContain('--score-chip-unit: var(--ui-width-unit)')
+    expect(selectorBlock(gameInfo, '.game-info')).toContain('container-type: inline-size')
+    expect(scoreChipsRule).toContain('--score-chip-unit: clamp(13px, calc(100cqw / 315 * 16), 26px)')
     expect(scoreChipsRule).toContain('gap: calc(0.3125 * var(--score-chip-unit))')
     expect(chipRule).toContain('width: var(--score-chip-unit)')
     expect(chipRule).toContain('height: var(--score-chip-unit)')

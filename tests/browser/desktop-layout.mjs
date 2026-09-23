@@ -293,9 +293,20 @@ try {
           .locator('.main-content')
           .evaluate((el) => el.getBoundingClientRect().height)
         const idealWidth = (((availableHeight * 13) / 25) * 16) / 9
-        const expectedVideoWidth = Math.max(640, Math.min(idealWidth, width * 0.6, width - 480))
+        const rem = await page.evaluate(() =>
+          parseFloat(getComputedStyle(document.documentElement).fontSize),
+        )
+        const maximum = Math.max(
+          480,
+          Math.min(width - 480, ((availableHeight - 16 * rem - 1) * 16) / 9),
+        )
+        const minimum = Math.min(640, maximum)
+        const expectedVideoWidth = Math.min(
+          maximum,
+          Math.max(minimum, Math.min(idealWidth, width * 0.6)),
+        )
         assert.ok(Math.abs(compact.video.width - expectedVideoWidth) < 0.1)
-        if (idealWidth >= 640 && idealWidth <= Math.min(width * 0.6, width - 480)) {
+        if (idealWidth >= minimum && idealWidth <= Math.min(width * 0.6, maximum)) {
           const lower = await page.locator('.game-ui').boundingBox()
           assert.ok(
             Math.abs(compact.video.height / lower.height - 13 / 12) < 0.01,
@@ -411,7 +422,7 @@ try {
         assert.ok(Math.max(...gaps) - Math.min(...gaps) < 2, `Uneven expanded gaps: ${gaps}`)
         assert.ok(expanded.input.bottom <= expanded.panel.bottom)
         assert.equal(expanded.focus, 'answer-input')
-        if (height >= 720) assert.equal(expanded.scroll, 0)
+        if (height >= 600) assert.equal(expanded.scroll, 0)
         const toggle = page.locator('.display-mode-toggle')
         const toggleBox = await toggle.boundingBox()
         assert.equal(toggleBox.width, 44)
@@ -463,7 +474,7 @@ try {
     const { useGameStore } = await import('/src/stores/gameStore.ts')
     useGameStore().answerResult = null
   })
-  for (const width of [1199, 1100, 960]) {
+  for (const width of [1199, 1100, 960, 932, 880]) {
     await page.setViewportSize({ width, height: 900 })
     await settle()
     assert.equal(await page.locator('.score-sidebar').count(), 1)
@@ -475,7 +486,7 @@ try {
     assert.ok(sidebar.width >= 240 && Math.abs(sidebar.x + sidebar.width - width) < 1)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width)
   }
-  await page.setViewportSize({ width: 959, height: 900 })
+  await page.setViewportSize({ width: 879, height: 900 })
   await settle()
   assert.equal(await page.locator('.score-sidebar').count(), 0)
   assert.equal(await page.locator('.answer-input').count(), 1)
@@ -484,13 +495,13 @@ try {
   assert.equal(await page.locator('.score-sidebar').count(), 1)
   await setState('QUESTIONING')
   // Settings drawer geometry, scrolling, and keyboard dismissal.
-  for (const width of [1440, 1200, 1199, 960, 959]) {
+  for (const width of [1440, 1200, 1199, 960, 880, 879]) {
     await page.setViewportSize({ width, height: 600 })
     await page.getByRole('button', { name: '設定を開く' }).click()
     await settle()
     const dialog = page.getByRole('dialog', { name: '設定', exact: true })
     const box = await dialog.locator('.modal-container').boundingBox()
-    if (width >= 960) {
+    if (width >= 880) {
       assert.ok(
         Math.abs(box.x + box.width - width) < 1,
         'Desktop settings attach to the right edge',
@@ -569,8 +580,9 @@ try {
   await page.mouse.up()
   await settle()
   const resized = (await measure()).video
+  const maximumWidth = Number(await right.getAttribute('aria-valuemax'))
   assert.ok(
-    Math.abs(resized.width - Math.min(original.width + 60, 960)) < 1,
+    Math.abs(resized.width - Math.min(original.width + 60, maximumWidth)) < 1,
     'Dragging changes width by twice the movement within the side-band limit',
   )
   assert.ok(Math.abs(resized.x + resized.width / 2 - 720) < 1, 'Video must stay centered')
@@ -585,7 +597,7 @@ try {
   )
   await right.press('End')
   await settle()
-  assert.equal((await measure()).video.width, 960)
+  assert.ok(Math.abs((await measure()).video.width - maximumWidth) < 1)
   assert.ok(
     await page.locator('.score-progress').evaluate((el) => el.scrollWidth <= el.clientWidth),
     'Sidebar must fit at minimum width',
@@ -613,6 +625,29 @@ try {
       await settle()
     }
   }
+  // 手動幅を維持したまま外側だけ狭めても、モデルの上限を縮めない。
+  for (const model of ['waseda-style-v1', 'simple-round-v1']) {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.evaluate(async (model) => {
+      const { useSettingsStore } = await import('/src/stores/settingsStore.ts')
+      useSettingsStore().setButtonModel(model)
+    }, model)
+    await settle()
+    const readSize = () => page.locator('.game-ui').evaluate((el) => ({
+      width: el.getBoundingClientRect().width,
+      model: parseFloat(getComputedStyle(el).getPropertyValue('--desktop-button-width')),
+      initial: parseFloat(getComputedStyle(el).getPropertyValue('--desktop-initial-width')),
+    }))
+    const before = await readSize()
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await settle()
+    const after = await readSize()
+    assert.equal(after.width, before.width, 'Central width stays fixed')
+    assert.equal(after.initial, before.initial, 'Manual layout retains the model reference width')
+    assert.ok(Math.abs(after.model - before.model) < 0.2, 'Model stays the same size')
+  }
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await settle()
   await setState('FINISHED')
   await settle()
   assert.equal(await page.locator('.result-ui').count(), 0)
@@ -643,7 +678,7 @@ try {
   assert.ok(Math.abs(parseFloat(replayStyle[0]) - rem * 0.5) < 0.01)
   assert.ok(Math.abs(parseFloat(replayStyle[1]) - rem * 0.875) < 0.01)
   assert.equal(replayStyle[2], '16px')
-  await page.setViewportSize({ width: 959, height: 900 })
+  await page.setViewportSize({ width: 879, height: 900 })
   await settle()
   assert.ok(await page.locator('.result-ui').isVisible(), 'Mobile keeps its result screen')
   assert.equal(await page.locator('.replay-card').count(), 0)
@@ -654,6 +689,82 @@ try {
   await settle()
   assert.equal(await page.locator('.replay-card').count(), 0)
   assert.equal(await page.locator('.guide-message').textContent(), 'ボタンを押してクイズを開始')
+  // 境界を触らずブラウザ幅だけを狭める経路も、モデル上限を縮めない。
+  for (const model of ['waseda-style-v1', 'simple-round-v1']) {
+    await page.setViewportSize({ width: 1920, height: 1065 })
+    await page.reload()
+    await page.getByText('タップしてはじめる', { exact: true }).click()
+    await page.evaluate(async (model) => {
+      const { useSettingsStore } = await import('/src/stores/settingsStore.ts')
+      useSettingsStore().setButtonMode('3d')
+      useSettingsStore().setButtonModel(model)
+      // ヘッダーのrem変化を切り離し、横幅だけの影響を検証する。
+      Object.assign(document.querySelector('.main-content').style, { height: '980px', flex: 'none' })
+    }, model)
+    let previous = 0
+    let reference
+    for (const width of [1920, 1440, 1280, 1200, 1100, 968, 960]) {
+      await page.setViewportSize({ width, height: 1065 })
+      await settle()
+      const size = await page.locator('.game-ui').evaluate((el) => ({
+        model: parseFloat(getComputedStyle(el).getPropertyValue('--desktop-button-width')),
+        reference: parseFloat(getComputedStyle(el).getPropertyValue('--desktop-initial-width')),
+      }))
+      reference ??= size.reference
+      assert.equal(size.reference, reference, 'Automatic layout retains the height-based cap')
+      assert.ok(size.model + 0.2 >= previous, `${model}: window narrowing must not lower the cap`)
+      previous = size.model
+    }
+  }
+  // PCの最小構成が縦に収まらない場合は、ドラッグ不可の縦長配置へ切り替える。
+  await page.reload()
+  await page.getByText('タップしてはじめる', { exact: true }).click()
+  for (const [width, height] of [[1366, 500], [1024, 480], [960, 500], [880, 500], [879, 770], [800, 600], [600, 600]]) {
+    await page.setViewportSize({ width, height })
+    for (const model of ['2d', 'simple-round-v1', 'waseda-style-v1']) {
+      await page.evaluate(async (model) => {
+        const { useSettingsStore } = await import('/src/stores/settingsStore.ts')
+        const settings = useSettingsStore()
+        settings.setButtonMode(model === '2d' ? '2d' : '3d')
+        if (model !== '2d') settings.setButtonModel(model)
+      }, model)
+      for (const state of ['QUESTIONING', 'ANSWERING']) {
+        await setState(state)
+        await settle()
+        assert.equal(await page.locator('.portrait-fallback').count(), 1)
+        assert.equal(await page.locator('.desktop-resize-handle').count(), 0)
+        const bounds = await page.locator('.main-content').evaluate((el) => ({
+          width: el.getBoundingClientRect().width,
+          height: el.getBoundingClientRect().height,
+          overflow: el.scrollHeight - el.clientHeight,
+          horizontal: el.scrollWidth - el.clientWidth,
+        }))
+        assert.ok(Math.abs(bounds.width * 2 - bounds.height) < 1)
+        assert.ok(bounds.overflow <= 1, JSON.stringify({ width, height, model, state, bounds }))
+        assert.equal(bounds.horizontal, 0)
+      }
+    }
+  }
+  await page.getByRole('button', { name: '設定を開く' }).click()
+  await settle()
+  const compactSettings = page.getByRole('dialog', { name: '設定', exact: true })
+  assert.ok(await compactSettings.locator('.modal-content').evaluate((el) => {
+    el.scrollTop = 100
+    return el.scrollTop > 0
+  }), 'Settings retain necessary scrolling')
+  await page.getByRole('button', { name: '設定を閉じる' }).click()
+  await setState('FINISHED')
+  await settle()
+  assert.equal(await page.locator('.portrait-fallback').count(), 1)
+  assert.ok(await page.locator('.result-ui').isVisible())
+  await page.setViewportSize({ width: 1366, height: 700 })
+  await settle()
+  assert.equal(await page.locator('.portrait-fallback').count(), 0)
+  assert.equal(await page.locator('.desktop-resize-handle').count(), 2)
+  await page.setViewportSize({ width: 500, height: 900 })
+  await settle()
+  assert.equal(await page.locator('.portrait-fallback').count(), 0)
+  assert.equal(await page.locator('.desktop-layout').count(), 0)
   await page.close()
 } finally {
   await browser.close()

@@ -16,7 +16,7 @@
 }
 
 /* PC専用。判定はuseDesktopLayoutと揃え、スマホや狭いiframeは従来の配置にする。 */
-@media (min-width: 960px) and (pointer: fine) {
+@media (min-width: 880px) and (pointer: fine) {
   .main-content.desktop-layout {
     /* ヘッダー下を動画13:UI12に分け、動画の16:9から初期横幅を求める。 */
     --desktop-auto-width: min(
@@ -26,9 +26,9 @@
     display: grid;
     --desktop-sidebar-space: 480px;
     --desktop-video-width: clamp(
-      640px,
+      var(--desktop-min-video-width, 640px),
       var(--desktop-preferred-width, var(--desktop-auto-width)),
-      calc(100% - var(--desktop-sidebar-space))
+      var(--desktop-max-video-width, calc(100% - var(--desktop-sidebar-space)))
     );
     grid-template-columns: minmax(0, 1fr) var(--desktop-video-width) minmax(0, 1fr);
     grid-template-rows: auto minmax(16rem, 1fr);
@@ -328,7 +328,7 @@
 }
 
 /* スマホ配置へ切り替える前に、左の予備領域だけを畳む。列番号は維持する。 */
-@media (min-width: 960px) and (width < 1200px) and (pointer: fine) {
+@media (min-width: 880px) and (width < 1200px) and (pointer: fine) {
   .main-content.desktop-layout {
     --desktop-sidebar-space: 240px;
     grid-template-columns: 0 var(--desktop-video-width) minmax(240px, 1fr);
