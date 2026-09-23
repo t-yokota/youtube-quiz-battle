@@ -90,10 +90,17 @@ h2 {
   margin-bottom: 0.875rem;
 }
 .score-progress {
-  padding: clamp(0.5rem, 5cqw, 1.125rem);
+  --card-padding: clamp(0.5rem, 5cqw, 1.125rem);
+  padding: var(--card-padding);
   min-width: 0;
   border: var(--panel-border);
-  border-radius: var(--radius-lg);
+  /* 通常幅ではテーマのRを保ち、余白が減った分だけ角丸も小さくする。
+     共有トークンは変更せず、狭いサイドカードだけに適用する。 */
+  border-radius: clamp(
+    calc(var(--radius-lg) * 0.5),
+    calc(var(--radius-lg) + var(--card-padding) - 1.125rem),
+    var(--radius-lg)
+  );
   background: var(--surface-panel);
   box-shadow: var(--panel-shadow);
 }
