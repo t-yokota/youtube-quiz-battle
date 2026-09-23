@@ -134,14 +134,18 @@ function basePoint(host: HTMLElement, onBase = true) {
   const targets = box ? [box] : root.children.filter((child) => child instanceof THREE.Mesh)
   scene.updateMatrixWorld(true)
   const ray = new THREE.Raycaster()
-  for (let y = 4; y < host.clientHeight; y += 4) {
-    for (let x = 4; x < host.clientWidth; x += 4) {
-      ray.setFromCamera(
-        new THREE.Vector2((x / host.clientWidth) * 2 - 1, 1 - (y / host.clientHeight) * 2),
-        camera,
-      )
-      const first = ray.intersectObject(root, true)[0]
-      if (first && targets.includes(first.object) === onBase) return [x, y] as const
+  // 全画素を細かく走査すると、coverage付きのCIでは複雑な箱型への
+  // raycastがタイムアウトを招く。まず粗く探し、細い領域だけ再探索する。
+  for (const step of [16, 4]) {
+    for (let y = step; y < host.clientHeight; y += step) {
+      for (let x = step; x < host.clientWidth; x += step) {
+        ray.setFromCamera(
+          new THREE.Vector2((x / host.clientWidth) * 2 - 1, 1 - (y / host.clientHeight) * 2),
+          camera,
+        )
+        const first = ray.intersectObject(root, true)[0]
+        if (first && targets.includes(first.object) === onBase) return [x, y] as const
+      }
     }
   }
   throw new Error('Visible target not found')
