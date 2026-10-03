@@ -262,7 +262,7 @@ describe('Single-Shot Guard', () => {
     vi.useRealTimers()
   })
 
-  it('startTime を 2 回通過してもスキップ済みとして WAITING になる（disableSeekbar=false）', () => {
+  it('startTime を 2 回通過してもスキップ済みとして TALKING になる（disableSeekbar=false）', () => {
     const { gm, store } = makeGameManager(makeQuizData({ disableSeekbar: false }))
 
     // Q1 通常再生: start(10) と reveal(20) を消費 → REVEALING
@@ -274,12 +274,13 @@ describe('Single-Shot Guard', () => {
     gm.updateVideoTime(9.0)
     expect(store.currentState).toBe(GameState.TALKING)
 
-    // startTime(10) を再通過: consumed.start=true → WAITING（スキップ）
+    // startTime(10) を再通過: consumed.start=true → TALKING（スキップ、案内表示）
     simulatePlayback(gm, 10.1, 9.0)
-    expect(store.currentState).toBe(GameState.WAITING)
+    expect(store.currentState).toBe(GameState.TALKING)
+    expect(store.guideText).toBe('次の問題をお待ちください')
   })
 
-  it('revealTime を 2 回通過すると REVEALING に遷移する（副作用なし）', () => {
+  it('revealTime を 2 回通過しても案内表示の TALKING を維持する（副作用なし）', () => {
     const { gm, store } = makeGameManager(makeQuizData({ disableSeekbar: false }))
 
     // Q1 通常再生: start/reveal 消費
@@ -289,9 +290,10 @@ describe('Single-Shot Guard', () => {
     // 後方シーク (prev=20.1 が Q1区間内 → consumed 維持) → TALKING（シーク先が問題区間外）
     gm.updateVideoTime(9.0)
 
-    // Q1 消費済みの状態で revealTime を再通過 → 副作用なしで REVEALING へ
+    // Q1 消費済みの状態で revealTime を再通過 → 残り回数を再表示せず TALKING を維持
     simulatePlayback(gm, 20.1, 9.0)
-    expect(store.currentState).toBe(GameState.REVEALING)
+    expect(store.currentState).toBe(GameState.TALKING)
+    expect(store.gamePanelMode).toBe('guide')
   })
 
   it('前方シークで飛ばした問題がスキップとしてresultsに記録される（disableSeekbar=false）', () => {

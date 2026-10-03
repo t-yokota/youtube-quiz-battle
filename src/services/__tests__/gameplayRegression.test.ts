@@ -341,6 +341,33 @@ describe('ゲーム進行の境界', () => {
     expect(store.currentState).toBe(GameState.READY)
     expect(store.results).toEqual([])
   })
+  it('シークで飛ばした問題の正解発表では残り回数を表示しない', () => {
+    const { store, tick, advanceTo } = setup({ disableSeekbar: false })
+    advanceTo(5)
+    tick(12)
+    expect(store.currentState).toBe(GameState.TALKING)
+    for (let t = 12.5; t <= 26; t += 0.5) {
+      tick(t)
+      expect(store.gamePanelMode).toBe('guide')
+      expect(store.guideText).toBe('次の問題をお待ちください')
+    }
+    for (let t = 26.5; t <= 31; t += 0.5) tick(t)
+    expect(store.currentState).toBe(GameState.QUESTIONING)
+    expect(store.gamePanelMode).toBe('answer')
+  })
+  it('飛ばした問題へ後方シークして出題から再生し直しても残り回数を表示しない', () => {
+    const { store, tick, advanceTo } = setup({ disableSeekbar: false })
+    advanceTo(5)
+    tick(12)
+    for (let t = 12.5; t <= 21; t += 0.5) tick(t)
+    tick(5)
+    for (let t = 5.5; t <= 26; t += 0.5) {
+      tick(t)
+      expect(store.gamePanelMode).toBe('guide')
+      expect(store.guideText).toBe('次の問題をお待ちください')
+    }
+    expect(store.results).toHaveLength(1)
+  })
   it('前方シークの後続問題へ現在問の試行情報をコピーしない', () => {
     const { store, advanceTo, tick } = setup({ disableSeekbar: false })
     advanceTo(11)

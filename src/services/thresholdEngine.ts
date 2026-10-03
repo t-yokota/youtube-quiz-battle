@@ -184,8 +184,8 @@ export class ThresholdEngine {
       } else {
         // 消費済み：不参加、スキップとして記録
         this.recordSkippedQuestion(question.index, true)
-        // 副作用なしで WAITING 状態へ遷移（スキップ済み問題）
-        this.gameStore.transitionToState(GameState.WAITING)
+        // 副作用なしで TALKING 状態へ遷移（スキップ済み問題は残り回数を出さず案内表示にする）
+        this.gameStore.transitionToState(GameState.TALKING)
         logger.log('[ThresholdEngine] Skipped question (already consumed):', question.index)
       }
     }
@@ -244,6 +244,9 @@ export class ThresholdEngine {
       if (!c.reveal) {
         c.reveal = true
         this.onReveal(question) // 副作用あり：正解表示、REVEALING状態へ
+      } else if (this.gameStore.currentState === GameState.TALKING) {
+        // 消費済みで案内表示中の問題は、正解発表で残り回数を再表示せず TALKING を維持する
+        logger.log('[ThresholdEngine] Skipped reveal of seek-consumed question:', question.index)
       } else {
         // 副作用なしで REVEALING 状態へ遷移（既に消費済み）
         this.gameStore.transitionToState(GameState.REVEALING)

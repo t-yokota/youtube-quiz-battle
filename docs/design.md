@@ -381,12 +381,13 @@ interface OthersAnsweringPeriod {
 
 1. `startTime`:
    - consumed.start=false → onStart()実行 + QUESTIONING状態へ
-   - consumed.start=true → WAITING状態へ（不参加）
+   - consumed.start=true → TALKING状態へ（不参加。残り回数を出さず「次の問題をお待ちください」を表示）
 2. `othersAnsweringPeriods[i].start`: WAITING状態へ
 3. `othersAnsweringPeriods[i].end`: QUESTIONING状態へ復帰
 4. `revealTime`:
    - consumed.reveal=false → onReveal()実行 + REVEALING状態へ
    - consumed.reveal=true → REVEALING状態へ（既に表示済み）
+   - ただしTALKING中（シークで飛ばした・再通過した消費済みの問題）→ TALKINGを維持（正解発表で残り回数を再表示しない）
 5. `endTime`:
    - consumed.end=false → onEnd()実行 + TALKING/FINISHED状態へ
    - consumed.end=true → TALKING状態へ（既に終了済み）
@@ -522,7 +523,7 @@ function applyThresholds(prev: number, curr: number, q: QuizQuestion) {
     } else {
       // 消費済み：不参加、スキップとして記録
       recordSkippedQuestion(q.index, true)
-      transitionTo(GAME_STATE.WAITING)
+      transitionTo(GAME_STATE.TALKING)  // 案内表示のまま
     }
   }
 
@@ -533,6 +534,8 @@ function applyThresholds(prev: number, curr: number, q: QuizQuestion) {
     if (!c.reveal) {
       c.reveal = true
       onReveal(q)  // 副作用あり：未確定結果の確定記録 + REVEALING状態へ
+    } else if (currentState === GAME_STATE.TALKING) {
+      // 消費済みで案内表示中の問題：TALKINGを維持
     } else {
       transitionTo(GAME_STATE.REVEALING)  // 消費済み：既に表示済み
     }
@@ -694,10 +697,10 @@ flowchart TD
     subgraph WindowScope["Loop"]
         direction TB
         ThresholdCheck["各問題の閾値を時間順にチェック"]
-        ThresholdCheck --> StartCheck["[start閾値]<br>未消費<br>→consumed.start=true, onStart(), QUESTIONING<br>消費済<br>→recordSkippedQuestion + WAITING（不参加）"]
+        ThresholdCheck --> StartCheck["[start閾値]<br>未消費<br>→consumed.start=true, onStart(), QUESTIONING<br>消費済<br>→recordSkippedQuestion + TALKING（不参加）"]
         StartCheck --> OthersStart["[othersAnsweringPeriods開始閾値]<br>→WAITING状態へ"]
         OthersStart --> OthersEnd["[othersAnsweringPeriods終了閾値]<br>→QUESTIONING状態へ復帰"]
-        OthersEnd --> RevealCheck["[reveal閾値]<br>未消費<br>→consumed.reveal=true, onReveal()<br>(未確定結果を確定記録) + REVEALING<br>消費済<br>→REVEALING（既に表示済）"]
+        OthersEnd --> RevealCheck["[reveal閾値]<br>未消費<br>→consumed.reveal=true, onReveal()<br>(未確定結果を確定記録) + REVEALING<br>消費済<br>→REVEALING（既に表示済）<br>TALKING中（消費済みで案内表示中）<br>→TALKINGを維持"]
         RevealCheck --> EndCheck["[end閾値]<br>未消費<br>→consumed.end=true, onEnd(), TALKING/FINISHED<br>消費済<br>→全問消費済みならFINISHED、<br>それ以外はTALKING"]
     end
 
