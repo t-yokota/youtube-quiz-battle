@@ -3,7 +3,7 @@
   "quizTitle": "QuizBattleDemo",
   "settings": {
     "maxAttempts": 3,
-    "answerTimeLimit": 10,
+    "answerTimeLimit": 15,
     "disableSeekbar": false,
     "jumpToRevealPeriod": false,
     "hideVideoPlayerDuringAnswer": true,
@@ -14,42 +14,61 @@
     {
       "questionNumber": 1,
       "questionText": "「あかい」「まるい」「おおきい」「うまい」の頭文字をとって名付けられた、福岡の特産であるイチゴの品種は何でしょう？",
-      "answers": ["あまおう"],
+      "answers": [
+        "あまおう"
+      ],
       "startTime": 4.01,
       "revealTime": 18.78,
-      "endTime": 20.3
+      "endTime": 20.3,
+      "othersAnsweringPeriods": []
     },
     {
       "questionNumber": 2,
       "questionText": "特に粒の大きいものは「大納言」と呼ばれる、マメ科の植物は何でしょう？",
-      "answers": ["小豆"],
+      "answers": [
+        "小豆",
+        "あずき"
+      ],
       "startTime": 21.8,
       "revealTime": 33.93,
-      "endTime": 35.45
+      "endTime": 35.45,
+      "othersAnsweringPeriods": []
     },
     {
       "questionNumber": 3,
       "questionText": "英語で「花びら」を表す言葉が由来となっている、炭酸飲料のペットボトルの底にデザインされている加工を何というでしょう？",
-      "answers": ["ペタロイド"],
+      "answers": [
+        "ペタロイド"
+      ],
       "startTime": 36.95,
       "revealTime": 52.61,
-      "endTime": 54.13
+      "endTime": 54.13,
+      "othersAnsweringPeriods": []
     },
     {
       "questionNumber": 4,
       "questionText": "ボウリングで「パーフェクトゲーム」を達成したとき、スコアは何点でしょう？",
-      "answers": ["300"],
+      "answers": [
+        "300",
+        "さんびゃく",
+        "三百"
+      ],
       "startTime": 55.63,
       "revealTime": 67.5,
-      "endTime": 69.01
+      "endTime": 69.01,
+      "othersAnsweringPeriods": []
     },
     {
       "questionNumber": 5,
       "questionText": "「どっどど　どどうど　どどうど　どどう」という書き出しで始まる、宮沢賢治の童話は何でしょう？",
-      "answers": ["風の又三郎"],
+      "answers": [
+        "風の又三郎",
+        "かぜのまたさぶろう"
+      ],
       "startTime": 70.51,
       "revealTime": 84.39,
-      "endTime": 86.0
+      "endTime": 86,
+      "othersAnsweringPeriods": []
     }
   ]
 }
