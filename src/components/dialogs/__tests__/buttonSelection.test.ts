@@ -21,6 +21,11 @@ it('表示方式→3Dタイプの階層を表示し、プレイ中も表示設�
   expect(mode.closest('section')!.lastElementChild!.textContent).toBe(
     '早押しボタンの見た目を切り替えます',
   )
+  expect(mode.value).toBe('3d')
+  expect(host.querySelector<HTMLSelectElement>('#button-model')!.value).toBe('simple-round-v1')
+  mode.value = '2d'
+  mode.dispatchEvent(new Event('change'))
+  await nextTick()
   expect(host.querySelector('#button-model')).toBeNull()
   mode.value = '3d'
   mode.dispatchEvent(new Event('change'))

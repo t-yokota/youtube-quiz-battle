@@ -35,8 +35,8 @@ async function settle() {
   await vi.dynamicImportSettled()
   await nextTick()
 }
-function mount() {
-  const settings = reactive({ ...defaultButton })
+function mount(renderMode: '2d' | '3d' = defaultButton.renderMode) {
+  const settings = reactive({ ...defaultButton, renderMode })
   app = createApp({
     setup() {
       const element = ref<HTMLElement>()
@@ -48,7 +48,7 @@ function mount() {
   return settings
 }
 it('2Dでは生成せず、モデル変更とリサイズに追従して2Dに戻すと画像を消す', async () => {
-  const settings = mount()
+  const settings = mount('2d')
   await settle()
   expect(fake.image).not.toHaveBeenCalled()
   settings.renderMode = '3d'

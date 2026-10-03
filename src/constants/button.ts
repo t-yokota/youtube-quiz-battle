@@ -8,7 +8,7 @@ export interface ButtonSettings {
 }
 export const defaultButton: Readonly<ButtonSettings> = Object.freeze({
   schemaVersion: 1,
-  renderMode: '2d',
+  renderMode: '3d',
   modelId: 'simple-round-v1',
   appearancePresetId: 'original-v1',
 })

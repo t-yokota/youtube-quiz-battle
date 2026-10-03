@@ -149,7 +149,7 @@ it('設定を閉じると設定ボタンではなく早押し操作へフォー�
   await flush()
   document.querySelector<HTMLButtonElement>('[aria-label="設定を閉じる"]')!.click()
   await flush()
-  expect(document.activeElement).toBe(host.querySelector('.quiz-button'))
+  expect(document.activeElement).toBe(host.querySelector('.button-hit'))
 })
 it('動画非表示の解答中はプレイヤーを保持して解答中表示に置き換える', async () => {
   const player = host.querySelector('#youtube-player-element')

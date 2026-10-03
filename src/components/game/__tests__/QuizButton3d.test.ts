@@ -49,6 +49,7 @@ it('3D切替と一時障害後の2D復帰で保存モデルと早押し経路を
   setActivePinia(pinia)
   const game = useGameStore(),
     settings = useSettingsStore()
+  settings.setButtonMode('2d')
   game.transitionToState(GameState.READY)
   const press = vi.fn(() => game.setButtonState(ButtonState.PUSHED))
   const host = document.createElement('div')
@@ -116,6 +117,7 @@ it('プレイ中の表示切替はモデルとゲーム状態を保ち、入力�
   const settings = useSettingsStore()
   const game = useGameStore()
   settings.setButtonModel('waseda-style-v1')
+  settings.setButtonMode('2d')
   game.transitionToState(GameState.QUESTIONING)
   const host = document.createElement('div')
   const { ref } = await import('vue')
