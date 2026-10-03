@@ -4,6 +4,7 @@ import { useGameStore } from '../gameStore'
 import { useDebugStore } from '../debugStore'
 import { GameState } from '@/types'
 import type { QuizData } from '@/types'
+import { ThresholdEngine } from '@/services/thresholdEngine'
 
 // ============================================================================
 // テスト用データ
@@ -595,5 +596,36 @@ describe('recordButtonPress / submissionTypes（Analytics用記録）', () => {
 
     expect(store.pendingTimesUntilPress).toEqual([])
     expect(store.pendingSubmissionTypes).toEqual([])
+  })
+})
+
+// ============================================================================
+// guideText: TALKING 状態の案内文
+// ============================================================================
+
+describe('guideText: TALKING 状態の案内文', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('1問目開始前は問題の開始を案内する', () => {
+    const store = useGameStore()
+    store.setQuizData(makeQuizData())
+    store.transitionToState(GameState.TALKING)
+
+    expect(store.guideText).toBe('問題の開始をお待ちください')
+  })
+
+  it('1問目開始前のシークで問題を飛ばした後は次の問題を案内する', () => {
+    const store = useGameStore()
+    const quizData = makeQuizData()
+    store.setQuizData(quizData)
+    store.transitionToState(GameState.TALKING)
+
+    new ThresholdEngine(quizData, store).consumeQuestionsBySeek(5, 28)
+
+    expect(store.currentState).toBe(GameState.TALKING)
+    expect(store.currentQuestionIndex).toBe(-1)
+    expect(store.guideText).toBe('次の問題をお待ちください')
   })
 })

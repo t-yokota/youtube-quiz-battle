@@ -1408,7 +1408,7 @@ _Guide Text（LOADING/READY/TALKING状態用）_
 - READY状態：「ボタンを押してクイズを開始」（下向き矢印のバウンスアニメーションでボタンへ視線誘導）
 - TALKING状態：
   - 1問目開始前：「問題の開始をお待ちください」
-  - 1問目終了後以降：「次の問題をお待ちください」
+  - 1問目終了後以降、または1問目開始前のシークで問題を飛ばした後：「次の問題をお待ちください」
 
 _Answer Content（QUESTIONING/ANSWERING/WAITING/REVEALING状態用）_
 

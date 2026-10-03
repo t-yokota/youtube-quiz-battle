@@ -94,7 +94,8 @@ export const useGameStore = defineStore('game', () => {
       case GameState.READY:
         return 'ボタンを押してクイズを開始'
       case GameState.TALKING:
-        return currentQuestionIndex.value === -1
+        // 1問目開始前のシークで問題を飛ばした場合も結果が記録されるため「次の問題」扱いにする
+        return currentQuestionIndex.value === -1 && results.value.length === 0
           ? '問題の開始をお待ちください'
           : '次の問題をお待ちください'
       default:
