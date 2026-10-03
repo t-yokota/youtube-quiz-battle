@@ -173,7 +173,8 @@ watch(
       <div class="answer-summary">
         <span class="attempts-counter"
           ><span ref="attemptsLabel" class="attempts-label"
-            >{{ desktop ? '解答残り' : '残り' }} {{ gameStore.remainingAttempts }}回<span
+            >{{ desktop ? '解答残り' : '残り' }}
+            {{ gameStore.answerResult === 'correct' ? '-' : gameStore.remainingAttempts }}回<span
               class="dim"
             >
               / {{ gameStore.effectiveSettings?.maxAttempts ?? gameStore.remainingAttempts }}</span

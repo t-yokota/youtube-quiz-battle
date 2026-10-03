@@ -1416,7 +1416,7 @@ _Guide Text（LOADING/READY/TALKING状態用）_
 _Answer Content（QUESTIONING/ANSWERING/WAITING/REVEALING状態用）_
 
 1. **Answer Meta Information**
-   - 残り解答回数表示（例：「残り 2回 / 3」。分母は実効`maxAttempts`）
+   - 残り解答回数表示（例：「残り 2回 / 3」。分母は実効`maxAttempts`）。正解後は次の問題まで回数を「-」にして「残り -回 / 3」と表示する
    - 解答制限時間タイマー: conic-gradientのリング + 秒数。ANSWERING中のみ表示。残り`TIMER_URGENT_THRESHOLD_SEC`秒（2026-07-07時点3秒）以下で赤色化 + 脈動演出に切り替わる
    - 解答結果表示（「正解！」または「不正解」のポップバナー）
 

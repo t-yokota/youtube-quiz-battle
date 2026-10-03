@@ -68,3 +68,27 @@ it('PCは移動完了後にフォーカスし、途中で解答が終了した�
   await vi.advanceTimersByTimeAsync(560)
   expect(document.activeElement).not.toBe(input)
 })
+
+it('正解後は残り回数を「-」で表示する', async () => {
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  const store = useGameStore()
+  store.setQuizData(quizFixture({ maxAttempts: 3 }))
+  store.setCurrentQuestionIndex(0)
+  store.initializeForQuestion()
+  store.transitionToState(GameState.ANSWERING)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const app = createApp(AnswerContent)
+  app.use(pinia).mount(host)
+  cleanup = () => {
+    app.unmount()
+    host.remove()
+  }
+  const label = () => host.querySelector('.attempts-label')!.textContent!.replace(/\s+/g, ' ')
+  expect(label()).toBe('残り 3回 / 3')
+  store.handleAnswerSubmit('東京')
+  await nextTick()
+  expect(store.answerResult).toBe('correct')
+  expect(label()).toBe('残り -回 / 3')
+})
